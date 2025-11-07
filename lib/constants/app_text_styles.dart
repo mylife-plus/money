@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 
 /// App Text Style Constants
-/// Define all text styles here using Kumbh Sans font
+/// Define all text styles here
+/// Note: Kumbh Sans font is set globally in app_theme.dart
 class AppTextStyles {
   AppTextStyles._();
 
-  // Base text style with Kumbh Sans
-  static TextStyle get _baseTextStyle => GoogleFonts.kumbhSans();
+  // Base text style (Kumbh Sans is applied automatically via theme)
+  static const TextStyle _baseTextStyle = TextStyle();
 
   // Headings
   static TextStyle get h1 => _baseTextStyle.copyWith(

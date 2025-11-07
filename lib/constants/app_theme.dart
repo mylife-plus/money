@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_constants.dart';
 
@@ -20,7 +19,6 @@ class AppTheme {
         surface: AppColors.surface,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      textTheme: GoogleFonts.kumbhSansTextTheme(),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         elevation: 0,

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:moneyapp/constants/app_text_styles.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Custom Text Widget with predefined variations
-/// Use this widget throughout the app for consistent typography
+/// Custom Text Widget with GoogleFonts support
+/// Use this widget throughout the app for consistent typography with proper font weight loading
 class CustomText extends StatelessWidget {
   final String text;
-  final TextStyle? style;
   final Color? color;
   final TextAlign? textAlign;
   final int? maxLines;
@@ -14,12 +13,11 @@ class CustomText extends StatelessWidget {
   final double? letterSpacing;
   final double? height;
   final FontWeight? fontWeight;
-  final double? size; // <-- Added
+  final double? size;
 
   const CustomText(
     this.text, {
     super.key,
-    this.style,
     this.color,
     this.textAlign,
     this.maxLines,
@@ -28,19 +26,19 @@ class CustomText extends StatelessWidget {
     this.letterSpacing,
     this.height,
     this.fontWeight,
-    this.size, // <-- Added
+    this.size,
   });
 
   @override
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: (style ?? AppTextStyles.bodyMedium).copyWith(
+      style: GoogleFonts.kumbhSans(
         color: color,
         letterSpacing: letterSpacing,
         height: height,
         fontWeight: fontWeight,
-        fontSize: size, // <-- Added
+        fontSize: size,
       ),
       textAlign: textAlign,
       maxLines: maxLines,
@@ -49,5 +47,42 @@ class CustomText extends StatelessWidget {
     );
   }
 
-  // ... rest of the code unchanged ...
+  /// Rich Text variation with multiple text spans
+  /// Use this when you need text with different styles (e.g., bold + regular)
+  static Widget richText({
+    required List<TextSpan> children,
+    TextAlign? textAlign,
+    int? maxLines,
+    TextOverflow? overflow,
+    bool? softWrap,
+  }) {
+    return RichText(
+      text: TextSpan(children: children),
+      textAlign: textAlign ?? TextAlign.start,
+      maxLines: maxLines,
+      overflow: overflow ?? TextOverflow.clip,
+      softWrap: softWrap ?? true,
+    );
+  }
+
+  /// Helper method to create a TextSpan with Kumbh Sans font
+  static TextSpan span(
+    String text, {
+    Color? color,
+    double? size,
+    FontWeight? fontWeight,
+    double? letterSpacing,
+    double? height,
+  }) {
+    return TextSpan(
+      text: text,
+      style: GoogleFonts.kumbhSans(
+        color: color,
+        fontSize: size,
+        fontWeight: fontWeight,
+        letterSpacing: letterSpacing,
+        height: height,
+      ),
+    );
+  }
 }

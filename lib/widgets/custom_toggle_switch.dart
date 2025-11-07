@@ -57,23 +57,25 @@ class CustomToggleSwitch extends StatelessWidget {
               child: Container(
                 height: double.infinity,
                 decoration: BoxDecoration(
-                  color: selectedOption == 1 ? Colors.white : Colors.transparent,
+                  color: selectedOption == 1
+                      ? Colors.white
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      option1IconPath,
-                      width: 33.r,
-                      height: 33.r,
-                    ),
+                    Image.asset(option1IconPath, width: 33.r, height: 33.r),
                     3.horizontalSpace,
                     CustomText(
                       option1Text,
-                      size: 20.r,
-                      fontWeight: selectedOption == 1 ? FontWeight.bold : FontWeight.w500,
-                      color: selectedOption == 1 ? Colors.black : const Color(0xff6E6E6E),
+                      size: 20.sp,
+                      fontWeight: selectedOption == 1
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: selectedOption == 1
+                          ? Colors.black
+                          : const Color(0xff6E6E6E),
                     ),
                   ],
                 ),
@@ -88,23 +90,25 @@ class CustomToggleSwitch extends StatelessWidget {
               child: Container(
                 height: double.infinity,
                 decoration: BoxDecoration(
-                  color: selectedOption == 2 ? Colors.white : Colors.transparent,
+                  color: selectedOption == 2
+                      ? Colors.white
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      option2IconPath,
-                      width: 33.r,
-                      height: 33.r,
-                    ),
+                    Image.asset(option2IconPath, width: 33.r, height: 33.r),
                     3.horizontalSpace,
                     CustomText(
                       option2Text,
-                      size: 20.r,
-                      fontWeight: selectedOption == 2 ? FontWeight.bold : FontWeight.w500,
-                      color: selectedOption == 2 ? Colors.black : const Color(0xff6E6E6E),
+                      size: 20.sp,
+                      fontWeight: selectedOption == 2
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: selectedOption == 2
+                          ? Colors.black
+                          : const Color(0xff6E6E6E),
                     ),
                   ],
                 ),
