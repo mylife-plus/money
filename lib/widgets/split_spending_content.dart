@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/widgets/custom_text.dart';
 import 'package:moneyapp/widgets/transaction_item.dart';
+import 'package:moneyapp/widgets/search_field_with_suggestions.dart';
 
 class SplitSpendingContent extends StatefulWidget {
   final String label;
@@ -25,6 +26,91 @@ class SplitSpendingContent extends StatefulWidget {
 
 class _SplitSpendingContentState extends State<SplitSpendingContent> {
   DateTime? selectedDate;
+  bool isHashtagSearchActive = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  List<String> _filteredRecommendations = [];
+  final GlobalKey _searchFieldKey = GlobalKey();
+
+  // Sample recommendations - replace with your actual data
+  final List<String> _allRecommendations = [
+    'Food & Dining',
+    'Transportation',
+    'Shopping',
+    'Entertainment',
+    'Healthcare',
+    'Bills & Utilities',
+    'Travel',
+    'Education',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+    _searchFocusNode.addListener(_onFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _searchFocusNode.removeListener(_onFocusChanged);
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      if (_searchController.text.isEmpty) {
+        _filteredRecommendations = [];
+      } else {
+        _filteredRecommendations = _allRecommendations
+            .where(
+              (item) => item.toLowerCase().contains(
+                _searchController.text.toLowerCase(),
+              ),
+            )
+            .toList();
+      }
+    });
+  }
+
+  void _onFocusChanged() {
+    // Show all recommendations when focused and field is empty
+    if (_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
+      setState(() {
+        _filteredRecommendations = _allRecommendations;
+      });
+    } else if (!_searchFocusNode.hasFocus) {
+      // Delay to allow tap on recommendations
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          setState(() {
+            _filteredRecommendations = [];
+          });
+        }
+      });
+    }
+  }
+
+  void _selectRecommendation(String value) {
+    _searchController.text = value;
+    _filteredRecommendations = [];
+    _searchFocusNode.unfocus();
+  }
+
+  void _addNewItem() {
+    // TODO: Implement add new item logic
+    print('Add new item: ${_searchController.text}');
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+  }
+
+  void _seeAll() {
+    // TODO: Implement see all logic
+    print('See all recommendations');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,21 +182,55 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 8.h),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isHashtagSearchActive
+                      ? Color(0xff0088FF)
+                      : Colors.white,
                   border: Border.all(color: Color(0xffDFDFDF)),
                   borderRadius: BorderRadius.circular(6.r),
                 ),
 
-                child: Row(
-                  children: [
-                    CustomText('0', size: 16.sp, color: Color(0xff0088FF)),
-                    CustomText(' #', size: 16.sp, color: Color(0xffA0A0A0)),
-                  ],
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      isHashtagSearchActive = !isHashtagSearchActive;
+                    });
+                  },
+                  child: Row(
+                    children: [
+                      CustomText(
+                        '0',
+                        size: 16.sp,
+                        color: isHashtagSearchActive
+                            ? Colors.white
+                            : Color(0xff0088FF),
+                      ),
+                      CustomText(
+                        ' #',
+                        size: 16.sp,
+                        color: isHashtagSearchActive
+                            ? Colors.white
+                            : Color(0xffA0A0A0),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
           7.verticalSpace,
+          if (isHashtagSearchActive) ...[
+            SearchFieldWithSuggestions(
+              suggestions: _allRecommendations,
+              controller: _searchController,
+              hintText: 'Search...',
+              onAdd: _addNewItem,
+              onSeeAll: _seeAll,
+              onSelected: (value) {
+                print('Selected: $value');
+              },
+            ),
+            7.verticalSpace,
+          ],
           Row(
             children: [
               Container(

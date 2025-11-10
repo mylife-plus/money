@@ -343,7 +343,7 @@ class HomeScreen extends GetView<HomeController> {
                               spacing: 4.h,
                               children: [
                                 for (List<dynamic> entries in [
-                                  ['12.', '🏧 ATM', 1, '400,00'],
+                                  ['12.', '🏧 ATM', 2, '400,00'],
                                   ['12.', '🏧 ATM', 1, '400,00'],
                                   ['11.', '🛒 Aldi', 1, '400,00'],
                                 ])
@@ -356,7 +356,7 @@ class HomeScreen extends GetView<HomeController> {
                               ],
                             ),
                           ),
-                          100.verticalSpace,
+                          150.verticalSpace,
                         ],
                       );
                     }),
