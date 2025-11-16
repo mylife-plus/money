@@ -2,6 +2,7 @@
 /// Define all route names here
 enum AppRoutes {
   home,
+  investment,
   settings,
   // Add more routes here as needed
   // example: login, profile, etc.
@@ -13,6 +14,8 @@ extension AppRoutesExtension on AppRoutes {
     switch (this) {
       case AppRoutes.home:
         return '/home';
+      case AppRoutes.investment:
+        return '/investment';
       case AppRoutes.settings:
         return '/settings';
       // Add more cases here

@@ -4,12 +4,12 @@ import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/widgets/custom_text.dart';
 
-class TopSheet extends StatelessWidget {
+class TopTransactionSheet extends StatelessWidget {
   final String title;
   final Widget child;
   final VoidCallback? onClose;
 
-  const TopSheet({
+  const TopTransactionSheet({
     super.key,
     required this.title,
     required this.child,
@@ -29,7 +29,11 @@ class TopSheet extends StatelessWidget {
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
-        return TopSheet(title: title, onClose: onClose, child: child);
+        return TopTransactionSheet(
+          title: title,
+          onClose: onClose,
+          child: child,
+        );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(

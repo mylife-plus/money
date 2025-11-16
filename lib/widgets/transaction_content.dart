@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:moneyapp/widgets/custom_popup.dart';
 import 'package:moneyapp/widgets/custom_text.dart';
+import 'package:moneyapp/widgets/category_chip.dart';
 
 class TransactionContent extends StatelessWidget {
   final String label;
@@ -80,28 +81,7 @@ class TransactionContent extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     for (var category in ['Travel', 'Repair'])
-                      Container(
-                        padding: EdgeInsets.fromLTRB(8.r, 8.r, 11.r, 7.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(7.r),
-                          border: Border.all(color: Color(0xffDFDFDF)),
-                        ),
-                        child: CustomText.richText(
-                          children: [
-                            CustomText.span(
-                              '# ',
-                              size: 16.sp,
-                              color: const Color(0xffA0A0A0),
-                            ),
-                            CustomText.span(
-                              category,
-                              size: 16.sp,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                      ),
+                      CategoryChip(category: category),
                   ],
                 ),
               ),

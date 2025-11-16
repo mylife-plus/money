@@ -4,28 +4,16 @@ import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/widgets/category_chip.dart';
 import 'package:moneyapp/widgets/custom_text.dart';
-import 'package:moneyapp/widgets/transaction_item.dart';
 import 'package:moneyapp/widgets/search_field_with_suggestions.dart';
 
-class SplitSpendingContent extends StatefulWidget {
-  final String label;
-  final String title;
-  final String category;
-  final String amount;
-
-  const SplitSpendingContent({
-    super.key,
-    required this.label,
-    required this.title,
-    required this.category,
-    required this.amount,
-  });
+class NewTransactionContent extends StatefulWidget {
+  const NewTransactionContent({super.key});
 
   @override
-  State<SplitSpendingContent> createState() => _SplitSpendingContentState();
+  State<NewTransactionContent> createState() => _EditSpendingContentState();
 }
 
-class _SplitSpendingContentState extends State<SplitSpendingContent> {
+class _EditSpendingContentState extends State<NewTransactionContent> {
   DateTime? selectedDate;
   bool isHashtagSearchActive = false;
   final TextEditingController _searchController = TextEditingController();
@@ -119,26 +107,7 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
       padding: EdgeInsets.symmetric(horizontal: 7.w),
       child: Column(
         children: [
-          6.verticalSpace,
-          TransactionItem(
-            label: widget.label,
-            title: widget.title,
-            category: widget.category,
-            amount: widget.amount,
-          ),
-          21.verticalSpace,
-          Row(
-            children: [
-              8.horizontalSpace,
-              Expanded(child: CustomText('into', size: 16.sp)),
-              InkWell(
-                child: Image.asset(AppIcons.plus, height: 21.r, width: 21.r),
-              ),
-
-              13.horizontalSpace,
-            ],
-          ),
-          19.verticalSpace,
+          8.verticalSpace,
 
           Row(
             children: [
@@ -200,14 +169,7 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
                   child: Row(
                     children: [
                       CustomText(
-                        '0',
-                        size: 16.sp,
-                        color: isHashtagSearchActive
-                            ? Colors.white
-                            : Color(0xff0088FF),
-                      ),
-                      CustomText(
-                        ' #',
+                        '#',
                         size: 16.sp,
                         color: isHashtagSearchActive
                             ? Colors.white
@@ -217,6 +179,8 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
                   ),
                 ),
               ),
+              6.horizontalSpace,
+              CategoryChip(category: 'Travel'),
             ],
           ),
           7.verticalSpace,
@@ -244,12 +208,7 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
                   borderRadius: BorderRadius.circular(6.r),
                 ),
                 child: Center(
-                  child: Image.asset(
-                    AppIcons.plus,
-                    height: 21.r,
-                    width: 21.r,
-                    color: const Color(0xffA0A0A0),
-                  ),
+                  child: Image.asset(AppIcons.atm, height: 20.r, width: 20.r),
                 ),
               ),
               7.horizontalSpace,
@@ -299,10 +258,10 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomText('Amount', size: 10.sp),
+                      // CustomText('Amount', size: 10.sp),
                       Expanded(
                         child: Align(
-                          alignment: Alignment.bottomCenter,
+                          // alignment: Alignment.bottomCenter,
                           child: TextField(
                             cursorHeight: 15.r,
                             decoration: const InputDecoration(
@@ -312,7 +271,10 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
-                            style: TextStyle(fontSize: 16.sp),
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              color: Color(0xffFF0000),
+                            ),
                             textAlign: TextAlign.end,
                           ),
                         ),
@@ -324,7 +286,7 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
             ],
           ),
 
-          24.verticalSpace,
+          28.verticalSpace,
           // Add more content here as you build the design
         ],
       ),

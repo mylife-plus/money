@@ -4,12 +4,18 @@ import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
+import 'package:moneyapp/routes/app_pages.dart';
+import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/screens/home/investment_screen.dart';
 import 'package:moneyapp/widgets/custom_app_bar.dart';
 import 'package:moneyapp/widgets/custom_slider.dart';
 import 'package:moneyapp/widgets/custom_text.dart';
 import 'package:moneyapp/widgets/custom_toggle_switch.dart';
 import 'package:moneyapp/widgets/custom_toggle_switch_small.dart';
+import 'package:moneyapp/widgets/edit_transaction_content.dart';
+import 'package:moneyapp/widgets/new_transaction_content.dart';
 import 'package:moneyapp/widgets/step_line_chart.dart';
+import 'package:moneyapp/widgets/top_transaction_sheet.dart';
 import 'package:moneyapp/widgets/transaction_item.dart';
 
 /// Home Screen
@@ -28,8 +34,7 @@ class HomeScreen extends GetView<HomeController> {
               leadingIconPath: AppIcons.transaction,
               actionIconPath: AppIcons.investment,
               onActionIconTap: () {
-                // Handle investment icon tap
-                Get.snackbar('Investment', 'Investment icon tapped');
+                Get.offNamed(AppRoutes.investment.path);
               },
             ),
             Expanded(
@@ -267,6 +272,13 @@ class HomeScreen extends GetView<HomeController> {
                                 ),
                                 Spacer(),
                                 InkWell(
+                                  onTap: () {
+                                    TopTransactionSheet.show(
+                                      context: context,
+                                      title: 'new Transaction',
+                                      child: NewTransactionContent(),
+                                    );
+                                  },
                                   child: Image.asset(
                                     AppIcons.plus,
                                     height: 21.r,

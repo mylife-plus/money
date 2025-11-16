@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:moneyapp/widgets/custom_popup.dart';
-import 'package:moneyapp/widgets/top_sheet.dart';
+import 'package:moneyapp/widgets/edit_transaction_content.dart';
+import 'package:moneyapp/widgets/top_transaction_sheet.dart';
 import 'package:moneyapp/widgets/split_spending_content.dart';
 import 'package:moneyapp/widgets/transaction_content.dart';
 import 'package:moneyapp/widgets/transaction_popup_menu.dart';
@@ -40,9 +41,10 @@ class _TransactionItemState extends State<TransactionItem> {
   final GlobalKey<CustomPopupState> _popupKey = GlobalKey<CustomPopupState>();
 
   void _handleSplit(BuildContext context) {
-    TopSheet.show(
+    _popupKey.currentState?.dismiss();
+    TopTransactionSheet.show(
       context: context,
-      title: 'Split Spending',
+      title: 'split Spending',
       child: SplitSpendingContent(
         label: widget.label,
         title: widget.title,
@@ -52,9 +54,18 @@ class _TransactionItemState extends State<TransactionItem> {
     );
   }
 
-  void _handleEdit() {
+  void _handleEdit(BuildContext context) {
     _popupKey.currentState?.dismiss();
-    // TODO: Implement edit logic
+    TopTransactionSheet.show(
+      context: context,
+      title: 'edit Transaction',
+      child: EditTransactionContent(
+        label: widget.label,
+        title: widget.title,
+        category: widget.category,
+        amount: widget.amount,
+      ),
+    );
   }
 
   void _handleSelect() {
@@ -98,10 +109,11 @@ class _TransactionItemState extends State<TransactionItem> {
             amountColor: widget.amountColor,
             backgroundColor: widget.backgroundColor,
             onSplit: () {
-              _popupKey.currentState?.dismiss();
               _handleSplit(context);
             },
-            onEdit: _handleEdit,
+            onEdit: () {
+              _handleEdit(context);
+            },
             onSelect: _handleSelect,
             onDelete: _handleDelete,
           ),
