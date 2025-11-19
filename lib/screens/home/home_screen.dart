@@ -7,16 +7,16 @@ import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/routes/app_pages.dart';
 import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/screens/home/investment_screen.dart';
-import 'package:moneyapp/widgets/custom_app_bar.dart';
-import 'package:moneyapp/widgets/custom_slider.dart';
-import 'package:moneyapp/widgets/custom_text.dart';
-import 'package:moneyapp/widgets/custom_toggle_switch.dart';
-import 'package:moneyapp/widgets/custom_toggle_switch_small.dart';
-import 'package:moneyapp/widgets/edit_transaction_content.dart';
-import 'package:moneyapp/widgets/new_transaction_content.dart';
-import 'package:moneyapp/widgets/step_line_chart.dart';
-import 'package:moneyapp/widgets/top_transaction_sheet.dart';
-import 'package:moneyapp/widgets/transaction_item.dart';
+import 'package:moneyapp/widgets/common/custom_app_bar.dart';
+import 'package:moneyapp/widgets/common/custom_slider.dart';
+import 'package:moneyapp/widgets/common/custom_text.dart';
+import 'package:moneyapp/widgets/common/custom_toggle_switch.dart';
+import 'package:moneyapp/widgets/common/custom_toggle_switch_small.dart';
+import 'package:moneyapp/widgets/transactions/edit_transaction_content.dart';
+import 'package:moneyapp/widgets/transactions/new_transaction_content.dart';
+import 'package:moneyapp/widgets/charts/step_line_chart.dart';
+import 'package:moneyapp/widgets/transactions/top_transaction_sheet.dart';
+import 'package:moneyapp/widgets/transactions/transaction_item.dart';
 
 /// Home Screen
 /// Main landing screen of the app
@@ -276,7 +276,10 @@ class HomeScreen extends GetView<HomeController> {
                                     TopTransactionSheet.show(
                                       context: context,
                                       title: 'new Transaction',
-                                      child: NewTransactionContent(),
+                                      child: NewTransactionContent(
+                                        isExpenseSelected:
+                                            controller.isExpenseSelected,
+                                      ),
                                     );
                                   },
                                   child: Image.asset(

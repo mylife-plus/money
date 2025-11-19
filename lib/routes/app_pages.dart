@@ -1,9 +1,13 @@
 import 'package:get/get.dart';
+import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/screens/hashtag/hashtag_group_screen.dart';
 import 'package:moneyapp/screens/home/home_screen.dart';
+import 'package:moneyapp/screens/home/investment_list_screen.dart';
 import 'package:moneyapp/screens/home/investment_screen.dart';
+import 'package:moneyapp/screens/setting/settings_view.dart';
 
 /// App Pages Configuration
 /// Configure all GetX pages and their bindings here
@@ -27,6 +31,17 @@ class AppPages {
       binding: InvestmentBinding(),
       transition: Transition.noTransition,
     ),
+    GetPage(
+      name: AppRoutes.investmentList.path,
+      page: () => const InvestmentListScreen(),
+      binding: InvestmentBinding(),
+    ),
+    GetPage(name: AppRoutes.settings.path, page: () => const SettingsView()),
+    GetPage(
+      name: AppRoutes.hashtagGroups.path,
+      page: () => const HashtagGroupScreen(),
+      binding: HashtagGroupsBinding(),
+    ),
     // Add more pages here
   ];
 }
@@ -46,5 +61,12 @@ class InvestmentBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<InvestmentController>(() => InvestmentController());
+  }
+}
+
+class HashtagGroupsBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<HashtagGroupsController>(() => HashtagGroupsController());
   }
 }

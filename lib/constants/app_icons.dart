@@ -6,6 +6,7 @@ class AppIcons {
   // General Icons
   static const String home = 'assets/icons/home_icon.png';
   static const String plus = 'assets/icons/plus_icon.png';
+  static const String minus = 'assets/icons/minus_icon.png';
   static const String closeBold = 'assets/icons/close_icon_bold.png';
   static const String search = 'assets/icons/search_normal_icon.png';
   static const String filter = 'assets/icons/filter_icon.png';
@@ -13,6 +14,7 @@ class AppIcons {
   static const String setting = 'assets/icons/setting_icon.png';
   static const String refresh = 'assets/icons/refresh_icon.png';
   static const String edit = 'assets/icons/edit_icon.png';
+  static const String backArrow = 'assets/icons/back_arrow.png';
 
   // Transaction & Finance Icons
   static const String transaction = 'assets/icons/transaction_icon.png';

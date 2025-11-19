@@ -3,7 +3,9 @@
 enum AppRoutes {
   home,
   investment,
+  investmentList,
   settings,
+  hashtagGroups,
   // Add more routes here as needed
   // example: login, profile, etc.
 }
@@ -16,8 +18,12 @@ extension AppRoutesExtension on AppRoutes {
         return '/home';
       case AppRoutes.investment:
         return '/investment';
+      case AppRoutes.investmentList:
+        return '/investmentList';
       case AppRoutes.settings:
         return '/settings';
+      case AppRoutes.hashtagGroups:
+        return '/hashtagGroups';
       // Add more cases here
     }
   }
