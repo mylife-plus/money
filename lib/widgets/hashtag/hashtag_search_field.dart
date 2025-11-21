@@ -38,8 +38,8 @@ class HashtagSearchField extends StatelessWidget {
           hintStyle: AppFonts.regular(
             16.sp,
             color: uiController.darkMode.value
-                ? Colors.white54
-                : Colors.grey[600]!,
+                ? Colors.grey[600]!
+                : Color(0xff9D9D9D),
           ),
           border: InputBorder.none,
           isDense: true,

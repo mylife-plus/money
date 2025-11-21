@@ -107,7 +107,7 @@ class HashtagGroupService {
   }
 
   /// Update an existing hashtag group
-  Future<bool> updateGroup(int groupId, String name) async {
+  Future<bool> updateGroup(int groupId, String name, {int? newParentId}) async {
     try {
       debugPrint(
         '[HashtagGroupService][updateGroup] ===== UPDATE GROUP STARTED =====',
@@ -118,6 +118,7 @@ class HashtagGroupService {
       debugPrint('  - Name length: ${name.length}');
       debugPrint('  - Name trimmed: "${name.trim()}"');
       debugPrint('  - Name trimmed length: ${name.trim().length}');
+      debugPrint('  - Parent ID New: $newParentId');
 
       // Get the old name before updating
       final oldGroup = await getGroupById(groupId);
@@ -172,10 +173,73 @@ class HashtagGroupService {
         }
       }
 
+      // Handle parent ID change if provided (for moving subgroups between parents)
+      if (newParentId != null && oldGroup != null) {
+        debugPrint(
+          '[HashtagGroupService][updateGroup] Parent ID change requested: ${oldGroup.parentId} -> $newParentId',
+        );
+
+        // Verify this is a subgroup being moved
+        if (oldGroup.parentId == null) {
+          debugPrint(
+            '[HashtagGroupService][updateGroup] Cannot change parent of main group',
+          );
+          throw Exception('CANNOT_CHANGE_MAIN_GROUP_PARENT');
+        }
+
+        // Verify new parent exists and is a main group
+        final newParent = await getGroupById(newParentId);
+        if (newParent == null) {
+          debugPrint(
+            '[HashtagGroupService][updateGroup] New parent ID $newParentId not found',
+          );
+          throw Exception('PARENT_NOT_FOUND');
+        }
+
+        if (newParent.parentId != null) {
+          debugPrint(
+            '[HashtagGroupService][updateGroup] New parent must be a main group, but $newParentId is a subgroup',
+          );
+          throw Exception('INVALID_PARENT_NOT_MAIN_GROUP');
+        }
+
+        // Check name conflict with new parent
+        if (newName.toLowerCase() == newParent.name.toLowerCase()) {
+          debugPrint(
+            '[HashtagGroupService][updateGroup] Subgroup name conflicts with new parent: ${newParent.name}',
+          );
+          throw Exception('SUBGROUP_CONFLICTS_WITH_PARENT');
+        }
+
+        // Check if new parent already has a subgroup with this name
+        final newParentSubgroups = await getSubgroups(newParentId);
+        for (final subgroup in newParentSubgroups) {
+          if (subgroup.id != groupId &&
+              subgroup.name.toLowerCase() == newName.toLowerCase()) {
+            debugPrint(
+              '[HashtagGroupService][updateGroup] New parent already has subgroup with name: ${subgroup.name}',
+            );
+            throw Exception('DUPLICATE_HASHTAG_NAME');
+          }
+        }
+
+        debugPrint(
+          '[HashtagGroupService][updateGroup] ✅ Parent ID validation passed',
+        );
+      }
+
       final updateData = {
         'hashtag_group_name': newName,
         'hashtag_group_updated_at': DateTime.now().toIso8601String(),
       };
+
+      // Add parent ID to update if provided
+      if (newParentId != null) {
+        updateData['hashtag_group_parent_id'] = newParentId.toString();
+        debugPrint(
+          '[HashtagGroupService][updateGroup] Including parent ID in update: $newParentId',
+        );
+      }
 
       debugPrint('[HashtagGroupService][updateGroup] Update data: $updateData');
       debugPrint(
@@ -211,8 +275,12 @@ class HashtagGroupService {
       debugPrint(
         '[HashtagGroupService][updateGroup] Stack trace: ${StackTrace.current}',
       );
-      // Rethrow duplicate exceptions so UI can handle them
-      if (e.toString().contains('DUPLICATE_HASHTAG_NAME')) {
+      // Rethrow specific exceptions so UI can handle them
+      if (e.toString().contains('DUPLICATE_HASHTAG_NAME') ||
+          e.toString().contains('CANNOT_CHANGE_MAIN_GROUP_PARENT') ||
+          e.toString().contains('PARENT_NOT_FOUND') ||
+          e.toString().contains('INVALID_PARENT_NOT_MAIN_GROUP') ||
+          e.toString().contains('SUBGROUP_CONFLICTS_WITH_PARENT')) {
         rethrow;
       }
       return false;

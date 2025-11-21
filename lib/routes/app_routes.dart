@@ -6,6 +6,7 @@ enum AppRoutes {
   investmentList,
   settings,
   hashtagGroups,
+  upload,
   // Add more routes here as needed
   // example: login, profile, etc.
 }
@@ -24,6 +25,8 @@ extension AppRoutesExtension on AppRoutes {
         return '/settings';
       case AppRoutes.hashtagGroups:
         return '/hashtagGroups';
+      case AppRoutes.upload:
+        return '/upload';
       // Add more cases here
     }
   }

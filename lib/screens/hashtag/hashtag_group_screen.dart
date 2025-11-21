@@ -1,14 +1,16 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart' as gfonts;
 import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/hashtag_group_service.dart';
 import 'package:moneyapp/services/hashtag_recent_service.dart';
 import 'package:moneyapp/widgets/common/add_edit_group_popup.dart';
+import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_indicator.dart';
 import 'package:moneyapp/widgets/hashtag/inline_add_main_group_widget.dart';
 import 'package:moneyapp/widgets/hashtag/inline_add_subgroup_widget.dart';
@@ -41,26 +43,10 @@ class HashtagGroupScreen extends StatefulWidget {
 
 class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
   final HashtagGroupService _hashtagGroupService = HashtagGroupService();
+  late final HashtagGroupsController _controller;
   UiController uiController = Get.put<UiController>(UiController());
 
-  // Reactive state variables
-  final RxList<HashtagGroup> _mainHashtagGroups = <HashtagGroup>[].obs;
-  final RxBool _isLoading = false.obs;
-  final RxMap<int, bool> _expandedHashtagGroups = <int, bool>{}.obs;
-  final RxMap<int, bool> _addingToHashtagGroup = <int, bool>{}.obs;
-  final RxMap<int, TextEditingController> _inlineNameControllers =
-      <int, TextEditingController>{}.obs;
-  final RxMap<int, ExpansionTileController> _expansionControllers =
-      <int, ExpansionTileController>{}.obs;
-  final RxMap<int, bool> _pendingAddingMode = <int, bool>{}.obs;
-
-  // Inline editing state for subgroups
-  final RxMap<int, bool> _editingHashtagGroup = <int, bool>{}.obs;
-  final RxMap<int, TextEditingController> _editNameControllers =
-      <int, TextEditingController>{}.obs;
-
-  // Inline add state for main hashtag groups
-  final RxBool _addingMainHashtagGroup = false.obs;
+  // Keep only screen-specific state
   final TextEditingController _mainHashtagGroupNameController =
       TextEditingController();
 
@@ -68,30 +54,32 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
   static const String _recentSubgroupsKey = 'recent_subgroups';
   static const int _maxRecentItems = 6;
 
-  // Multiple selection state
-  final RxList<HashtagGroup> _selectedHashtagGroups = <HashtagGroup>[].obs;
-
   // Global refresh notifier for external access
   final RxInt _globalRefreshNotifier = 0.obs;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize or get controller
+    if (Get.isRegistered<HashtagGroupsController>()) {
+      _controller = Get.find<HashtagGroupsController>();
+    } else {
+      _controller = Get.put(HashtagGroupsController());
+    }
+
     debugPrint(
       '[HashtagGroupsView][initState] HashtagGroupsView opened, initializing...',
     );
     debugPrint(
       '[HashtagGroupsView][initState] Multiple selection mode: ${widget.allowMultipleSelection}',
     );
-    debugPrint(
-      '[HashtagGroupsView][initState] Starting database initialization and hashtag group loading',
-    );
 
     // Initialize selected hashtag groups for multiple selection mode
     if (widget.allowMultipleSelection && widget.selectedHashtagGroups != null) {
-      _selectedHashtagGroups.addAll(widget.selectedHashtagGroups!);
+      _controller.setSelectedGroups(widget.selectedHashtagGroups!);
       debugPrint(
-        '[HashtagGroupsView][initState] Initialized with ${_selectedHashtagGroups.length} pre-selected hashtag groups',
+        '[HashtagGroupsView][initState] Initialized with ${_controller.selectedGroups.length} pre-selected hashtag groups',
       );
     }
 
@@ -107,7 +95,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       );
     }
 
-    _loadHashtagGroups();
+    _controller.loadHashtagGroups();
 
     // Listen for global refresh triggers
     ever(_globalRefreshNotifier, (timestamp) {
@@ -115,7 +103,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         debugPrint(
           '[HashtagGroupsView][initState] Global refresh triggered, refreshing hashtag groups...',
         );
-        _refreshHashtagGroupsFromDatabase();
+        _controller.refreshGroups();
       }
     });
 
@@ -127,16 +115,6 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
   @override
   void dispose() {
     _mainHashtagGroupNameController.dispose();
-
-    // Dispose inline controllers
-    for (final controller in _inlineNameControllers.values) {
-      controller.dispose();
-    }
-
-    // Dispose editing controllers
-    for (final controller in _editNameControllers.values) {
-      controller.dispose();
-    }
 
     // Clean up global refresh notifier
     try {
@@ -151,94 +129,6 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     }
 
     super.dispose();
-  }
-
-  /// Load all main hashtag groups with their subgroups
-  Future<void> _loadHashtagGroups() async {
-    try {
-      _isLoading.value = true;
-      debugPrint(
-        '[HashtagGroupsView][_loadHashtagGroups] Starting hashtag group loading process',
-      );
-
-      // Step 1: Fetch all hashtag groups from database
-      debugPrint(
-        '[HashtagGroupsView][_loadHashtagGroups] Fetching hashtag groups from database',
-      );
-
-      final hashtagGroups = await _hashtagGroupService
-          .getAllGroupsHierarchical();
-      _mainHashtagGroups.value = hashtagGroups;
-
-      debugPrint(
-        '[HashtagGroupsView][_loadHashtagGroups] Successfully loaded ${hashtagGroups.length} main hashtag groups from database',
-      );
-
-      // Verify we have the expected predefined hashtag groups
-      if (_mainHashtagGroups.isNotEmpty) {
-        debugPrint(
-          '[HashtagGroupsView][_loadHashtagGroups] ✅ Database contains hashtag groups - initialization successful',
-        );
-
-        // Log hashtag group details for debugging
-        for (int i = 0; i < _mainHashtagGroups.length; i++) {
-          final hashtagGroup = _mainHashtagGroups[i];
-          final subgroupCount = hashtagGroup.subgroups?.length ?? 0;
-          final customStatus = hashtagGroup.isCustom
-              ? '(Custom)'
-              : '(Predefined)';
-          debugPrint(
-            '[HashtagGroupsView][_loadHashtagGroups] Main Hashtag Group ${i + 1}: ${hashtagGroup.name} - $subgroupCount subgroups $customStatus',
-          );
-
-          // Log first few subgroups for verification
-          if (hashtagGroup.hasSubgroups && i < 3) {
-            // Only log first 3 main hashtag groups' subgroups
-            for (int j = 0; j < math.min(3, subgroupCount); j++) {
-              final sub = hashtagGroup.subgroups![j];
-              debugPrint(
-                '[HashtagGroupsView][_loadHashtagGroups]   └─ Subgroup: ${sub.name}',
-              );
-            }
-            if (subgroupCount > 3) {
-              debugPrint(
-                '[HashtagGroupsView][_loadHashtagGroups]   └─ ... and ${subgroupCount - 3} more subgroups',
-              );
-            }
-          }
-        }
-      } else {
-        debugPrint(
-          '[HashtagGroupsView][_loadHashtagGroups] ⚠️ No hashtag groups found in database - this may indicate an initialization issue',
-        );
-      }
-    } catch (e) {
-      debugPrint(
-        '[HashtagGroupsView][_loadHashtagGroups] Error during hashtag group loading/initialization: $e',
-      );
-      debugPrint(
-        '[HashtagGroupsView][_loadHashtagGroups] Error type: ${e.runtimeType}',
-      );
-      debugPrint(
-        '[HashtagGroupsView][_loadHashtagGroups] Stack trace: ${StackTrace.current}',
-      );
-
-      Get.snackbar(
-        'Unable to Load',
-        'Unable to load hashtag groups. Please try again.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
-      );
-
-      // Set empty hashtag groups to prevent UI errors
-      _mainHashtagGroups.value = [];
-    } finally {
-      _isLoading.value = false;
-      debugPrint(
-        '[HashtagGroupsView][_loadHashtagGroups] Hashtag group loading process completed',
-      );
-    }
   }
 
   /// Refresh hashtag groups from database (used after CRUD operations)
@@ -273,7 +163,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       debugPrint(
         '[HashtagGroupsView][_refreshHashtagGroupsFromDatabase] 📝 Updating reactive list',
       );
-      _mainHashtagGroups.value = hashtagGroups;
+      _controller.allGroups = hashtagGroups;
 
       debugPrint(
         '[HashtagGroupsView][_refreshHashtagGroupsFromDatabase] ✅ Successfully refreshed ${hashtagGroups.length} main hashtag groups',
@@ -542,33 +432,33 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
   /// Clear all controllers and state to prevent disposed controller errors
   void _clearAllControllers() {
     // Dispose and clear inline name controllers
-    for (final controller in _inlineNameControllers.values) {
+    for (final controller in _controller.inlineNameControllers.values) {
       try {
         controller.dispose();
       } catch (e) {
         debugPrint('[HashtagGroupsView] Error disposing inline controller: $e');
       }
     }
-    _inlineNameControllers.clear();
+    _controller.inlineNameControllers.clear();
 
     // Dispose and clear edit name controllers
-    for (final controller in _editNameControllers.values) {
+    for (final controller in _controller.editNameControllers.values) {
       try {
         controller.dispose();
       } catch (e) {
         debugPrint('[HashtagGroupsView] Error disposing edit controller: $e');
       }
     }
-    _editNameControllers.clear();
+    _controller.editNameControllers.clear();
 
     // Clear expansion controllers (don't dispose as they're managed by ExpansionTile)
-    _expansionControllers.clear();
+    _controller.expansionControllers.clear();
 
     // Clear all state maps
-    _expandedHashtagGroups.clear();
-    _addingToHashtagGroup.clear();
-    _pendingAddingMode.clear();
-    _editingHashtagGroup.clear();
+    _controller.expandedGroups.clear();
+    _controller.addingToGroup.clear();
+    _controller.pendingAddingMode.clear();
+    _controller.editingGroup.clear();
   }
 
   /// Select a hashtag group and return to parent
@@ -606,11 +496,14 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     if (hashtagGroup.isMainGroup && hashtagGroup.hasSubgroups) {
       // For main groups, check if ALL subgroups are selected
       isSelected = hashtagGroup.subgroups!.every(
-        (subgroup) => _selectedHashtagGroups.any((g) => g.id == subgroup.id),
+        (subgroup) =>
+            _controller.selectedGroups.any((g) => g.id == subgroup.id),
       );
     } else {
       // For subgroups, check if this specific group is selected
-      isSelected = _selectedHashtagGroups.any((g) => g.id == hashtagGroup.id);
+      isSelected = _controller.selectedGroups.any(
+        (g) => g.id == hashtagGroup.id,
+      );
     }
 
     debugPrint(
@@ -622,7 +515,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       if (hashtagGroup.isMainGroup && hashtagGroup.hasSubgroups) {
         // If this is a main group, remove all its subgroups
         for (final subgroup in hashtagGroup.subgroups!) {
-          _selectedHashtagGroups.removeWhere((g) => g.id == subgroup.id);
+          _controller.selectedGroups.removeWhere((g) => g.id == subgroup.id);
           debugPrint(
             '[HashtagGroupsView][_toggleHashtagGroupSelection] Removed subgroup: ${subgroup.name}',
           );
@@ -632,7 +525,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         );
       } else {
         // For subgroups, remove them directly
-        _selectedHashtagGroups.removeWhere((g) => g.id == hashtagGroup.id);
+        _controller.selectedGroups.removeWhere((g) => g.id == hashtagGroup.id);
         debugPrint(
           '[HashtagGroupsView][_toggleHashtagGroupSelection] Removed: ${hashtagGroup.name}',
         );
@@ -642,8 +535,8 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       if (hashtagGroup.isMainGroup && hashtagGroup.hasSubgroups) {
         // If this is a main group, add all its subgroups (not the main group itself)
         for (final subgroup in hashtagGroup.subgroups!) {
-          if (!_selectedHashtagGroups.any((g) => g.id == subgroup.id)) {
-            _selectedHashtagGroups.add(subgroup);
+          if (!_controller.selectedGroups.any((g) => g.id == subgroup.id)) {
+            _controller.selectedGroups.add(subgroup);
             debugPrint(
               '[HashtagGroupsView][_toggleHashtagGroupSelection] Added subgroup: ${subgroup.name}',
             );
@@ -654,7 +547,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         );
       } else {
         // For subgroups, add them directly
-        _selectedHashtagGroups.add(hashtagGroup);
+        _controller.selectedGroups.add(hashtagGroup);
         debugPrint(
           '[HashtagGroupsView][_toggleHashtagGroupSelection] Added: ${hashtagGroup.name}',
         );
@@ -665,7 +558,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     }
 
     debugPrint(
-      '[HashtagGroupsView][_toggleHashtagGroupSelection] Total selected: ${_selectedHashtagGroups.length}',
+      '[HashtagGroupsView][_toggleHashtagGroupSelection] Total selected: ${_controller.selectedGroups.length}',
     );
   }
 
@@ -673,14 +566,16 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
   /// Handle done button press for multiple selection mode
   void _onDonePressed() {
     debugPrint(
-      '[HashtagGroupsView][_onDonePressed] Returning ${_selectedHashtagGroups.length} selected hashtag groups',
+      '[HashtagGroupsView][_onDonePressed] Returning ${_controller.selectedGroups.length} selected hashtag groups',
     );
 
     if (widget.onMultipleHashtagGroupsSelected != null) {
-      widget.onMultipleHashtagGroupsSelected!(_selectedHashtagGroups.toList());
+      widget.onMultipleHashtagGroupsSelected!(
+        _controller.selectedGroups.toList(),
+      );
     }
 
-    Get.back(result: _selectedHashtagGroups.toList());
+    Get.back(result: _controller.selectedGroups.toList());
   }
 
   /// Show popup for adding subgroup to a hashtag group
@@ -764,17 +659,17 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
   /// Helper method to enable adding mode
   void _enableAddingMode(int hashtagGroupId) {
-    _addingToHashtagGroup[hashtagGroupId] = true;
+    _controller.addingToGroup[hashtagGroupId] = true;
 
     // Initialize controllers
-    _inlineNameControllers[hashtagGroupId] = TextEditingController();
+    _controller.inlineNameControllers[hashtagGroupId] = TextEditingController();
   }
 
   /// Cancel inline adding
   void _cancelInlineAdding(int hashtagGroupId) {
-    _addingToHashtagGroup[hashtagGroupId] = false;
-    _inlineNameControllers[hashtagGroupId]?.dispose();
-    _inlineNameControllers.remove(hashtagGroupId);
+    _controller.addingToGroup[hashtagGroupId] = false;
+    _controller.inlineNameControllers[hashtagGroupId]?.dispose();
+    _controller.inlineNameControllers.remove(hashtagGroupId);
   }
 
   /// Save recently selected subgroup
@@ -896,43 +791,44 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     final uiController = Get.find<UiController>();
 
     return PopScope(
-      canPop: !widget.allowMultipleSelection || _selectedHashtagGroups.isEmpty,
+      canPop:
+          !widget.allowMultipleSelection || _controller.selectedGroups.isEmpty,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop &&
             widget.allowMultipleSelection &&
-            _selectedHashtagGroups.isNotEmpty) {
+            _controller.selectedGroups.isNotEmpty) {
           _onDonePressed();
         }
       },
       child: Scaffold(
+        backgroundColor: Color(0xffDEEDFF),
         appBar: AppBar(
           leading: widget.allowMultipleSelection
               ? Obx(
                   () => IconButton(
-                    onPressed: _selectedHashtagGroups.isNotEmpty
+                    onPressed: _controller.selectedGroups.isNotEmpty
                         ? _onDonePressed
                         : () => Get.back(),
                     icon: const Icon(Icons.arrow_back),
-                    tooltip: _selectedHashtagGroups.isNotEmpty
+                    tooltip: _controller.selectedGroups.isNotEmpty
                         ? 'Done'
                         : 'Back',
                   ),
                 )
               : null,
-          title: Obx(
-            () => Text(
-              widget.allowMultipleSelection ? 'Hashtags' : 'Hashtag Group',
-              style: gfonts.GoogleFonts.kumbhSans(
-                color: uiController.darkMode.value
-                    ? Colors.white
-                    : Colors.white,
-                fontSize: 18,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(AppIcons.hashtag, width: 22.r, height: 22.r),
+              13.horizontalSpace,
+              CustomText(
+                'Settings',
+                size: 18.sp,
                 fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
-              maxLines: null, // Allow unlimited lines
-              overflow: TextOverflow.visible, // Show all text
-              textAlign: TextAlign.center, // Keep centered
-            ),
+              35.horizontalSpace,
+            ],
           ),
           centerTitle: true,
           backgroundColor: uiController.currentMainColor,
@@ -964,7 +860,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             // Selection indicator when in filter mode
             if (widget.allowMultipleSelection)
               Obx(() {
-                final selectedCount = _selectedHashtagGroups
+                final selectedCount = _controller.selectedGroups
                     .where((g) => g.isSubgroup)
                     .length;
                 if (selectedCount == 0) {
@@ -978,7 +874,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             // Main content
             Expanded(
               child: Obx(() {
-                if (_isLoading.value) {
+                if (_controller.isLoading.value) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 return _buildMainContent(uiController);
@@ -1009,7 +905,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
     return Obx(() {
       // Check if any hashtag group is expanded
-      final hasExpandedGroup = _expandedHashtagGroups.values.any(
+      final hasExpandedGroup = _controller.expandedGroups.values.any(
         (expanded) => expanded == true,
       );
 
@@ -1017,7 +913,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         children: [
           // Inline add widget for main hashtag groups (at the top)
           Obx(
-            () => _addingMainHashtagGroup.value
+            () => _controller.addingMainGroup.value
                 ? InlineAddMainGroupWidget(
                     controller: _mainHashtagGroupNameController,
                     onSave: _saveInlineAddMainHashtagGroup,
@@ -1027,9 +923,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           ),
 
           // Show empty state message if no groups and not adding
-          if (_mainHashtagGroups.isEmpty)
+          if (_controller.allGroups.isEmpty)
             Obx(
-              () => !_addingMainHashtagGroup.value
+              () => !_controller.addingMainGroup.value
                   ? Container(
                       padding: const EdgeInsets.all(40),
                       child: Center(
@@ -1049,7 +945,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             ),
 
           // Main hashtag groups
-          ..._mainHashtagGroups.map(
+          ..._controller.allGroups.map(
             (mainHashtagGroup) =>
                 _buildMainHashtagGroupExpansionTile(mainHashtagGroup),
           ),
@@ -1064,12 +960,12 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
   /// Build main hashtag group expansion tile
   Widget _buildMainHashtagGroupExpansionTile(HashtagGroup mainHashtagGroup) {
     final uiController = Get.find<UiController>();
-    final isExpanded = _expandedHashtagGroups[mainHashtagGroup.id] ?? false;
+    final isExpanded = _controller.expandedGroups[mainHashtagGroup.id] ?? false;
 
     // Create a new expansion controller for this group to avoid state conflicts
     final groupId = mainHashtagGroup.id!;
-    _expansionControllers[groupId] = ExpansionTileController();
-    final controller = _expansionControllers[groupId]!;
+    _controller.expansionControllers[groupId] = ExpansionTileController();
+    final controller = _controller.expansionControllers[groupId]!;
 
     return Obx(() {
       // Check if all subgroups are selected (for filter mode)
@@ -1079,7 +975,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           mainHashtagGroup.subgroups!.isNotEmpty &&
           mainHashtagGroup.subgroups!.every(
             (subgroup) =>
-                _selectedHashtagGroups.any((g) => g.id == subgroup.id),
+                _controller.selectedGroups.any((g) => g.id == subgroup.id),
           );
 
       // Count selected subgroups
@@ -1087,8 +983,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           widget.allowMultipleSelection && mainHashtagGroup.subgroups != null
           ? mainHashtagGroup.subgroups!
                 .where(
-                  (subgroup) =>
-                      _selectedHashtagGroups.any((g) => g.id == subgroup.id),
+                  (subgroup) => _controller.selectedGroups.any(
+                    (g) => g.id == subgroup.id,
+                  ),
                 )
                 .length
           : 0;
@@ -1097,7 +994,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
         decoration: BoxDecoration(
           color: uiController.darkMode.value ? Colors.black : Colors.white,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(4.r),
           // Add border to entire container when all subgroups are selected (filter mode only)
           border: widget.allowMultipleSelection && allSubgroupsSelected
               ? Border.all(color: uiController.currentMainColor, width: 2)
@@ -1113,7 +1010,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                 color: uiController.darkMode.value
                     ? Colors.grey[900]
                     : Colors.white,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(4.r),
                 // No border on main group header since we only select subgroups
                 border: null,
               ),
@@ -1122,12 +1019,13 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                 controller: controller,
                 initiallyExpanded: isExpanded,
                 onExpansionChanged: (expanded) {
-                  _expandedHashtagGroups[mainHashtagGroup.id!] = expanded;
+                  _controller.expandedGroups[mainHashtagGroup.id!] = expanded;
 
                   // Check if we need to enable adding mode after expansion
                   if (expanded &&
-                      (_pendingAddingMode[mainHashtagGroup.id!] ?? false)) {
-                    _pendingAddingMode[mainHashtagGroup.id!] = false;
+                      (_controller.pendingAddingMode[mainHashtagGroup.id!] ??
+                          false)) {
+                    _controller.pendingAddingMode[mainHashtagGroup.id!] = false;
                     _enableAddingMode(mainHashtagGroup.id!);
                   }
                 },
@@ -1135,11 +1033,11 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                 childrenPadding: EdgeInsets.zero,
                 backgroundColor: Colors.transparent,
                 collapsedBackgroundColor: Colors.transparent,
-                collapsedShape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(2)),
+                collapsedShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(4.r)),
                 ),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(2)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(4.r)),
                 ),
                 // Show checkbox on the left when in filter mode
                 leading: widget.allowMultipleSelection
@@ -1262,7 +1160,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                             BlendMode.srcIn,
                           ),
                           child: Image.asset(
-                            AppIcons.edit,
+                            AppIcons.editV2,
                             width: 25,
                             height: 25,
                           ),
@@ -1280,7 +1178,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                               BlendMode.srcIn,
                             ),
                             child: Image.asset(
-                              AppIcons.edit,
+                              AppIcons.delete,
                               width: 25,
                               height: 25,
                             ),
@@ -1292,7 +1190,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                       // Add subgroup button
                       IconButton(
                         onPressed:
-                            (_addingToHashtagGroup[mainHashtagGroup.id] ??
+                            (_controller.addingToGroup[mainHashtagGroup.id] ??
                                 false)
                             ? null
                             : () => _startInlineAdding(mainHashtagGroup.id!),
@@ -1304,9 +1202,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                             BlendMode.srcIn,
                           ),
                           child: Image.asset(
-                            AppIcons.plus,
-                            width: 25,
-                            height: 25,
+                            AppIcons.plusThin,
+                            width: 21.r,
+                            height: 21.r,
                           ),
                         ),
                         tooltip: 'Add Subgroup',
@@ -1322,10 +1220,10 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                           BlendMode.srcIn,
                         ),
                         child: Image.asset(
-                          (_expandedHashtagGroups[mainHashtagGroup.id!] ??
+                          (_controller.expandedGroups[mainHashtagGroup.id!] ??
                                   false)
-                              ? AppIcons.edit
-                              : AppIcons.edit,
+                              ? AppIcons.arrowUp
+                              : AppIcons.arrowDown,
                           width: 25,
                           height: 25,
                         ),
@@ -1346,9 +1244,10 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
               // Inline adding widget
               Obx(() {
-                if (_addingToHashtagGroup[mainHashtagGroup.id] ?? false) {
+                if (_controller.addingToGroup[mainHashtagGroup.id] ?? false) {
                   return InlineAddSubgroupWidget(
-                    controller: _inlineNameControllers[mainHashtagGroup.id!]!,
+                    controller: _controller
+                        .inlineNameControllers[mainHashtagGroup.id!]!,
                     onSave: () => _saveInlineSubgroup(mainHashtagGroup.id!),
                     onCancel: () => _cancelInlineAdding(mainHashtagGroup.id!),
                   );
@@ -1387,15 +1286,15 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
   Widget _buildSubgroupTile(HashtagGroup subgroup, UiController uiController) {
     final isSelected =
         widget.allowMultipleSelection &&
-        _selectedHashtagGroups.any((g) => g.id == subgroup.id);
+        _controller.selectedGroups.any((g) => g.id == subgroup.id);
 
     return Obx(() {
-      final isEditing = _editingHashtagGroup[subgroup.id] ?? false;
+      final isEditing = _controller.editingGroup[subgroup.id] ?? false;
 
       if (isEditing) {
         return InlineEditSubgroupWidget(
           hashtagGroup: subgroup,
-          controller: _editNameControllers[subgroup.id!]!,
+          controller: _controller.editNameControllers[subgroup.id!]!,
           onSave: () => _saveInlineEdit(subgroup),
           onCancel: () => _cancelInlineEdit(subgroup.id!),
         );
@@ -1408,7 +1307,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           color: uiController.darkMode.value
               ? Colors.grey[900]
               : const Color(0xFFF1F1F1),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(4.r),
           border: isSelected
               ? Border.all(color: uiController.currentMainColor, width: 2)
               : null,
@@ -1456,7 +1355,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                           BlendMode.srcIn,
                         ),
                         child: Image.asset(
-                          AppIcons.edit,
+                          AppIcons.editV2,
                           width: 20,
                           height: 20,
                         ),
@@ -1477,7 +1376,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                           BlendMode.srcIn,
                         ),
                         child: Image.asset(
-                          AppIcons.closeBold,
+                          AppIcons.delete,
                           width: 20,
                           height: 20,
                         ),
@@ -1512,6 +1411,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           initialName: hashtagGroup.name,
           editItemId: hashtagGroup.id,
           parentId: hashtagGroup.parentId,
+          groupList: _controller.allGroups,
           onSave: (newName, parentId) async {
             // Use the existing save logic
             if (newName.isEmpty) {
@@ -1525,7 +1425,11 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             }
 
             try {
-              await _hashtagGroupService.updateGroup(hashtagGroup.id!, newName);
+              await _hashtagGroupService.updateGroup(
+                hashtagGroup.id!,
+                newName,
+                newParentId: parentId,
+              );
 
               // Update in recents if it exists
               await HashtagRecentService().updateHashtagGroupInRecents(
@@ -1590,7 +1494,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
   /// Save inline edit
   Future<void> _saveInlineEdit(HashtagGroup hashtagGroup) async {
-    final nameController = _editNameControllers[hashtagGroup.id!]!;
+    final nameController = _controller.editNameControllers[hashtagGroup.id!]!;
     final newName = nameController.text.trim();
 
     if (newName.isEmpty) {
@@ -1660,9 +1564,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
   /// Cancel inline edit
   void _cancelInlineEdit(int hashtagGroupId) {
-    _editingHashtagGroup[hashtagGroupId] = false;
-    _editNameControllers[hashtagGroupId]?.dispose();
-    _editNameControllers.remove(hashtagGroupId);
+    _controller.editingGroup[hashtagGroupId] = false;
+    _controller.editNameControllers[hashtagGroupId]?.dispose();
+    _controller.editNameControllers.remove(hashtagGroupId);
   }
 
   /// Show popup for adding main hashtag group
@@ -1744,7 +1648,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
   /// Cancel inline adding for main hashtag group
   void _cancelInlineAddingMainHashtagGroup() {
-    _addingMainHashtagGroup.value = false;
+    _controller.addingMainGroup.value = false;
     _mainHashtagGroupNameController.clear();
   }
 
@@ -1815,7 +1719,8 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
   /// Save inline added subgroup
   Future<void> _saveInlineSubgroup(int parentHashtagGroupId) async {
-    final nameController = _inlineNameControllers[parentHashtagGroupId]!;
+    final nameController =
+        _controller.inlineNameControllers[parentHashtagGroupId]!;
     final name = nameController.text.trim();
 
     if (name.isEmpty) {

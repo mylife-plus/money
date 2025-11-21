@@ -122,6 +122,8 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
           6.verticalSpace,
           TransactionItem(
             label: widget.label,
+            id: '0',
+            isSelected: false,
             title: widget.title,
             category: widget.category,
             amount: widget.amount,

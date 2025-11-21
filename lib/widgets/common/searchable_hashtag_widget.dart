@@ -28,7 +28,7 @@ class SearchableHashtagWidget extends StatefulWidget {
 
   const SearchableHashtagWidget({
     super.key,
-    this.title = 'Search Hashtags',
+    this.title = 'filter Hashtags',
     required this.onHashtagSelected,
     this.onGroupSelected,
     this.onMultipleGroupsSelectedFromPicker,
@@ -181,11 +181,11 @@ class _SearchableHashtagWidgetState extends State<SearchableHashtagWidget> {
 
     return Obx(
       () => Container(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color:
-              widget.backgroundColor ??
-              (uiController.darkMode.value ? Colors.grey[850] : Colors.white),
+          color: Colors.white,
+          border: Border.all(color: Color(0xffDFDFDF)),
+          borderRadius: BorderRadius.circular(6.r),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,14 +195,12 @@ class _SearchableHashtagWidgetState extends State<SearchableHashtagWidget> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset(
-                  widget.iconPath ?? AppIcons.atm,
-                  width: 20.w,
-                  height: 20.h,
-                  color: uiController.darkMode.value
-                      ? Colors.white
-                      : Colors.grey[600],
+                  widget.iconPath ?? AppIcons.hashtagThinIcon,
+                  width: 17.w,
+                  height: 17.h,
+                  color: Color(0xff3C3C3C),
                 ),
-                SizedBox(width: 8.w),
+                SizedBox(width: 11.w),
                 Expanded(
                   child: _showResults.value
                       ? HashtagSearchField(
@@ -210,6 +208,7 @@ class _SearchableHashtagWidgetState extends State<SearchableHashtagWidget> {
                           focusNode: _focusNode,
                           uiController: uiController,
                           hintText: widget.title,
+
                           onChanged: _performSearch,
                           onClear: () {
                             _searchController.clear();

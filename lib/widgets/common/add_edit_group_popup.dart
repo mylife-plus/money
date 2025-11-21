@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
+import 'package:moneyapp/models/hashtag_group_model.dart';
 
 /// Popup dialog for adding or editing hashtag/contact groups and subgroups
 class AddEditGroupPopup extends StatefulWidget {
@@ -12,6 +14,7 @@ class AddEditGroupPopup extends StatefulWidget {
   final bool isMainGroup; // true for main groups, false for subgroups
   final Function(String name, int? parentId)? onSave; // Callback when saved
   final VoidCallback? onCancel; // Callback when cancelled
+  final List<HashtagGroup>? groupList;
 
   const AddEditGroupPopup({
     super.key,
@@ -22,6 +25,7 @@ class AddEditGroupPopup extends StatefulWidget {
     this.isMainGroup = false,
     this.onSave,
     this.onCancel,
+    this.groupList,
   });
 
   @override
@@ -31,15 +35,24 @@ class AddEditGroupPopup extends StatefulWidget {
 class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
   final TextEditingController _nameController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode();
+  int? selectedParentGroup;
 
   @override
   void initState() {
     super.initState();
     _nameController.text = widget.initialName ?? '';
+    if (widget.groupList != null && widget.groupList!.isNotEmpty) {
+      selectedParentGroup = widget.parentId;
+    }
 
     // Auto-focus name field
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _nameFocusNode.requestFocus();
+      if (widget.groupList == null || widget.groupList!.isEmpty) {
+        _nameFocusNode.requestFocus();
+      } else {
+        selectedParentGroup = widget.parentId;
+      }
+
       // Position cursor at the end
       _nameController.selection = TextSelection.fromPosition(
         TextPosition(offset: _nameController.text.length),
@@ -67,7 +80,7 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
       return;
     }
 
-    widget.onSave?.call(name, widget.parentId);
+    widget.onSave?.call(name, selectedParentGroup);
     Navigator.of(context).pop();
   }
 
@@ -137,6 +150,67 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
 
             const SizedBox(height: 16),
 
+            if (widget.groupList != null && widget.groupList!.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: StatefulBuilder(
+                  builder: (context, setStateSB) {
+                    // default to provided parentId, otherwise the first group's id
+
+                    return DropdownButtonHideUnderline(
+                      child: DropdownButton<int?>(
+                        value:
+                            selectedParentGroup ??
+                            (widget.groupList!.isNotEmpty
+                                ? widget.groupList!.first.id
+                                : null),
+                        isExpanded: true,
+                        icon: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: uiController.currentMainColor,
+                        ),
+                        items: widget.groupList!
+                            .map(
+                              (group) => DropdownMenuItem<int?>(
+                                value: group.id,
+                                child: Text(
+                                  group.name,
+                                  style: GoogleFonts.kumbhSans(
+                                    color: uiController.darkMode.value
+                                        ? Colors.white
+                                        : Colors.black,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) {
+                          setStateSB(() {
+                            selectedParentGroup = val;
+                          });
+                        },
+                        hint: Text(
+                          'Select Parent Group',
+                          style: GoogleFonts.kumbhSans(
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              6.verticalSpace,
+            ],
             // Name input field
             Container(
               width: double.infinity,

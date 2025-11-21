@@ -18,6 +18,10 @@ class TransactionItem extends StatefulWidget {
   final Color? amountColor;
   final Color? backgroundColor;
   final Color? borderColor;
+  final bool isSelected;
+  final Function(String id)? onSelect;
+  final bool isSelectionMode;
+  final String id;
 
   const TransactionItem({
     super.key,
@@ -31,6 +35,10 @@ class TransactionItem extends StatefulWidget {
     this.amountColor = const Color(0xffFF0000),
     this.backgroundColor = Colors.white,
     this.borderColor = const Color(0xffDFDFDF),
+    required this.isSelected,
+    this.isSelectionMode = false,
+    this.onSelect,
+    required this.id,
   });
 
   @override
@@ -70,7 +78,9 @@ class _TransactionItemState extends State<TransactionItem> {
 
   void _handleSelect() {
     _popupKey.currentState?.dismiss();
-    // TODO: Implement select logic
+    if (widget.onSelect != null) {
+      widget.onSelect!(widget.id);
+    }
   }
 
   void _handleDelete() {
@@ -97,8 +107,10 @@ class _TransactionItemState extends State<TransactionItem> {
             borderRadius: BorderRadius.circular(4.r),
           ),
           animationDuration: Duration.zero,
+          enabled: !widget.isSelectionMode,
           content: TransactionPopupMenu(
             transactionWidth: constraints.maxWidth,
+
             label: widget.label,
             title: widget.title,
             category: widget.category,
@@ -108,6 +120,7 @@ class _TransactionItemState extends State<TransactionItem> {
             categoryColor: widget.categoryColor,
             amountColor: widget.amountColor,
             backgroundColor: widget.backgroundColor,
+
             onSplit: () {
               _handleSplit(context);
             },
@@ -117,17 +130,24 @@ class _TransactionItemState extends State<TransactionItem> {
             onSelect: _handleSelect,
             onDelete: _handleDelete,
           ),
-          child: TransactionContent(
-            label: widget.label,
-            title: widget.title,
-            category: widget.category,
-            amount: widget.amount,
-            labelColor: widget.labelColor,
-            titleColor: widget.titleColor,
-            categoryColor: widget.categoryColor,
-            amountColor: widget.amountColor,
-            backgroundColor: widget.backgroundColor,
-            borderColor: widget.borderColor,
+          child: InkWell(
+            onTap: widget.isSelectionMode ? _handleSelect : null,
+            child: TransactionContent(
+              label: widget.label,
+
+              title: widget.title,
+              category: widget.category,
+              amount: widget.amount,
+              labelColor: widget.labelColor,
+              titleColor: widget.titleColor,
+              categoryColor: widget.categoryColor,
+              amountColor: widget.amountColor,
+              backgroundColor: widget.backgroundColor,
+              borderWidth: widget.isSelected ? 2 : 1,
+              borderColor: widget.isSelected
+                  ? Color(0xff0088FF)
+                  : widget.borderColor,
+            ),
           ),
         );
       },

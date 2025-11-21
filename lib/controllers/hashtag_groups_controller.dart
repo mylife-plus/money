@@ -14,6 +14,22 @@ class HashtagGroupsController extends GetxController {
   // Hashtag groups data
   final RxList<HashtagGroup> _allGroups = <HashtagGroup>[].obs;
   final RxList<HashtagGroup> _selectedGroups = <HashtagGroup>[].obs;
+  final RxBool isLoading = false.obs;
+
+  // UI state management
+  final RxMap<int, bool> expandedGroups = <int, bool>{}.obs;
+  final RxMap<int, bool> addingToGroup = <int, bool>{}.obs;
+  final RxMap<int, bool> editingGroup = <int, bool>{}.obs;
+  final RxMap<int, bool> pendingAddingMode = <int, bool>{}.obs;
+  final RxBool addingMainGroup = false.obs;
+
+  // Controllers map for inline editing
+  final RxMap<int, TextEditingController> inlineNameControllers =
+      <int, TextEditingController>{}.obs;
+  final RxMap<int, TextEditingController> editNameControllers =
+      <int, TextEditingController>{}.obs;
+  final RxMap<int, ExpansionTileController> expansionControllers =
+      <int, ExpansionTileController>{}.obs;
 
   // Legacy sport hashtags for backward compatibility
   final RxList<String> sportHashtags = <String>[
@@ -28,6 +44,11 @@ class HashtagGroupsController extends GetxController {
   // Getters
   List<HashtagGroup> get allGroups => _allGroups;
   List<HashtagGroup> get selectedGroups => _selectedGroups;
+
+  // Setters for updating groups
+  set allGroups(List<HashtagGroup> groups) => _allGroups.value = groups;
+  set selectedGroups(List<HashtagGroup> groups) =>
+      _selectedGroups.value = groups;
 
   @override
   void onInit() {
@@ -50,6 +71,7 @@ class HashtagGroupsController extends GetxController {
   /// Load all hashtag groups from database
   Future<void> loadHashtagGroups() async {
     try {
+      isLoading.value = true;
       debugPrint(
         '[HashtagGroupsController][loadHashtagGroups] Loading groups from database',
       );
@@ -64,6 +86,20 @@ class HashtagGroupsController extends GetxController {
       debugPrint(
         '[HashtagGroupsController][loadHashtagGroups] Error loading groups: $e',
       );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Refresh hashtag groups from database
+  Future<void> refreshGroups() async {
+    try {
+      debugPrint('[HashtagGroupsController][refreshGroups] Refreshing groups');
+      clearAllControllers();
+      await loadHashtagGroups();
+      debugPrint('[HashtagGroupsController][refreshGroups] Refresh completed');
+    } catch (e) {
+      debugPrint('[HashtagGroupsController][refreshGroups] Error: $e');
     }
   }
 
@@ -208,6 +244,105 @@ class HashtagGroupsController extends GetxController {
     _selectedGroups.clear();
   }
 
+  /// Clear all controllers and state
+  void clearAllControllers() {
+    // Dispose inline controllers
+    for (final controller in inlineNameControllers.values) {
+      try {
+        controller.dispose();
+      } catch (e) {
+        debugPrint(
+          '[HashtagGroupsController] Error disposing inline controller: $e',
+        );
+      }
+    }
+    inlineNameControllers.clear();
+
+    // Dispose edit controllers
+    for (final controller in editNameControllers.values) {
+      try {
+        controller.dispose();
+      } catch (e) {
+        debugPrint(
+          '[HashtagGroupsController] Error disposing edit controller: $e',
+        );
+      }
+    }
+    editNameControllers.clear();
+
+    // Clear other state
+    expansionControllers.clear();
+    expandedGroups.clear();
+    addingToGroup.clear();
+    pendingAddingMode.clear();
+    editingGroup.clear();
+  }
+
+  /// Enable adding mode for a group
+  void enableAddingMode(int groupId) {
+    addingToGroup[groupId] = true;
+    inlineNameControllers[groupId] = TextEditingController();
+  }
+
+  /// Cancel inline adding
+  void cancelInlineAdding(int groupId) {
+    addingToGroup[groupId] = false;
+    inlineNameControllers[groupId]?.dispose();
+    inlineNameControllers.remove(groupId);
+  }
+
+  /// Start inline editing
+  void startInlineEditing(int groupId, String currentName) {
+    editingGroup[groupId] = true;
+    editNameControllers[groupId] = TextEditingController(text: currentName);
+  }
+
+  /// Cancel inline editing
+  void cancelInlineEditing(int groupId) {
+    editingGroup[groupId] = false;
+    editNameControllers[groupId]?.dispose();
+    editNameControllers.remove(groupId);
+  }
+
+  /// Toggle hashtag group selection for multiple selection mode
+  void toggleGroupSelection(
+    HashtagGroup hashtagGroup,
+    List<HashtagGroup> currentSelection,
+  ) {
+    debugPrint(
+      '[HashtagGroupsController][toggleGroupSelection] Toggling: ${hashtagGroup.name}',
+    );
+
+    bool isSelected;
+    if (hashtagGroup.isMainGroup && hashtagGroup.hasSubgroups) {
+      isSelected = hashtagGroup.subgroups!.every(
+        (subgroup) => currentSelection.any((g) => g.id == subgroup.id),
+      );
+    } else {
+      isSelected = currentSelection.any((g) => g.id == hashtagGroup.id);
+    }
+
+    if (isSelected) {
+      // Deselect
+      if (hashtagGroup.isMainGroup && hashtagGroup.hasSubgroups) {
+        for (final subgroup in hashtagGroup.subgroups!) {
+          removeFromSelection(subgroup);
+        }
+      } else {
+        removeFromSelection(hashtagGroup);
+      }
+    } else {
+      // Select
+      if (hashtagGroup.isMainGroup && hashtagGroup.hasSubgroups) {
+        for (final subgroup in hashtagGroup.subgroups!) {
+          addToSelection(subgroup);
+        }
+      } else {
+        addToSelection(hashtagGroup);
+      }
+    }
+  }
+
   void startEditing(String item) {
     originalItem.value = item;
     editingItem.value = item;
@@ -234,6 +369,7 @@ class HashtagGroupsController extends GetxController {
   @override
   void onClose() {
     editController.dispose();
+    clearAllControllers();
     super.onClose();
   }
 }
