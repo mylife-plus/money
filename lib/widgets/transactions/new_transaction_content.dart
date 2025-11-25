@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/search_field_with_suggestions.dart';
@@ -117,11 +118,9 @@ class _EditSpendingContentState extends State<NewTransactionContent> {
             children: [
               InkWell(
                 onTap: () {
-                  showDatePicker(
-                    context: context,
-                    initialDate: selectedDate ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
+                  DatePickerHelper.showStyledDatePicker(
+                    context,
+                    initialDate: selectedDate,
                   ).then((pickedDate) {
                     if (pickedDate != null) {
                       setState(() {
@@ -222,26 +221,37 @@ class _EditSpendingContentState extends State<NewTransactionContent> {
                 child: Container(
                   height: 35.h,
 
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 15.w,
-                    // vertical: 8.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 7.w),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: const Color(0xffDFDFDF)),
                     borderRadius: BorderRadius.circular(6.r),
                   ),
-                  child: Center(
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'Description',
-                        hintStyle: TextStyle(color: Color(0xffB4B4B4)),
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomText('Description', size: 10.sp),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: TextField(
+                            textAlign: TextAlign.end,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+
+                              hintText: 'Description',
+                              hintStyle: TextStyle(
+                                color: Color(0xffB4B4B4),
+                                fontSize: 16.sp,
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            style: TextStyle(fontSize: 16.sp),
+                          ),
+                        ),
                       ),
-                      style: TextStyle(fontSize: 16.sp),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -301,19 +311,27 @@ class _EditSpendingContentState extends State<NewTransactionContent> {
                       ),
                       Expanded(
                         child: Align(
-                          // alignment: Alignment.bottomCenter,
+                          alignment: Alignment.bottomCenter,
                           child: TextField(
                             cursorHeight: 15.r,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: '€ 0,00',
-                              hintStyle: TextStyle(color: Color(0xffB4B4B4)),
+                              hintStyle: TextStyle(
+                                color: Color(0xffB4B4B4),
+                                fontSize: 16.sp,
+                              ),
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
+                            keyboardType: TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             style: TextStyle(
                               fontSize: 16.sp,
-                              color: Color(0xffFF0000),
+                              color: isAddingIncome
+                                  ? Color(0xff00C00D)
+                                  : Color(0xffFF0000),
                             ),
                             textAlign: TextAlign.end,
                           ),

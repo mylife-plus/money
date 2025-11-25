@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class PriceEntryRow extends StatefulWidget {
@@ -62,11 +63,9 @@ class _PriceEntryRowState extends State<PriceEntryRow> {
             child: isEditable
                 ? InkWell(
                     onTap: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
+                      DateTime? pickedDate = await DatePickerHelper.showStyledDatePicker(
+                        context,
+                        initialDate: selectedDate,
                       );
                       if (pickedDate != null) {
                         setState(() {

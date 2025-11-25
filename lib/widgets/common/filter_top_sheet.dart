@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
+import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/filter_fileds.dart';
 import 'package:moneyapp/widgets/common/searchable_hashtag_widget.dart';
@@ -67,34 +68,11 @@ class _FilterTopSheetState extends State<FilterTopSheet> {
   DateTime? toDate;
 
   Future<void> _pickFromDate(BuildContext context) async {
-    final uiController = Get.find<UiController>();
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: fromDate ?? DateTime.now(),
+    final picked = await DatePickerHelper.showStyledDatePicker(
+      context,
+      initialDate: fromDate,
       firstDate: DateTime(1900),
-      lastDate: toDate ?? DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData(
-            useMaterial3: true,
-            colorScheme: uiController.darkMode.value
-                ? ColorScheme.dark(
-                    primary: uiController.currentMainColor,
-                    onPrimary: Colors.white,
-                    surface: const Color(0xFF1E1E1E),
-                    onSurface: Colors.white,
-                  )
-                : ColorScheme.light(
-                    primary: uiController.currentMainColor,
-                    onPrimary: Colors.white,
-                    surface: Colors.white,
-                    onSurface: Colors.black,
-                  ),
-          ),
-          child: child!,
-        );
-      },
+      lastDate: toDate,
     );
 
     if (picked != null) {
@@ -105,34 +83,10 @@ class _FilterTopSheetState extends State<FilterTopSheet> {
   }
 
   Future<void> _pickToDate(BuildContext context) async {
-    final uiController = Get.find<UiController>();
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: toDate ?? DateTime.now(),
+    final picked = await DatePickerHelper.showStyledDatePicker(
+      context,
+      initialDate: toDate,
       firstDate: fromDate ?? DateTime(1900),
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData(
-            useMaterial3: true,
-            colorScheme: uiController.darkMode.value
-                ? ColorScheme.dark(
-                    primary: uiController.currentMainColor,
-                    onPrimary: Colors.white,
-                    surface: const Color(0xFF1E1E1E),
-                    onSurface: Colors.white,
-                  )
-                : ColorScheme.light(
-                    primary: uiController.currentMainColor,
-                    onPrimary: Colors.white,
-                    surface: Colors.white,
-                    onSurface: Colors.black,
-                  ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {

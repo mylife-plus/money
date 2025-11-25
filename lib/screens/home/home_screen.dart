@@ -18,510 +18,521 @@ import 'package:moneyapp/widgets/transactions/transaction_item.dart';
 
 /// Home Screen
 /// Main landing screen of the app
-class HomeScreen extends GetView<HomeController> {
-  HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  final ScrollController _scrollController = ScrollController();
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+  double _lastScrollOffset = 0;
+  bool _isAppBarVisible = true;
   List<String> selectedIds = [];
 
   @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final currentScrollOffset = _scrollController.offset;
+    final scrollDelta = currentScrollOffset - _lastScrollOffset;
+
+    // Scrolling down
+    if (scrollDelta > 0 && _isAppBarVisible && currentScrollOffset > 50) {
+      setState(() {
+        _isAppBarVisible = false;
+      });
+      _animationController.reverse();
+    }
+    // Scrolling up
+    else if (scrollDelta < 0 && !_isAppBarVisible) {
+      setState(() {
+        _isAppBarVisible = true;
+      });
+      _animationController.forward();
+    }
+
+    _lastScrollOffset = currentScrollOffset;
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            CustomAppBar(
-              title: 'Transactions',
-              leadingIconPath: AppIcons.transaction,
-              actionIconPath: AppIcons.investment,
-              onActionIconTap: () {
-                Get.offNamed(AppRoutes.investment.path);
-              },
+            SizeTransition(
+              sizeFactor: _animation,
+              child: FadeTransition(
+                opacity: _animation,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomAppBar(
+                      title: 'Transactions',
+                      leadingIconPath: AppIcons.transaction,
+                      actionIconPath: AppIcons.investment,
+                      onActionIconTap: () {
+                        Get.offNamed(AppRoutes.investment.path);
+                      },
+                    ),
+                    27.verticalSpace,
+                    Obx(
+                      () => CustomToggleSwitch(
+                        option1IconPath: AppIcons.export,
+                        option1Text: 'Spending',
+                        option2IconPath: AppIcons.import,
+                        option2Text: 'Income',
+                        selectedOption: controller.selectedToggleOption.value,
+                        onOption1Tap: controller.selectSpending,
+                        onOption2Tap: controller.selectIncome,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             Expanded(
               child: SingleChildScrollView(
-                child: StatefulBuilder(
-                  builder: (context, setState) {
-                    return Column(
-                      children: [
-                        27.verticalSpace,
-                        Obx(
-                          () => CustomToggleSwitch(
-                            option1IconPath: AppIcons.export,
-                            option1Text: 'Spending',
-                            option2IconPath: AppIcons.import,
-                            option2Text: 'Income',
-                            selectedOption:
-                                controller.selectedToggleOption.value,
-                            onOption1Tap: controller.selectSpending,
-                            onOption2Tap: controller.selectIncome,
+                controller: _scrollController,
+                child: Obx(() {
+                  return Column(
+                    children: [
+                      26.verticalSpace,
+                      CustomText.richText(
+                        children: [
+                          CustomText.span(
+                            'Average ',
+                            size: 14.sp,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w400,
                           ),
+                          CustomText.span(
+                            controller.isExpenseSelected
+                                ? 'spending '
+                                : 'income ',
+                            size: 14.sp,
+                            color: controller.isExpenseSelected
+                                ? const Color(0xffFF0000)
+                                : const Color(0xff00C00D),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          CustomText.span(
+                            'per',
+                            size: 14.sp,
+                            color: const Color(0xffA5A5A5),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ],
+                      ),
+                      15.verticalSpace,
+                      _buildAverageContainer(controller.isExpenseSelected),
+                      15.verticalSpace,
+                      Container(
+                        margin: EdgeInsets.symmetric(horizontal: 7.w),
+                        padding: const EdgeInsets.fromLTRB(13, 8, 0, 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: const Color(0xffE3E3E3)),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
+                        height: 227.h,
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Image.asset(
+                                  AppIcons.refresh,
+                                  height: 21.r,
+                                  width: 21.r,
+                                ),
 
-                        Obx(() {
-                          return Column(
-                            children: [
-                              26.verticalSpace,
-                              CustomText.richText(
-                                children: [
-                                  CustomText.span(
-                                    'Average ',
+                                CustomToggleSwitchSmall(
+                                  option1Text: 'year',
+                                  option2Text: 'month',
+                                  backgroundColor: controller.isExpenseSelected
+                                      ? const Color(0xffFFB2B2)
+                                      : const Color(0xffB1FFB6),
+                                  selectedOption: controller
+                                      .selectedChartDurationOption
+                                      .value,
+                                  onOption1Tap: controller.selectYear,
+                                  onOption2Tap: controller.selectMonth,
+                                ),
+                                CustomText(
+                                  '\$ 2,720',
+                                  size: 20.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: controller.isExpenseSelected
+                                      ? const Color(0xffFF0000)
+                                      : const Color(0xff00C00D),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.only(right: 15.w),
+                                  child: CustomText(
+                                    'Dez 2025',
                                     size: 14.sp,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                  CustomText.span(
-                                    controller.isExpenseSelected
-                                        ? 'spending '
-                                        : 'income ',
-                                    size: 14.sp,
+                                    fontWeight: FontWeight.normal,
                                     color: controller.isExpenseSelected
-                                        ? Color(0xffFF0000)
-                                        : Color(0xff00C00D),
-                                    fontWeight: FontWeight.w500,
+                                        ? const Color(0xffFF0000)
+                                        : const Color(0xff00C00D),
                                   ),
-                                  CustomText.span(
-                                    'per',
-                                    size: 14.sp,
-                                    color: Color(0xffA5A5A5),
-                                    fontWeight: FontWeight.w400,
+                                ),
+                              ],
+                            ),
+                            Expanded(
+                              child: StepLineChartWidget(
+                                data: [
+                                  ChartDataPoint(label: '2004', value: 2400),
+                                  ChartDataPoint(label: '2007', value: 1800),
+                                  ChartDataPoint(label: '2010', value: 1300),
+                                  ChartDataPoint(label: '2013', value: 2100),
+                                  ChartDataPoint(label: '2016', value: 2400),
+                                  ChartDataPoint(label: '2019', value: 1700),
+                                  ChartDataPoint(label: '2022', value: 2000),
+                                  ChartDataPoint(label: '2025', value: 2700),
+                                ],
+                                lineColor: controller.isExpenseSelected
+                                    ? const Color(0xffFF0000)
+                                    : const Color(0xff00C00D),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      20.verticalSpace,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 7.w),
+
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            for (var duration in [
+                              '1m',
+                              '2m',
+                              '4m',
+                              '6m',
+                              '1y',
+                              '2y',
+                              '4y',
+                            ])
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10.w,
+                                  vertical: 5.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: const Color(0xffDFDFDF),
+                                  ),
+                                  borderRadius: BorderRadius.circular(4.r),
+                                ),
+                                child: CustomText(
+                                  duration,
+                                  size: 16.sp,
+                                  color: const Color(0xff8B8B8B),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      20.verticalSpace,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: CustomSlider(
+                          min: 0,
+                          max: 10000,
+                          startValue: 2000,
+                          endValue: 8000,
+                          lineColor: controller.isExpenseSelected
+                              ? const Color(0xffFF9494)
+                              : const Color(0xff9DFFA3),
+                          handleColor: const Color(0xFFFFE478),
+                          onChanged: (start, end) {
+                            print(
+                              'Range: \$${start.toInt()} - \$${end.toInt()}',
+                            );
+                          },
+                        ),
+                      ),
+                      30.verticalSpace,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 18.0.w),
+                        child: Row(
+                          children: [
+                            InkWell(
+                              child: Image.asset(
+                                AppIcons.sort,
+                                height: 24.r,
+                                width: 24.r,
+                              ),
+                            ),
+                            40.horizontalSpace,
+                            InkWell(
+                              onTap: () {
+                                FilterTopSheet.show(
+                                  context: context,
+                                  isOpenedFromMap: false,
+                                );
+                              },
+                              child: Image.asset(
+                                AppIcons.filter,
+                                height: 24.r,
+                                width: 24.r,
+                              ),
+                            ),
+                            40.horizontalSpace,
+                            InkWell(
+                              child: Image.asset(
+                                AppIcons.search,
+                                height: 24.r,
+                                width: 24.r,
+                              ),
+                            ),
+                            const Spacer(),
+                            InkWell(
+                              onTap: () {
+                                TopTransactionSheet.show(
+                                  context: context,
+                                  title: 'new Transaction',
+                                  child: NewTransactionContent(
+                                    isExpenseSelected:
+                                        controller.isExpenseSelected,
+                                  ),
+                                );
+                              },
+                              child: Image.asset(
+                                AppIcons.plus,
+                                height: 21.r,
+                                width: 21.r,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      25.verticalSpace,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 15.w),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            InkWell(
+                              child: Row(
+                                children: [
+                                  CustomText(
+                                    '2024',
+                                    color: const Color(0xff707070),
+                                    size: 16.sp,
+                                  ),
+                                  5.horizontalSpace,
+                                  Icon(
+                                    Icons.arrow_drop_down_rounded,
+                                    size: 32.r,
+                                    color: const Color(0xff707070),
                                   ),
                                 ],
                               ),
-                              15.verticalSpace,
-                              _buildAverageContainer(
-                                controller.isExpenseSelected,
+                            ),
+                            CustomText(
+                              '€ 12.000,23',
+                              color: const Color(0xffFF0000),
+                              size: 16.sp,
+                            ),
+                          ],
+                        ),
+                      ),
+                      18.verticalSpace,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 15.w),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            InkWell(
+                              child: Row(
+                                children: [
+                                  CustomText(
+                                    'Dezember',
+                                    color: const Color(0xff707070),
+                                    size: 16.sp,
+                                  ),
+                                  5.horizontalSpace,
+                                  Icon(
+                                    Icons.arrow_drop_down_rounded,
+                                    size: 32.r,
+                                    color: const Color(0xff707070),
+                                  ),
+                                ],
                               ),
-                              15.verticalSpace,
-                              Container(
-                                margin: EdgeInsets.symmetric(horizontal: 7.w),
-                                padding: EdgeInsets.fromLTRB(13, 8, 0, 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(color: Color(0xffE3E3E3)),
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                height: 227.h,
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Image.asset(
-                                          AppIcons.refresh,
-                                          height: 21.r,
-                                          width: 21.r,
-                                        ),
+                            ),
+                            CustomText(
+                              '€ 1.220,33',
+                              color: const Color(0xffFF0000),
+                              size: 16.sp,
+                            ),
+                          ],
+                        ),
+                      ),
+                      13.verticalSpace,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w),
+                        child: Column(
+                          spacing: 4.h,
+                          children: [
+                            for (List<dynamic> entries in [
+                              ['1', '12.', '🏧 ATM', 2, '400,00'],
+                              ['2', '12.', '🏧 ATM', 1, '400,00'],
+                              ['3', '13.', '🛒 Aldi', 1, '400,00'],
+                              ['4', '12.', '🏧 ATM', 2, '400,00'],
+                              ['5', '12.', '🏧 ATM', 1, '400,00'],
+                              ['6', '12.', '🛒 Aldi', 1, '400,00'],
+                              ['7', '11.', '🏧 ATM', 2, '400,00'],
+                              ['8', '11.', '🏧 ATM', 1, '400,00'],
+                              ['9', '11.', '🛒 Aldi', 1, '400,00'],
+                            ])
+                              TransactionItem(
+                                id: entries[0],
+                                label: entries[1],
+                                title: entries[2],
+                                category: '${entries[3]}',
+                                isSelected: selectedIds.contains(entries[0]),
+                                amount: entries[4],
 
-                                        CustomToggleSwitchSmall(
-                                          option1Text: 'year',
-                                          option2Text: 'month',
-                                          backgroundColor:
-                                              controller.isExpenseSelected
-                                              ? Color(0xffFFB2B2)
-                                              : Color(0xffB1FFB6),
-                                          selectedOption: controller
-                                              .selectedChartDurationOption
-                                              .value,
-                                          onOption1Tap: controller.selectYear,
-                                          onOption2Tap: controller.selectMonth,
-                                        ),
-                                        CustomText(
-                                          '\$ 2,720',
-                                          size: 20.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: controller.isExpenseSelected
-                                              ? Color(0xffFF0000)
-                                              : Color(0xff00C00D),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.only(right: 15.w),
-                                          child: CustomText(
-                                            'Dez 2025',
-                                            size: 14.sp,
-                                            fontWeight: FontWeight.normal,
-                                            color: controller.isExpenseSelected
-                                                ? Color(0xffFF0000)
-                                                : Color(0xff00C00D),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Expanded(
-                                      child: StepLineChartWidget(
-                                        data: [
-                                          ChartDataPoint(
-                                            label: '2004',
-                                            value: 2400,
-                                          ),
-                                          ChartDataPoint(
-                                            label: '2007',
-                                            value: 1800,
-                                          ),
-                                          ChartDataPoint(
-                                            label: '2010',
-                                            value: 1300,
-                                          ),
-                                          ChartDataPoint(
-                                            label: '2013',
-                                            value: 2100,
-                                          ),
-                                          ChartDataPoint(
-                                            label: '2016',
-                                            value: 2400,
-                                          ),
-                                          ChartDataPoint(
-                                            label: '2019',
-                                            value: 1700,
-                                          ),
-                                          ChartDataPoint(
-                                            label: '2022',
-                                            value: 2000,
-                                          ),
-                                          ChartDataPoint(
-                                            label: '2025',
-                                            value: 2700,
-                                          ),
-                                        ],
-                                        lineColor: controller.isExpenseSelected
-                                            ? const Color(0xffFF0000)
-                                            : const Color(0xff00C00D),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                onSelect: (id) {
+                                  setState(() {
+                                    if (selectedIds.contains(id)) {
+                                      selectedIds.remove(id);
+                                    } else {
+                                      selectedIds.add(id);
+                                    }
+                                  });
+                                },
+                                isSelectionMode: selectedIds.isNotEmpty,
                               ),
-                              20.verticalSpace,
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 7.w),
+                          ],
+                        ),
+                      ),
+                      if (selectedIds.isNotEmpty) ...[
+                        56.verticalSpace,
+                        CustomText(
+                          '${selectedIds.length} Selected',
+                          size: 20.sp,
+                          color: const Color(0xff0088FF),
+                        ),
+                        16.verticalSpace,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 14.w),
+                              height: 44.h,
 
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    for (var duration in [
-                                      '1m',
-                                      '2m',
-                                      '4m',
-                                      '6m',
-                                      '1y',
-                                      '2y',
-                                      '4y',
-                                    ])
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 10.w,
-                                          vertical: 5.h,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(
-                                            color: Color(0xffDFDFDF),
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            4.r,
-                                          ),
-                                        ),
-                                        child: CustomText(
-                                          duration,
-                                          size: 16.sp,
-                                          color: Color(0xff8B8B8B),
-                                        ),
-                                      ),
-                                  ],
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xffCFCFCF),
                                 ),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(13.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.25),
+                                    blurRadius: 4.0,
+                                    offset: const Offset(0, 0),
+                                  ),
+                                ],
                               ),
-                              20.verticalSpace,
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                                child: CustomSlider(
-                                  min: 0,
-                                  max: 10000,
-                                  startValue: 2000,
-                                  endValue: 8000,
-                                  lineColor: controller.isExpenseSelected
-                                      ? const Color(0xffFF9494)
-                                      : const Color(0xff9DFFA3),
-                                  handleColor: const Color(0xFFFFE478),
-                                  onChanged: (start, end) {
-                                    print(
-                                      'Range: \$${start.toInt()} - \$${end.toInt()}',
-                                    );
-                                  },
-                                ),
-                              ),
-                              30.verticalSpace,
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 18.0.w,
-                                ),
-                                child: Row(
-                                  children: [
-                                    InkWell(
-                                      child: Image.asset(
-                                        AppIcons.sort,
-                                        height: 24.r,
-                                        width: 24.r,
-                                      ),
-                                    ),
-                                    40.horizontalSpace,
-                                    InkWell(
-                                      onTap: () {
-                                        FilterTopSheet.show(
-                                          context: context,
-                                          isOpenedFromMap: false,
-                                        );
-                                      },
-                                      child: Image.asset(
-                                        AppIcons.filter,
-                                        height: 24.r,
-                                        width: 24.r,
-                                      ),
-                                    ),
-                                    40.horizontalSpace,
-                                    InkWell(
-                                      child: Image.asset(
-                                        AppIcons.search,
-                                        height: 24.r,
-                                        width: 24.r,
-                                      ),
-                                    ),
-                                    Spacer(),
-                                    InkWell(
-                                      onTap: () {
-                                        TopTransactionSheet.show(
-                                          context: context,
-                                          title: 'new Transaction',
-                                          child: NewTransactionContent(
-                                            isExpenseSelected:
-                                                controller.isExpenseSelected,
-                                          ),
-                                        );
-                                      },
-                                      child: Image.asset(
-                                        AppIcons.plus,
-                                        height: 21.r,
-                                        width: 21.r,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              25.verticalSpace,
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 15.w),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    InkWell(
-                                      child: Row(
-                                        children: [
-                                          CustomText(
-                                            '2024',
-                                            color: Color(0xff707070),
-                                            size: 16.sp,
-                                          ),
-                                          5.horizontalSpace,
-                                          Icon(
-                                            Icons.arrow_drop_down_rounded,
-                                            size: 32.r,
-                                            color: Color(0xff707070),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    CustomText(
-                                      '€ 12.000,23',
-                                      color: Color(0xffFF0000),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              18.verticalSpace,
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 15.w),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    InkWell(
-                                      child: Row(
-                                        children: [
-                                          CustomText(
-                                            'Dezember',
-                                            color: Color(0xff707070),
-                                            size: 16.sp,
-                                          ),
-                                          5.horizontalSpace,
-                                          Icon(
-                                            Icons.arrow_drop_down_rounded,
-                                            size: 32.r,
-                                            color: Color(0xff707070),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    CustomText(
-                                      '€ 1.220,33',
-                                      color: Color(0xffFF0000),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              13.verticalSpace,
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 6.w),
-                                child: Column(
-                                  spacing: 4.h,
-                                  children: [
-                                    for (List<dynamic> entries in [
-                                      ['1', '12.', '🏧 ATM', 2, '400,00'],
-                                      ['2', '12.', '🏧 ATM', 1, '400,00'],
-                                      ['3', '11.', '🛒 Aldi', 1, '400,00'],
-                                    ])
-                                      TransactionItem(
-                                        id: entries[0],
-                                        label: entries[1],
-                                        title: entries[2],
-                                        category: '${entries[3]}',
-                                        isSelected: selectedIds.contains(
-                                          entries[0],
-                                        ),
-                                        amount: entries[4],
-
-                                        onSelect: (id) {
-                                          setState(() {
-                                            if (selectedIds.contains(id)) {
-                                              selectedIds.remove(id);
-                                            } else {
-                                              selectedIds.add(id);
-                                            }
-                                          });
-                                        },
-                                        isSelectionMode: selectedIds.isNotEmpty,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              if (selectedIds.isNotEmpty) ...[
-                                56.verticalSpace,
-                                CustomText(
-                                  '${selectedIds.length} Selected',
+                              child: Center(
+                                child: CustomText(
+                                  'add #',
                                   size: 20.sp,
-                                  color: Color(0xff0088FF),
+                                  color: const Color(0xff0088FF),
                                 ),
-                                16.verticalSpace,
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 14.w,
-                                      ),
-                                      height: 44.h,
+                              ),
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 14.w),
+                              height: 44.h,
 
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Color(0xffCFCFCF),
-                                        ),
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(
-                                          13.r,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.25,
-                                            ),
-                                            blurRadius: 4.0,
-                                            offset: Offset(0, 0),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: CustomText(
-                                          'add #',
-                                          size: 20.sp,
-                                          color: Color(0xff0088FF),
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 14.w,
-                                      ),
-                                      height: 44.h,
-
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Color(0xffCFCFCF),
-                                        ),
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(
-                                          13.r,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.25,
-                                            ),
-                                            blurRadius: 4.0,
-                                            offset: Offset(0, 0),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: CustomText(
-                                          'edit category',
-                                          size: 20.sp,
-                                          color: Color(0xff0071FF),
-                                        ),
-                                      ),
-                                    ),
-                                    //test change
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 14.w,
-                                      ),
-                                      height: 44.h,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Color(0xffCFCFCF),
-                                        ),
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(
-                                          13.r,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.25,
-                                            ),
-                                            blurRadius: 4.0,
-                                            offset: Offset(0, 0),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: CustomText(
-                                          'delete',
-                                          size: 20.sp,
-                                          color: Color(0xffFF0000),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xffCFCFCF),
                                 ),
-                              ],
-                              150.verticalSpace,
-                            ],
-                          );
-                        }),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(13.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.25),
+                                    blurRadius: 4.0,
+                                    offset: const Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: CustomText(
+                                  'edit category',
+                                  size: 20.sp,
+                                  color: const Color(0xff0071FF),
+                                ),
+                              ),
+                            ),
+                            //test change
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 14.w),
+                              height: 44.h,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xffCFCFCF),
+                                ),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(13.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.25),
+                                    blurRadius: 4.0,
+                                    offset: const Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: CustomText(
+                                  'delete',
+                                  size: 20.sp,
+                                  color: const Color(0xffFF0000),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    );
-                  },
-                ),
+                      150.verticalSpace,
+                    ],
+                  );
+                }),
               ),
             ),
           ],
@@ -536,7 +547,7 @@ class HomeScreen extends GetView<HomeController> {
       padding: EdgeInsets.all(2.r),
       height: 56.h,
       decoration: BoxDecoration(
-        color: Color(0xffdfdfdf),
+        color: const Color(0xffdfdfdf),
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: Row(

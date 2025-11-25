@@ -106,7 +106,7 @@ class _TopInvestmentSheetState extends State<TopInvestmentSheet> {
                       selectedOption = 2;
                     });
                   },
-                  backgroundColor: Colors.yellow,
+                  backgroundColor: AppColors.primary,
                 ),
                 27.h.verticalSpace,
                 // Content

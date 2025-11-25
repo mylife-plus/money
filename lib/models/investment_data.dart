@@ -57,6 +57,31 @@ class InvestmentData {
         unitPrice: '\$ 0.92',
         totalValue: '\$ 120',
       ),
+      InvestmentData(
+        icon: '📱',
+        name: 'Apple',
+        amount: '50',
+        symbol: 'AAPL',
+        unitPrice: '\$ 175.30',
+        totalValue: '\$ 8,765',
+      ),
+      InvestmentData(
+        icon: '📦',
+        name: 'Amazon',
+        amount: '10',
+        symbol: 'AMZN',
+        unitPrice: '\$ 3,200',
+        totalValue: '\$ 32,005',
+      ),
+
+      InvestmentData(
+        icon: '📈',
+        name: 'S&P 500 ETF',
+        amount: '100',
+        symbol: 'SPY',
+        unitPrice: '\$ 450.75',
+        totalValue: '\$ 45,075',
+      ),
     ];
   }
 }

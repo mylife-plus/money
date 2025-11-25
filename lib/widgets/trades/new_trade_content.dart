@@ -6,6 +6,7 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/models/investment_recommendation.dart';
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/investments/select_investment_field.dart';
 
@@ -150,18 +151,22 @@ class _NewTradeContentState extends State<NewTradeContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 7.w),
-      child: Column(
-        children: [
+    return GestureDetector(
+      onTap: () {
+        // Hide keyboard when tapping outside
+        FocusScope.of(context).unfocus();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 7.w),
+        child: Column(
+          children: [
           Center(
             child: InkWell(
               onTap: () {
-                showDatePicker(
-                  context: context,
-                  initialDate: selectedDate ?? DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
+                DatePickerHelper.showStyledDatePicker(
+                  context,
+                  initialDate: selectedDate,
                 ).then((pickedDate) {
                   if (pickedDate != null) {
                     setState(() {
@@ -329,7 +334,7 @@ class _NewTradeContentState extends State<NewTradeContent> {
                   ),
                   child: Padding(
                     padding: EdgeInsets.all(12.r),
-                    child: Image.asset(AppIcons.tickBold),
+                    child: Image.asset(AppIcons.closeBold),
                   ),
                 ),
               ),
@@ -353,21 +358,22 @@ class _NewTradeContentState extends State<NewTradeContent> {
                   ),
                   child: Padding(
                     padding: EdgeInsets.all(12.r),
-                    child: Image.asset(AppIcons.closeBold),
+                    child: Image.asset(AppIcons.tickBold),
                   ),
                 ),
               ),
             ],
           ),
           33.verticalSpace,
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget buildTextField(String label, String hint) {
     return Container(
-      height: 36.h,
+      height: 35.h,
       padding: EdgeInsets.symmetric(
         horizontal: 7.w,
         // vertical: 8.h,
@@ -385,6 +391,7 @@ class _NewTradeContentState extends State<NewTradeContent> {
             child: Align(
               alignment: Alignment.bottomCenter,
               child: TextField(
+                keyboardType: TextInputType.number,
                 cursorHeight: 15.r,
                 decoration: InputDecoration(
                   border: InputBorder.none,

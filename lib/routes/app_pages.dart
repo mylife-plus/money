@@ -8,7 +8,8 @@ import 'package:moneyapp/screens/home/home_screen.dart';
 import 'package:moneyapp/screens/home/investment_list_screen.dart';
 import 'package:moneyapp/screens/home/investment_screen.dart';
 import 'package:moneyapp/screens/setting/settings_screen.dart';
-import 'package:moneyapp/screens/uploads/upload_screen.dart';
+import 'package:moneyapp/screens/uploads/upload_investments_screen.dart';
+import 'package:moneyapp/screens/uploads/upload_transactions_screen.dart';
 
 /// App Pages Configuration
 /// Configure all GetX pages and their bindings here
@@ -43,7 +44,15 @@ class AppPages {
       page: () => const HashtagGroupScreen(),
       binding: HashtagGroupsBinding(),
     ),
-    GetPage(name: AppRoutes.upload.path, page: () => const UploadScreen()),
+
+    GetPage(
+      name: AppRoutes.uploadTransaction.path,
+      page: () => const UploadTransactionsScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.uploadInvestment.path,
+      page: () => const UploadInvestmentsScreen(),
+    ),
     // Add more pages here
   ];
 }

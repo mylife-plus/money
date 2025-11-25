@@ -6,6 +6,7 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/models/investment_recommendation.dart';
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/investments/select_investment_field.dart';
 
@@ -99,189 +100,207 @@ class _NewInvestmentTransactionContentState
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 7.w),
-      child: Column(
-        children: [
-          Center(
-            child: InkWell(
-              onTap: () {
-                showDatePicker(
-                  context: context,
-                  initialDate: selectedDate ?? DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                ).then((pickedDate) {
-                  if (pickedDate != null) {
-                    setState(() {
-                      selectedDate = pickedDate;
-                    });
-                  }
-                });
-              },
-              child: Container(
-                // height: 35.h,
-                width: 100,
-                padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Color(0xffDFDFDF)),
-                  borderRadius: BorderRadius.circular(6.r),
-                ),
-
-                child: Center(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomText('Date', color: Colors.black, size: 12.sp),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomText(
-                              selectedDate == null
-                                  ? 'select Date'
-                                  : DateFormat(
-                                      'dd.MM.yyyy',
-                                    ).format(selectedDate!),
-                              size: selectedDate == null ? 12.sp : 16.sp,
-                              textAlign: TextAlign.center,
-                              color: selectedDate == null
-                                  ? Color(0xffB4B4B4)
-                                  : Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          10.verticalSpace,
-          buildTextField('Description', ''),
-          7.verticalSpace,
-          Row(
-            children: [
-              Expanded(
-                child: buildTextField(
-                  'Amount',
-                  '0',
-                  backgroundColor: Color(0xffEAFFEB),
-                  prefixWidget: InkWell(
-                    onTap: () {
+    return GestureDetector(
+      onTap: () {
+        // Hide keyboard when tapping outside
+        FocusScope.of(context).unfocus();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 7.w),
+        child: Column(
+          children: [
+            Center(
+              child: InkWell(
+                onTap: () {
+                  DatePickerHelper.showStyledDatePicker(
+                    context,
+                    initialDate: selectedDate,
+                  ).then((pickedDate) {
+                    if (pickedDate != null) {
                       setState(() {
-                        isAddingInvestment = !isAddingInvestment;
+                        selectedDate = pickedDate;
                       });
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(2.r),
-                      width: 16.w,
-                      height: 14.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4.r),
-                        border: Border.all(color: Color(0xffDFDFDF)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Image.asset(
-                        isAddingInvestment ? AppIcons.plus : AppIcons.minus,
-                        color: isAddingInvestment
-                            ? Color(0xff00C00D)
-                            : Color(0xffFFE5E5),
-                      ),
+                    }
+                  });
+                },
+                child: Container(
+                  // height: 35.h,
+                  width: 100,
+                  padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+
+                  child: Center(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomText('Date', color: Colors.black, size: 12.sp),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomText(
+                                selectedDate == null
+                                    ? 'select Date'
+                                    : DateFormat(
+                                        'dd.MM.yyyy',
+                                      ).format(selectedDate!),
+                                size: selectedDate == null ? 12.sp : 16.sp,
+                                textAlign: TextAlign.center,
+                                color: selectedDate == null
+                                    ? Color(0xffB4B4B4)
+                                    : Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              4.horizontalSpace,
-              Expanded(
-                child: SelectInvestmentField(
-                  suggestions: _investmentController.recommendations,
-                  controller: _searchController,
-                  hintText: 'select',
-                  onAdd: _addNewItem,
-                  onSelected: (value) {
-                    _searchController.text = value.text;
-                    print('Selected: ${value.text}');
+            ),
+            10.verticalSpace,
+            buildTextField('Description', ''),
+            7.verticalSpace,
+            Row(
+              children: [
+                Expanded(
+                  child: buildTextField(
+                    'Amount',
+                    '0',
+                    backgroundColor: Color(0xffEAFFEB),
+                    keyboardType: TextInputType.number,
+                    prefixWidget: InkWell(
+                      onTap: () {
+                        setState(() {
+                          isAddingInvestment = !isAddingInvestment;
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(2.r),
+                        width: 16.w,
+                        height: 14.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                          border: Border.all(color: Color(0xffDFDFDF)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          isAddingInvestment ? AppIcons.plus : AppIcons.minus,
+                          color: isAddingInvestment
+                              ? Color(0xff00C00D)
+                              : Color(0xffFFE5E5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                4.horizontalSpace,
+                Expanded(
+                  child: SelectInvestmentField(
+                    suggestions: _investmentController.recommendations,
+                    controller: _searchController,
+                    hintText: 'select',
+                    onAdd: _addNewItem,
+                    onSelected: (value) {
+                      _searchController.text = value.text;
+                      print('Selected: ${value.text}');
+                    },
+                  ),
+                ),
+                // Expanded(child: buildTextField('Investment', 'select')),
+              ],
+            ),
+            7.verticalSpace,
+            Row(
+              children: [
+                Expanded(
+                  child: buildTextField(
+                    'Price',
+                    '\$ 0.00',
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                4.horizontalSpace,
+                Expanded(
+                  child: buildTextField(
+                    'Total',
+                    '\$ 0.00',
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+
+            25.verticalSpace,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                InkWell(
+                  onTap: () {
+                    Get.back();
                   },
+                  child: Container(
+                    height: 44.r,
+                    width: 44.r,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(11.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 4,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(12.r),
+                      child: Image.asset(AppIcons.closeBold),
+                    ),
+                  ),
                 ),
-              ),
-              // Expanded(child: buildTextField('Investment', 'select')),
-            ],
-          ),
-          7.verticalSpace,
-          Row(
-            children: [
-              Expanded(child: buildTextField('Price', '\$ 0.00')),
-              4.horizontalSpace,
-              Expanded(child: buildTextField('Total', '\$ 0.00')),
-            ],
-          ),
+                InkWell(
+                  onTap: () {
+                    Get.back();
+                  },
+                  child: Container(
+                    height: 44.r,
+                    width: 44.r,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(11.r),
 
-          25.verticalSpace,
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              InkWell(
-                onTap: () {
-                  Get.back();
-                },
-                child: Container(
-                  height: 44.r,
-                  width: 44.r,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(11.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 4,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(12.r),
-                    child: Image.asset(AppIcons.tickBold),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 4,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(12.r),
+                      child: Image.asset(AppIcons.tickBold),
+                    ),
                   ),
                 ),
-              ),
-              InkWell(
-                onTap: () {
-                  Get.back();
-                },
-                child: Container(
-                  height: 44.r,
-                  width: 44.r,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(11.r),
-
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 4,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(12.r),
-                    child: Image.asset(AppIcons.closeBold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          27.verticalSpace,
-        ],
+              ],
+            ),
+            27.verticalSpace,
+          ],
+        ),
       ),
     );
   }
@@ -291,6 +310,7 @@ class _NewInvestmentTransactionContentState
     String hint, {
     Color? backgroundColor,
     Widget? prefixWidget,
+    TextInputType? keyboardType,
   }) {
     return Container(
       height: 36.h,
@@ -317,6 +337,7 @@ class _NewInvestmentTransactionContentState
             child: Align(
               alignment: Alignment.bottomCenter,
               child: TextField(
+                keyboardType: keyboardType,
                 cursorHeight: 15.r,
                 decoration: InputDecoration(
                   border: InputBorder.none,

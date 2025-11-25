@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
@@ -125,11 +126,9 @@ class _EditSpendingContentState extends State<EditTransactionContent> {
             children: [
               InkWell(
                 onTap: () {
-                  showDatePicker(
-                    context: context,
-                    initialDate: selectedDate ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
+                  DatePickerHelper.showStyledDatePicker(
+                    context,
+                    initialDate: selectedDate,
                   ).then((pickedDate) {
                     if (pickedDate != null) {
                       setState(() {

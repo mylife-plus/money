@@ -5,14 +5,15 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
-class UploadScreen extends StatefulWidget {
-  const UploadScreen({super.key});
+class UploadInvestmentsScreen extends StatefulWidget {
+  const UploadInvestmentsScreen({super.key});
 
   @override
-  State<UploadScreen> createState() => _UploadScreenState();
+  State<UploadInvestmentsScreen> createState() =>
+      _UploadInvestmentsScreenState();
 }
 
-class _UploadScreenState extends State<UploadScreen> {
+class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
   UiController uiController = Get.find<UiController>();
   bool isDataUpload = false;
   @override
@@ -32,7 +33,7 @@ class _UploadScreenState extends State<UploadScreen> {
             // Image.asset(AppIcons.hashtag, width: 22.r, height: 22.r),
             // 13.horizontalSpace,
             CustomText(
-              '📥 Upload 💸Spending',
+              '📥 Upload 💰Investments',
               size: 18.sp,
               fontWeight: FontWeight.w600,
               color: Colors.white,

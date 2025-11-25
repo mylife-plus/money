@@ -25,14 +25,18 @@ class SelectInvestmentField extends StatelessWidget {
     return Autocomplete<InvestmentRecommendation>(
       displayStringForOption: (InvestmentRecommendation option) => option.text,
       optionsBuilder: (TextEditingValue textEditingValue) {
+        // Always return matching suggestions
         if (textEditingValue.text.isEmpty) {
           return suggestions;
         }
-        return suggestions.where((InvestmentRecommendation option) {
+        final filtered = suggestions.where((InvestmentRecommendation option) {
           return option.text.toLowerCase().contains(
             textEditingValue.text.toLowerCase(),
           );
-        });
+        }).toList();
+
+        // Return at least one result to show the dropdown with "add new"
+        return filtered;
       },
       onSelected: (InvestmentRecommendation selection) {
         onSelected?.call(selection);
@@ -51,7 +55,7 @@ class SelectInvestmentField extends StatelessWidget {
             }
 
             return Container(
-              height: 36.h,
+              height: 35.h,
 
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -59,10 +63,9 @@ class SelectInvestmentField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6.r),
               ),
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 9.h),
+                padding: EdgeInsets.symmetric(horizontal: 7.w),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     CustomText('Investment', size: 10.sp),
                     Expanded(
@@ -86,6 +89,21 @@ class SelectInvestmentField extends StatelessWidget {
                           onChanged: (value) {
                             if (controller != null) {
                               controller!.text = value;
+                            }
+                          },
+                          onTap: () {
+                            // Clear and restore text to trigger optionsBuilder
+                            final currentText = textEditingController.text;
+                            if (currentText.isNotEmpty) {
+                              textEditingController.clear();
+                              // Use a microtask to restore the text immediately after
+                              Future.microtask(() {
+                                textEditingController.text = currentText;
+                                textEditingController.selection = TextSelection(
+                                  baseOffset: 0,
+                                  extentOffset: currentText.length,
+                                );
+                              });
                             }
                           },
                         ),

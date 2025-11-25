@@ -123,14 +123,19 @@ class SettingsScreen extends StatelessWidget {
                   SettingsTile(
                     title: '📥 Upload 💸Transactions ',
                     onTap: () {
-                      Get.toNamed(AppRoutes.upload.path);
+                      Get.toNamed(AppRoutes.uploadTransaction.path);
                     },
                   ),
                   SettingsTile(
                     title: '📥 Export 💸Transactions ',
                     onTap: () {},
                   ),
-                  SettingsTile(title: '📥 Upload 💰Investments', onTap: () {}),
+                  SettingsTile(
+                    title: '📥 Upload 💰Investments',
+                    onTap: () {
+                      Get.toNamed(AppRoutes.uploadInvestment.path);
+                    },
+                  ),
                   SettingsTile(title: '📤 Export 💰Investments ', onTap: () {}),
                   SettingsTile(
                     title: 'Erase All Data',
