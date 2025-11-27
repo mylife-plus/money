@@ -249,7 +249,7 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
         if (!formatOnly)
           Expanded(
             child: Container(
-              height: 36.h,
+              height: 41.h,
               padding: EdgeInsets.symmetric(horizontal: 7.w),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -286,7 +286,7 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
         if (hasFormat)
           Expanded(
             child: Container(
-              height: 36.h,
+              height: 41.h,
               padding: EdgeInsets.symmetric(horizontal: 7.w),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -335,7 +335,7 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
       children: [
         Expanded(
           child: Container(
-            height: 36.h,
+            height: 41.h,
             padding: EdgeInsets.symmetric(horizontal: 7.w),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -375,7 +375,7 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
         Expanded(
           flex: 2,
           child: Container(
-            height: 36.h,
+            height: 41.h,
             padding: EdgeInsets.symmetric(horizontal: 7.w),
             decoration: BoxDecoration(
               color: Colors.white,

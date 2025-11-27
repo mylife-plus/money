@@ -55,7 +55,7 @@ class SelectInvestmentField extends StatelessWidget {
             }
 
             return Container(
-              height: 35.h,
+              height: 41.h,
 
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -67,7 +67,11 @@ class SelectInvestmentField extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CustomText('Investment', size: 10.sp),
+                    CustomText(
+                      'Investment',
+                      size: 12.sp,
+                      color: Color(0xffCACACA),
+                    ),
                     Expanded(
                       child: Align(
                         alignment: Alignment.bottomRight,

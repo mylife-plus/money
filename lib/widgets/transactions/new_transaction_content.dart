@@ -18,12 +18,23 @@ class NewTransactionContent extends StatefulWidget {
 class _EditSpendingContentState extends State<NewTransactionContent> {
   DateTime? selectedDate;
   bool isAddingIncome = false;
+  String? selectedIcon;
 
   bool isHashtagSearchActive = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   List<String> _filteredRecommendations = [];
   final GlobalKey _searchFieldKey = GlobalKey();
+
+  // Predefined icons for selection
+  final List<String> predefinedIcons = [
+    AppIcons.digitalCurrency,
+    AppIcons.bitcoinConvert,
+    AppIcons.investment,
+    AppIcons.car,
+    AppIcons.atm,
+    AppIcons.cart,
+  ];
 
   // Sample recommendations - replace with your actual data
   final List<String> _allRecommendations = [
@@ -106,6 +117,66 @@ class _EditSpendingContentState extends State<NewTransactionContent> {
     print('See all recommendations');
   }
 
+  Future<void> _showIconSelectionDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        child: Container(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomText(
+                'Select Icon',
+                size: 18.sp,
+                fontWeight: FontWeight.w600,
+              ),
+              16.verticalSpace,
+              // Predefined icons grid
+              GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 10.w,
+                  mainAxisSpacing: 10.h,
+                ),
+                itemCount: predefinedIcons.length,
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        selectedIcon = predefinedIcons[index];
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selectedIcon == predefinedIcons[index]
+                              ? const Color(0xff0088FF)
+                              : const Color(0xffDFDFDF),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                      padding: EdgeInsets.all(8.w),
+                      child: Image.asset(
+                        predefinedIcons[index],
+                        width: 24.w,
+                        height: 24.h,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -130,8 +201,8 @@ class _EditSpendingContentState extends State<NewTransactionContent> {
                   });
                 },
                 child: Container(
-                  height: 35.h,
-                  padding: EdgeInsets.symmetric(horizontal: 15.w),
+                  height: 41.h,
+                  padding: EdgeInsets.only(left: 7.w, right: 12.w),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: Color(0xffDFDFDF)),
@@ -139,54 +210,232 @@ class _EditSpendingContentState extends State<NewTransactionContent> {
                   ),
 
                   child: Center(
-                    child: CustomText(
-                      selectedDate == null
-                          ? 'select Date'
-                          : DateFormat('dd/MM/yyyy').format(selectedDate!),
-                      size: 16.sp,
-                      color: selectedDate == null
-                          ? Color(0xffB4B4B4)
-                          : Colors.black,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (selectedDate != null)
+                          CustomText(
+                            'Date',
+                            size: 12.sp,
+                            color: Color(0xffC1C1C1),
+                          ),
+                        CustomText(
+                          selectedDate == null
+                              ? 'select Date'
+                              : DateFormat('dd/MM/yyyy').format(selectedDate!),
+                          size: 16.sp,
+                          color: selectedDate == null
+                              ? Color(0xffB4B4B4)
+                              : Colors.black,
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              7.horizontalSpace,
-              Container(
-                height: 35.h,
-                padding: EdgeInsets.symmetric(horizontal: 15.w),
-                decoration: BoxDecoration(
-                  color: isHashtagSearchActive
-                      ? Color(0xff0088FF)
-                      : Colors.white,
-                  border: Border.all(color: Color(0xffDFDFDF)),
-                  borderRadius: BorderRadius.circular(6.r),
-                ),
-
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      isHashtagSearchActive = !isHashtagSearchActive;
-                    });
-                  },
+              11.horizontalSpace,
+              Expanded(
+                flex: 204,
+                child: Container(
+                  height: 41.h,
+                  padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: isAddingIncome
+                        ? Color(0xffE5FFE5)
+                        : Color(0xffFFE5E5),
+                    border: Border.all(color: const Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      CustomText(
-                        '#',
-                        size: 16.sp,
-                        color: isHashtagSearchActive
-                            ? Colors.white
-                            : Color(0xffA0A0A0),
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            isAddingIncome = !isAddingIncome;
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4.r),
+                          width: 28.w,
+                          height: 26.h,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4.r),
+                            border: Border.all(color: Color(0xffDFDFDF)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Image.asset(
+                            isAddingIncome ? AppIcons.plus : AppIcons.minus,
+                            color: isAddingIncome
+                                ? Color(0xff00C00D)
+                                : Color(0xffFF0000),
+                          ),
+                        ),
+                      ),
+                      6.horizontalSpace,
+                      Expanded(
+                        child: TextField(
+                          // cursorHeight: 15.r,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '0,00',
+                            labelText: isAddingIncome ? 'Income' : 'Spending',
+                            labelStyle: TextStyle(
+                              color: Color(0xffB4B4B4),
+                              fontSize: 16.sp,
+                            ),
+                            hintStyle: TextStyle(
+                              color: Color(0xffB4B4B4),
+                              fontSize: 16.sp,
+                            ),
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            suffixStyle: TextStyle(
+                              color: Color(0xffB4B4B4),
+                              fontSize: 16.sp,
+                            ),
+                            suffixText: 'EUR',
+                          ),
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            color: isAddingIncome
+                                ? Color(0xff00C00D)
+                                : Color(0xffFF0000),
+                          ),
+                          textAlign: TextAlign.end,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              6.horizontalSpace,
-              CategoryChip(category: 'Travel'),
+              Spacer(flex: 57),
             ],
           ),
           7.verticalSpace,
+
+          Row(
+            children: [
+              InkWell(
+                onTap: _showIconSelectionDialog,
+                child: Container(
+                  height: 41.h,
+                  width: 37.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                  child: Column(
+                    children: [
+                      CustomText('Icon', size: 12.sp, color: Color(0xffC1C1C1)),
+                      3.verticalSpace,
+                      Center(
+                        child: Image.asset(
+                          selectedIcon ?? AppIcons.plus,
+                          height: 17.r,
+                          width: 19.r,
+                          color: selectedIcon == null
+                              ? Color(0xffC9C9C9)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              7.horizontalSpace,
+
+              Expanded(
+                flex: 228,
+                child: Container(
+                  height: 41.h,
+
+                  padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                  child: TextField(
+                    textAlign: TextAlign.end,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+
+                      hintText: 'Description',
+                      labelText: 'Description',
+                      labelStyle: TextStyle(
+                        color: Color(0xffB4B4B4),
+                        fontSize: 16.sp,
+                      ),
+                      hintStyle: TextStyle(
+                        color: Color(0xffB4B4B4),
+                        fontSize: 16.sp,
+                      ),
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    style: TextStyle(fontSize: 16.sp),
+                  ),
+                ),
+              ),
+              Spacer(flex: 110),
+            ],
+          ),
+          9.verticalSpace,
+          Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    isHashtagSearchActive = !isHashtagSearchActive;
+                  });
+                },
+                child: Container(
+                  height: 41.h,
+                  width: 37.h,
+                  decoration: BoxDecoration(
+                    color: isHashtagSearchActive
+                        ? Color(0xff0088FF)
+                        : Colors.white,
+                    border: Border.all(color: const Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                  child: Column(
+                    children: [
+                      CustomText('Add', size: 12.sp, color: Color(0xffC1C1C1)),
+                      3.verticalSpace,
+                      Center(
+                        child: Image.asset(
+                          AppIcons.hashtag,
+                          height: 15.r,
+                          width: 24.r,
+                          color: !isHashtagSearchActive
+                              ? Colors.black
+                              : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              6.horizontalSpace,
+              CategoryChip(category: 'Travel', categoryGroup: 'Shopping'),
+            ],
+          ),
+          6.verticalSpace,
           if (isHashtagSearchActive) ...[
             SearchFieldWithSuggestions(
               suggestions: _allRecommendations,
@@ -200,149 +449,6 @@ class _EditSpendingContentState extends State<NewTransactionContent> {
             ),
             7.verticalSpace,
           ],
-          Row(
-            children: [
-              Container(
-                height: 35.h,
-                width: 35.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xffDFDFDF)),
-                  borderRadius: BorderRadius.circular(6.r),
-                ),
-                child: Center(
-                  child: Image.asset(AppIcons.atm, height: 20.r, width: 20.r),
-                ),
-              ),
-              7.horizontalSpace,
-
-              Expanded(
-                flex: 215,
-                child: Container(
-                  height: 35.h,
-
-                  padding: EdgeInsets.symmetric(horizontal: 7.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xffDFDFDF)),
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomText('Description', size: 10.sp),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: TextField(
-                            textAlign: TextAlign.end,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-
-                              hintText: 'Description',
-                              hintStyle: TextStyle(
-                                color: Color(0xffB4B4B4),
-                                fontSize: 16.sp,
-                              ),
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            style: TextStyle(fontSize: 16.sp),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              6.horizontalSpace,
-              Expanded(
-                flex: 116,
-                child: Container(
-                  height: 35.h,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 7.w,
-                    // vertical: 8.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isAddingIncome
-                        ? Color(0xffE5FFE5)
-                        : Color(0xffFFE5E5),
-                    border: Border.all(color: const Color(0xffDFDFDF)),
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        children: [
-                          CustomText('Amount', size: 10.sp),
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                isAddingIncome = !isAddingIncome;
-                              });
-                            },
-                            child: Container(
-                              padding: EdgeInsets.all(2.r),
-                              width: 16.w,
-                              height: 14.h,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(4.r),
-                                border: Border.all(color: Color(0xffDFDFDF)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Image.asset(
-                                isAddingIncome ? AppIcons.plus : AppIcons.minus,
-                                color: isAddingIncome
-                                    ? Color(0xff00C00D)
-                                    : Color(0xffFFE5E5),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: TextField(
-                            cursorHeight: 15.r,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              hintText: '€ 0,00',
-                              hintStyle: TextStyle(
-                                color: Color(0xffB4B4B4),
-                                fontSize: 16.sp,
-                              ),
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            keyboardType: TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              color: isAddingIncome
-                                  ? Color(0xff00C00D)
-                                  : Color(0xffFF0000),
-                            ),
-                            textAlign: TextAlign.end,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
 
           28.verticalSpace,
           // Add more content here as you build the design

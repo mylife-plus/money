@@ -43,7 +43,7 @@ class InvestmentListScreen extends StatelessWidget {
                 () => ListView.separated(
                   padding: EdgeInsets.symmetric(horizontal: 28.w),
                   itemCount: controller.recommendations.length + 1,
-                  separatorBuilder: (context, index) => 8.verticalSpace,
+                  separatorBuilder: (context, index) => 4.verticalSpace,
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       // New entry row

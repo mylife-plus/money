@@ -142,7 +142,7 @@ class PortfolioSection extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                flex: 3,
+                flex: 110,
                 child: CustomText(
                   'Investment',
                   color: Color(0xffCCCCCC),
@@ -150,25 +150,20 @@ class PortfolioSection extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: 2,
+                flex: 110,
                 child: CustomText(
-                  'Amount',
+                  textAlign: TextAlign.center,
+                  'Amount/Price',
                   color: Color(0xffCCCCCC),
                   size: 14.sp,
                 ),
               ),
+
               Expanded(
-                flex: 2,
-                child: CustomText(
-                  'Price',
-                  color: Color(0xffCCCCCC),
-                  size: 14.sp,
-                ),
-              ),
-              Expanded(
-                flex: 2,
+                flex: 120,
                 child: CustomText(
                   'Total',
+                  textAlign: TextAlign.center,
                   color: Color(0xffCCCCCC),
                   size: 14.sp,
                 ),
@@ -188,7 +183,8 @@ class PortfolioSection extends StatelessWidget {
                     TopPriceChangeScreen.show(context: context);
                   },
                   child: InvestmentItem(
-                    icon: investment.icon,
+                    backgroundColor: investment.backgroundColor,
+                    image: investment.image,
                     name: investment.name,
                     amount: investment.amount,
                     symbol: investment.symbol,

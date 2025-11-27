@@ -27,6 +27,7 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
   late TextEditingController nameController;
   late TextEditingController shortTextController;
   String? selectedAssetPath;
+  Color? selectedColor;
   final InvestmentController _controller = Get.find();
 
   // Predefined icons for selection
@@ -39,15 +40,30 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
     AppIcons.cart,
   ];
 
+  // Predefined colors for selection
+  final List<Color> predefinedColors = [
+    Color(0xffFFE5E5), // Light pink
+    Color(0xffFFD4A3), // Light orange
+    Color(0xffFFE5A3), // Light yellow
+    Color(0xffE5FFE5), // Light green
+    Color(0xffA3D4FF), // Light blue
+    Color(0xffD4A3FF), // Light purple
+    Color(0xffFFA3D4), // Light magenta
+    Color(0xffA3FFD4), // Light cyan
+  ];
+
   @override
   void initState() {
     super.initState();
     isEditable = widget.initialIsEditable || widget.isNewEntry;
-    nameController = TextEditingController(text: widget.initialData?.text ?? '');
+    nameController = TextEditingController(
+      text: widget.initialData?.text ?? '',
+    );
     shortTextController = TextEditingController(
       text: widget.initialData?.shortText ?? '',
     );
     selectedAssetPath = widget.initialData?.assetPath;
+    selectedColor = widget.initialData?.color;
   }
 
   @override
@@ -117,6 +133,63 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
     );
   }
 
+  Future<void> _showColorSelectionDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        child: Container(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomText(
+                'Select Color',
+                size: 18.sp,
+                fontWeight: FontWeight.w600,
+              ),
+              16.verticalSpace,
+              // Predefined colors grid
+              GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 10.w,
+                  mainAxisSpacing: 10.h,
+                ),
+                itemCount: predefinedColors.length,
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        selectedColor = predefinedColors[index];
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: predefinedColors[index],
+                        border: Border.all(
+                          color: selectedColor == predefinedColors[index]
+                              ? const Color(0xff0088FF)
+                              : const Color(0xffDFDFDF),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                      height: 40.h,
+                      width: 40.w,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _handleSave() {
     if (nameController.text.isEmpty || shortTextController.text.isEmpty) {
       return;
@@ -135,6 +208,7 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
       assetPath: selectedAssetPath!,
       text: nameController.text,
       shortText: shortText,
+      color: selectedColor,
     );
 
     if (widget.isNewEntry) {
@@ -144,6 +218,7 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
       shortTextController.clear();
       setState(() {
         selectedAssetPath = null;
+        selectedColor = null;
       });
     } else {
       // Update existing
@@ -184,65 +259,62 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
                       color: const Color(0xffB4B4B4),
                     )
                   : selectedAssetPath != null
-                      ? Image.asset(
-                          selectedAssetPath!,
-                          width: 16.w,
-                          height: 16.h,
-                        )
-                      : Image.asset(
-                          AppIcons.plus,
-                          width: 16.w,
-                          height: 16.h,
-                          color: const Color(0xffB4B4B4),
-                        ),
+                  ? Image.asset(selectedAssetPath!, width: 16.w, height: 16.h)
+                  : Image.asset(
+                      AppIcons.plus,
+                      width: 16.w,
+                      height: 16.h,
+                      color: const Color(0xffB4B4B4),
+                    ),
             ),
           ),
         ),
-        7.horizontalSpace,
+        6.horizontalSpace,
         // Investment Name Field
-        Container(
-          height: 35.h,
-          width: 156.w,
-          padding: EdgeInsets.symmetric(horizontal: 8.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xffDFDFDF)),
-            borderRadius: BorderRadius.circular(6.r),
-          ),
-          child: Center(
-            child: isEditable
-                ? TextField(
-                    controller: nameController,
-                    textAlign: TextAlign.start,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Investment',
-                      hintStyle: const TextStyle(
-                        color: Color(0xffB4B4B4),
-                        fontSize: 14,
+        Expanded(
+          child: Container(
+            height: 35.h,
+            // width: 188.w,
+            padding: EdgeInsets.symmetric(horizontal: 8.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xffDFDFDF)),
+              borderRadius: BorderRadius.circular(6.r),
+            ),
+            child: Center(
+              child: isEditable
+                  ? TextField(
+                      controller: nameController,
+                      textAlign: TextAlign.start,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Investment',
+                        hintStyle: const TextStyle(
+                          color: Color(0xffB4B4B4),
+                          fontSize: 14,
+                        ),
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
                       ),
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
+                      style: TextStyle(fontSize: 14.sp, color: Colors.black),
+                    )
+                  : CustomText(
+                      nameController.text.isEmpty
+                          ? 'Investment'
+                          : nameController.text,
+                      size: 14.sp,
+                      color: nameController.text.isEmpty
+                          ? const Color(0xffB4B4B4)
+                          : Colors.black,
                     ),
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.black,
-                    ),
-                  )
-                : CustomText(
-                    nameController.text.isEmpty ? 'Investment' : nameController.text,
-                    size: 14.sp,
-                    color: nameController.text.isEmpty
-                        ? const Color(0xffB4B4B4)
-                        : Colors.black,
-                  ),
+            ),
           ),
         ),
-        7.horizontalSpace,
+        4.horizontalSpace,
         // Short Text Field
         Container(
           height: 35.h,
-          width: 73.w,
+          width: 56.w,
           padding: EdgeInsets.symmetric(horizontal: 8.w),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -266,18 +338,40 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
                       contentPadding: EdgeInsets.zero,
                       counterText: '',
                     ),
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.black,
-                    ),
+                    style: TextStyle(fontSize: 14.sp, color: Colors.black),
                   )
                 : CustomText(
-                    shortTextController.text.isEmpty ? '???' : shortTextController.text,
+                    shortTextController.text.isEmpty
+                        ? '???'
+                        : shortTextController.text,
                     size: 14.sp,
                     color: shortTextController.text.isEmpty
                         ? const Color(0xffB4B4B4)
                         : Colors.black,
                   ),
+          ),
+        ),
+        4.horizontalSpace,
+        // Color Indicator/Selector
+        InkWell(
+          onTap: isEditable ? _showColorSelectionDialog : null,
+          child: Container(
+            height: 35.h,
+            width: 40.w,
+            decoration: BoxDecoration(
+              color: selectedColor ?? Colors.white,
+              border: Border.all(color: const Color(0xffDFDFDF)),
+              borderRadius: BorderRadius.circular(6.r),
+            ),
+            child: selectedColor == null
+                ? Center(
+                    child: Icon(
+                      Icons.palette_outlined,
+                      size: 18.r,
+                      color: const Color(0xffB4B4B4),
+                    ),
+                  )
+                : null,
           ),
         ),
         isEditable ? 12.horizontalSpace : 15.horizontalSpace,

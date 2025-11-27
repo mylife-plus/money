@@ -81,7 +81,10 @@ class TransactionContent extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     for (var category in ['Travel', 'Repair'])
-                      CategoryChip(category: category),
+                      CategoryChip(
+                        category: category,
+                        categoryGroup: 'Shopping',
+                      ),
                   ],
                 ),
               ),

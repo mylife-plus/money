@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/models/investment_recommendation.dart';
@@ -11,32 +12,37 @@ class InvestmentController extends GetxController {
   // Investment recommendations
   final RxList<InvestmentRecommendation> recommendations =
       <InvestmentRecommendation>[
-    InvestmentRecommendation.fromAsset(
-      assetPath: AppIcons.digitalCurrency,
-      text: 'Bitcoin',
-      shortText: 'BTC',
-    ),
-    InvestmentRecommendation.fromAsset(
-      assetPath: AppIcons.bitcoinConvert,
-      text: 'Ethereum',
-      shortText: 'ETH',
-    ),
-    InvestmentRecommendation.fromAsset(
-      assetPath: AppIcons.investment,
-      text: 'Haus',
-      shortText: '🏡',
-    ),
-    InvestmentRecommendation.fromAsset(
-      assetPath: AppIcons.car,
-      text: 'Car',
-      shortText: '🚗',
-    ),
-    InvestmentRecommendation.fromAsset(
-      assetPath: AppIcons.atm,
-      text: 'Euro',
-      shortText: 'EUR',
-    ),
-  ].obs;
+        InvestmentRecommendation.fromAsset(
+          assetPath: AppIcons.digitalCurrency,
+          text: 'Bitcoin',
+          shortText: 'BTC',
+          color: const Color(0xffFFF1B8),
+        ),
+        InvestmentRecommendation.fromAsset(
+          assetPath: AppIcons.bitcoinConvert,
+          text: 'Ethereum',
+          shortText: 'ETH',
+          color: const Color(0xffFFA1EF),
+        ),
+        InvestmentRecommendation.fromAsset(
+          assetPath: AppIcons.investment,
+          text: 'Haus',
+          shortText: '🏡',
+          color: const Color(0xffB7DDFF),
+        ),
+        InvestmentRecommendation.fromAsset(
+          assetPath: AppIcons.car,
+          text: 'Car',
+          shortText: '🚗',
+          color: const Color(0xffA3FFD4),
+        ),
+        InvestmentRecommendation.fromAsset(
+          assetPath: AppIcons.atm,
+          text: 'Euro',
+          shortText: 'EUR',
+          color: const Color(0xffFFD4A3),
+        ),
+      ].obs;
 
   // Getter
   bool get isPortfolioSelected => selectedToggleOption.value == 1;
@@ -63,7 +69,10 @@ class InvestmentController extends GetxController {
   }
 
   /// Update a recommendation
-  void updateRecommendation(int index, InvestmentRecommendation recommendation) {
+  void updateRecommendation(
+    int index,
+    InvestmentRecommendation recommendation,
+  ) {
     if (index >= 0 && index < recommendations.length) {
       recommendations[index] = recommendation;
     }

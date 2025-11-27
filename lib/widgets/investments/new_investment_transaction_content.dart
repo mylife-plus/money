@@ -21,6 +21,7 @@ class NewInvestmentTransactionContent extends StatefulWidget {
 class _NewInvestmentTransactionContentState
     extends State<NewInvestmentTransactionContent> {
   DateTime? selectedDate;
+  String? selectedIcon;
   bool isAddingInvestment = true;
 
   bool isHashtagSearchActive = false;
@@ -29,6 +30,16 @@ class _NewInvestmentTransactionContentState
   List<InvestmentRecommendation> _filteredRecommendations = [];
   final GlobalKey _searchFieldKey = GlobalKey();
   final InvestmentController _investmentController = Get.find();
+
+  // Predefined icons for selection
+  final List<String> predefinedIcons = [
+    AppIcons.digitalCurrency,
+    AppIcons.bitcoinConvert,
+    AppIcons.investment,
+    AppIcons.car,
+    AppIcons.atm,
+    AppIcons.cart,
+  ];
 
   @override
   void initState() {
@@ -96,6 +107,66 @@ class _NewInvestmentTransactionContentState
   void _seeAll() {
     // TODO: Implement see all logic
     print('See all recommendations');
+  }
+
+  Future<void> _showIconSelectionDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        child: Container(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomText(
+                'Select Icon',
+                size: 18.sp,
+                fontWeight: FontWeight.w600,
+              ),
+              16.verticalSpace,
+              // Predefined icons grid
+              GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 10.w,
+                  mainAxisSpacing: 10.h,
+                ),
+                itemCount: predefinedIcons.length,
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        selectedIcon = predefinedIcons[index];
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selectedIcon == predefinedIcons[index]
+                              ? const Color(0xff0088FF)
+                              : const Color(0xffDFDFDF),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                      padding: EdgeInsets.all(8.w),
+                      child: Image.asset(
+                        predefinedIcons[index],
+                        width: 24.w,
+                        height: 24.h,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -169,40 +240,85 @@ class _NewInvestmentTransactionContentState
             Row(
               children: [
                 Expanded(
-                  child: buildTextField(
-                    'Amount',
-                    '0',
-                    backgroundColor: Color(0xffEAFFEB),
-                    keyboardType: TextInputType.number,
-                    prefixWidget: InkWell(
-                      onTap: () {
-                        setState(() {
-                          isAddingInvestment = !isAddingInvestment;
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(2.r),
-                        width: 16.w,
-                        height: 14.h,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4.r),
-                          border: Border.all(color: Color(0xffDFDFDF)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
+                  child: Container(
+                    height: 41.h,
+                    padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: isAddingInvestment
+                          ? Color(0xffE5FFE5)
+                          : Color(0xffFFE5E5),
+                      border: Border.all(color: const Color(0xffDFDFDF)),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              isAddingInvestment = !isAddingInvestment;
+                            });
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(4.r),
+                            width: 28.w,
+                            height: 26.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4.r),
+                              border: Border.all(color: Color(0xffDFDFDF)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
                             ),
-                          ],
+                            child: Image.asset(
+                              isAddingInvestment ? AppIcons.plus : AppIcons.minus,
+                              color: isAddingInvestment
+                                  ? Color(0xff00C00D)
+                                  : Color(0xffFF0000),
+                            ),
+                          ),
                         ),
-                        child: Image.asset(
-                          isAddingInvestment ? AppIcons.plus : AppIcons.minus,
-                          color: isAddingInvestment
-                              ? Color(0xff00C00D)
-                              : Color(0xffFFE5E5),
+                        6.horizontalSpace,
+                        Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: '0,00',
+                              labelText: isAddingInvestment ? 'Income' : 'Spending',
+                              labelStyle: TextStyle(
+                                color: Color(0xffB4B4B4),
+                                fontSize: 16.sp,
+                              ),
+                              hintStyle: TextStyle(
+                                color: Color(0xffB4B4B4),
+                                fontSize: 16.sp,
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              suffixStyle: TextStyle(
+                                color: Color(0xffB4B4B4),
+                                fontSize: 16.sp,
+                              ),
+                              suffixText: 'EUR',
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              color: isAddingInvestment
+                                  ? Color(0xff00C00D)
+                                  : Color(0xffFF0000),
+                            ),
+                            textAlign: TextAlign.end,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -219,7 +335,6 @@ class _NewInvestmentTransactionContentState
                     },
                   ),
                 ),
-                // Expanded(child: buildTextField('Investment', 'select')),
               ],
             ),
             7.verticalSpace,
@@ -228,16 +343,18 @@ class _NewInvestmentTransactionContentState
                 Expanded(
                   child: buildTextField(
                     'Price',
-                    '\$ 0.00',
+                    '0.00',
                     keyboardType: TextInputType.number,
+                    showCurrency: true,
                   ),
                 ),
                 4.horizontalSpace,
                 Expanded(
                   child: buildTextField(
                     'Total',
-                    '\$ 0.00',
+                    '0.00',
                     keyboardType: TextInputType.number,
+                    showCurrency: true,
                   ),
                 ),
               ],
@@ -311,48 +428,72 @@ class _NewInvestmentTransactionContentState
     Color? backgroundColor,
     Widget? prefixWidget,
     TextInputType? keyboardType,
+    bool showCurrency = false,
   }) {
     return Container(
-      height: 36.h,
-      padding: EdgeInsets.symmetric(
-        horizontal: 7.w,
-        // vertical: 8.h,
-      ),
+      height: 41.h,
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
       decoration: BoxDecoration(
         color: backgroundColor ?? Colors.white,
         border: Border.all(color: const Color(0xffDFDFDF)),
         borderRadius: BorderRadius.circular(6.r),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CustomText(label, size: 10.sp),
-              if (prefixWidget != null) prefixWidget,
-            ],
-          ),
-          Expanded(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: TextField(
-                keyboardType: keyboardType,
-                cursorHeight: 15.r,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: hint,
-                  hintStyle: TextStyle(color: Color(0xffB4B4B4)),
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
+      child: prefixWidget != null
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomText(label, size: 10.sp),
+                    prefixWidget,
+                  ],
                 ),
-                style: TextStyle(fontSize: 16.sp),
-                textAlign: TextAlign.end,
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: TextField(
+                      keyboardType: keyboardType,
+                      cursorHeight: 15.r,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: hint,
+                        hintStyle: TextStyle(color: Color(0xffB4B4B4)),
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      style: TextStyle(fontSize: 16.sp),
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : TextField(
+              keyboardType: keyboardType,
+              textAlign: TextAlign.end,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: hint,
+                labelText: label,
+                labelStyle: TextStyle(
+                  color: Color(0xffB4B4B4),
+                  fontSize: 16.sp,
+                ),
+                hintStyle: TextStyle(
+                  color: Color(0xffB4B4B4),
+                  fontSize: 16.sp,
+                ),
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                suffixText: showCurrency ? 'EUR' : null,
+                suffixStyle: TextStyle(
+                  color: Color(0xffB4B4B4),
+                  fontSize: 16.sp,
+                ),
               ),
+              style: TextStyle(fontSize: 16.sp),
             ),
-          ),
-        ],
-      ),
     );
   }
 }

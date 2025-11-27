@@ -4,6 +4,7 @@ import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class CategoryChip extends StatelessWidget {
   final String category;
+  final String categoryGroup;
   final Color? backgroundColor;
   final Color? borderColor;
   final Color? textColor;
@@ -13,6 +14,7 @@ class CategoryChip extends StatelessWidget {
   const CategoryChip({
     super.key,
     required this.category,
+    required this.categoryGroup,
     this.backgroundColor = Colors.white,
     this.borderColor = const Color(0xffDFDFDF),
     this.textColor = Colors.black,
@@ -25,20 +27,26 @@ class CategoryChip extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        height: 35.h,
+        height: 41.h,
         padding: EdgeInsets.fromLTRB(8.r, 0.r, 11.r, 0.r),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(7.r),
           border: Border.all(color: borderColor!),
         ),
-        child: Center(
-          child: CustomText.richText(
-            children: [
-              CustomText.span('# ', size: 16.sp, color: prefixColor),
-              CustomText.span(category, size: 16.sp, color: textColor),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomText(categoryGroup, size: 12.sp, color: Color(0xffB4B4B4)),
+            Center(
+              child: CustomText.richText(
+                children: [
+                  CustomText.span('# ', size: 16.sp, color: prefixColor),
+                  CustomText.span(category, size: 16.sp, color: textColor),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 
 /// Model for investment recommendations
 /// Supports both asset images and user-selected device images
@@ -7,12 +8,14 @@ class InvestmentRecommendation {
   final File? imageFile;
   final String text;
   final String shortText;
+  final Color? color;
 
   InvestmentRecommendation({
     this.assetPath,
     this.imageFile,
     required this.text,
     required this.shortText,
+    this.color,
   }) : assert(
           assetPath != null || imageFile != null,
           'Either assetPath or imageFile must be provided',
@@ -23,11 +26,13 @@ class InvestmentRecommendation {
     required String assetPath,
     required String text,
     required String shortText,
+    Color? color,
   }) {
     return InvestmentRecommendation(
       assetPath: assetPath,
       text: text,
       shortText: shortText,
+      color: color,
     );
   }
 
@@ -36,11 +41,13 @@ class InvestmentRecommendation {
     required File imageFile,
     required String text,
     required String shortText,
+    Color? color,
   }) {
     return InvestmentRecommendation(
       imageFile: imageFile,
       text: text,
       shortText: shortText,
+      color: color,
     );
   }
 
@@ -57,6 +64,7 @@ class InvestmentRecommendation {
       'imagePath': imageFile?.path,
       'text': text,
       'shortText': shortText,
+      'color': color?.value,
     };
   }
 
@@ -69,12 +77,13 @@ class InvestmentRecommendation {
           : null,
       text: json['text'] as String,
       shortText: json['shortText'] as String,
+      color: json['color'] != null ? Color(json['color'] as int) : null,
     );
   }
 
   @override
   String toString() {
     return 'InvestmentRecommendation(text: $text, shortText: $shortText, '
-        'assetPath: $assetPath, imageFile: ${imageFile?.path})';
+        'assetPath: $assetPath, imageFile: ${imageFile?.path}, color: $color)';
   }
 }
