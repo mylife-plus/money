@@ -25,7 +25,7 @@ class InvestmentItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(13.w, 10.h, 10.w, 10.h),
+      padding: EdgeInsets.fromLTRB(13.w, 2.h, 10.w, 3.h),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(color: Color(0xffDFDFDF)),
@@ -90,7 +90,7 @@ class InvestmentItem extends StatelessWidget {
                 CustomText.span(
                   '$totalValue ',
                   color: Colors.black,
-                  size: 20.sp,
+                  size: 18.sp,
                   fontWeight: FontWeight.w500,
                 ),
                 CustomText.span('USD', color: Color(0xff999999), size: 10.sp),

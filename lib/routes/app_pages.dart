@@ -7,9 +7,18 @@ import 'package:moneyapp/screens/hashtag/hashtag_group_screen.dart';
 import 'package:moneyapp/screens/home/home_screen.dart';
 import 'package:moneyapp/screens/home/investment_list_screen.dart';
 import 'package:moneyapp/screens/home/investment_screen.dart';
+import 'package:moneyapp/screens/investments/new_investment_transaction_screen.dart';
+import 'package:moneyapp/screens/investments/new_portfolio_change_screen.dart';
 import 'package:moneyapp/screens/setting/settings_screen.dart';
+import 'package:moneyapp/screens/trades/new_trade_screen.dart';
+import 'package:moneyapp/screens/transactions/new_transaction_screen.dart';
+import 'package:moneyapp/screens/transactions/split_spending_screen.dart';
 import 'package:moneyapp/screens/uploads/upload_investments_screen.dart';
 import 'package:moneyapp/screens/uploads/upload_transactions_screen.dart';
+import 'package:moneyapp/screens/mcc/add_mcc_screen.dart';
+import 'package:moneyapp/screens/filter/filter_screen.dart';
+import 'package:moneyapp/screens/investments/bitcoin_prices_screen.dart';
+import 'package:moneyapp/controllers/mcc_controller.dart';
 
 /// App Pages Configuration
 /// Configure all GetX pages and their bindings here
@@ -52,6 +61,67 @@ class AppPages {
     GetPage(
       name: AppRoutes.uploadInvestment.path,
       page: () => const UploadInvestmentsScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.newTransaction.path,
+      page: () => const NewTransactionScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<HomeController>(() => HomeController());
+        Get.lazyPut<MCCController>(() => MCCController());
+        Get.lazyPut<HashtagGroupsController>(() => HashtagGroupsController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.editTransaction.path,
+      page: () => const NewTransactionScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<HomeController>(() => HomeController());
+        Get.lazyPut<MCCController>(() => MCCController());
+        Get.lazyPut<HashtagGroupsController>(() => HashtagGroupsController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.splitSpending.path,
+      page: () => const SplitSpendingScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<HomeController>(() => HomeController());
+        Get.lazyPut<MCCController>(() => MCCController());
+        Get.lazyPut<HashtagGroupsController>(() => HashtagGroupsController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.newTrade.path,
+      page: () => const NewTradeScreen(),
+      binding: InvestmentBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.newInvestmentTransaction.path,
+      page: () => const NewInvestmentTransactionScreen(),
+      binding: InvestmentBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.newPortfolioChange.path,
+      page: () => const NewPortfolioChangeScreen(),
+      binding: InvestmentBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.addMCC.path,
+      page: () => const AddMCCScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<MCCController>(() => MCCController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.filter.path,
+      page: () => const FilterScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<MCCController>(() => MCCController());
+        Get.lazyPut<HashtagGroupsController>(() => HashtagGroupsController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.bitcoinPrices.path,
+      page: () => const BitcoinPricesScreen(),
     ),
     // Add more pages here
   ];

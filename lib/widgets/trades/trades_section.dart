@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
-import 'package:moneyapp/widgets/investments/new_investment_transaction_content.dart';
-import 'package:moneyapp/widgets/trades/new_trade_content.dart';
-import 'package:moneyapp/widgets/transactions/new_transaction_content.dart';
 import 'package:moneyapp/widgets/trades/received_trade_item.dart';
-import 'package:moneyapp/widgets/investments/top_investment_sheet.dart';
-import 'package:moneyapp/widgets/transactions/top_transaction_sheet.dart';
 import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
 
 class TradesSection extends StatelessWidget {
@@ -37,12 +34,7 @@ class TradesSection extends StatelessWidget {
               Spacer(),
               InkWell(
                 onTap: () {
-                  TopInvestmentSheet.show(
-                    context: context,
-                    title: 'Portfolio change',
-                    tradeChild: NewTradeContent(),
-                    transactionChild: NewInvestmentTransactionContent(),
-                  );
+                  Get.toNamed(AppRoutes.newPortfolioChange.path);
                 },
                 child: Image.asset(AppIcons.plus, height: 21.r, width: 21.r),
               ),

@@ -250,35 +250,34 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
           Expanded(
             child: Container(
               height: 41.h,
-              padding: EdgeInsets.symmetric(horizontal: 7.w),
+              padding: EdgeInsets.symmetric(
+                horizontal: 7.w,
+                vertical: 2.h,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(color: const Color(0xffDFDFDF)),
-                borderRadius: BorderRadius.circular(6.r),
+                borderRadius: BorderRadius.circular(4.r),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CustomText('Column', size: 10.sp),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: TextField(
-                        controller: columnController,
-                        cursorHeight: 15.r,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '',
-                          hintStyle: TextStyle(color: Color(0xffB4B4B4)),
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        style: TextStyle(fontSize: 16.sp),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
+              child: TextField(
+                controller: columnController,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: '',
+                  labelText: 'Column',
+                  labelStyle: TextStyle(
+                    color: Color(0xffB4B4B4),
+                    fontSize: 16.sp,
                   ),
-                ],
+                  hintStyle: TextStyle(
+                    color: Color(0xffB4B4B4),
+                    fontSize: 16.sp,
+                  ),
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: TextStyle(fontSize: 16.sp),
+                textAlign: TextAlign.end,
               ),
             ),
           ),
@@ -287,35 +286,34 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
           Expanded(
             child: Container(
               height: 41.h,
-              padding: EdgeInsets.symmetric(horizontal: 7.w),
+              padding: EdgeInsets.symmetric(
+                horizontal: 7.w,
+                vertical: 2.h,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(color: const Color(0xffDFDFDF)),
-                borderRadius: BorderRadius.circular(6.r),
+                borderRadius: BorderRadius.circular(4.r),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CustomText('Format', size: 10.sp),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: TextField(
-                        controller: formatController,
-                        cursorHeight: 15.r,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '',
-                          hintStyle: TextStyle(color: Color(0xffB4B4B4)),
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        style: TextStyle(fontSize: 16.sp),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
+              child: TextField(
+                controller: formatController,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: '',
+                  labelText: 'Format',
+                  labelStyle: TextStyle(
+                    color: Color(0xffB4B4B4),
+                    fontSize: 16.sp,
                   ),
-                ],
+                  hintStyle: TextStyle(
+                    color: Color(0xffB4B4B4),
+                    fontSize: 16.sp,
+                  ),
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: TextStyle(fontSize: 16.sp),
+                textAlign: TextAlign.end,
               ),
             ),
           )
@@ -336,38 +334,34 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
         Expanded(
           child: Container(
             height: 41.h,
-            padding: EdgeInsets.symmetric(horizontal: 7.w),
+            padding: EdgeInsets.symmetric(
+              horizontal: 7.w,
+              vertical: 2.h,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: const Color(0xffDFDFDF)),
-              borderRadius: BorderRadius.circular(6.r),
+              borderRadius: BorderRadius.circular(4.r),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [CustomText('Column', size: 10.sp)],
+            child: TextField(
+              controller: columnController,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: '',
+                labelText: 'Column',
+                labelStyle: TextStyle(
+                  color: Color(0xffB4B4B4),
+                  fontSize: 16.sp,
                 ),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: TextField(
-                      controller: columnController,
-                      cursorHeight: 15.r,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: '',
-                        hintStyle: TextStyle(color: Color(0xffB4B4B4)),
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      style: TextStyle(fontSize: 16.sp),
-                      textAlign: TextAlign.end,
-                    ),
-                  ),
+                hintStyle: TextStyle(
+                  color: Color(0xffB4B4B4),
+                  fontSize: 16.sp,
                 ),
-              ],
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: TextStyle(fontSize: 16.sp),
+              textAlign: TextAlign.end,
             ),
           ),
         ),
@@ -376,38 +370,34 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
           flex: 2,
           child: Container(
             height: 41.h,
-            padding: EdgeInsets.symmetric(horizontal: 7.w),
+            padding: EdgeInsets.symmetric(
+              horizontal: 7.w,
+              vertical: 2.h,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: const Color(0xffDFDFDF)),
-              borderRadius: BorderRadius.circular(6.r),
+              borderRadius: BorderRadius.circular(4.r),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [CustomText('with text', size: 10.sp)],
+            child: TextField(
+              controller: textController,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: '',
+                labelText: 'with text',
+                labelStyle: TextStyle(
+                  color: Color(0xffB4B4B4),
+                  fontSize: 16.sp,
                 ),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: TextField(
-                      controller: textController,
-                      cursorHeight: 15.r,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: '',
-                        hintStyle: TextStyle(color: Color(0xffB4B4B4)),
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      style: TextStyle(fontSize: 16.sp),
-                      textAlign: TextAlign.end,
-                    ),
-                  ),
+                hintStyle: TextStyle(
+                  color: Color(0xffB4B4B4),
+                  fontSize: 16.sp,
                 ),
-              ],
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: TextStyle(fontSize: 16.sp),
+              textAlign: TextAlign.end,
             ),
           ),
         ),

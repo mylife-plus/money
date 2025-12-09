@@ -11,9 +11,7 @@ import 'package:moneyapp/widgets/common/custom_slider.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/custom_toggle_switch.dart';
 import 'package:moneyapp/widgets/common/custom_toggle_switch_small.dart';
-import 'package:moneyapp/widgets/common/filter_top_sheet.dart';
-import 'package:moneyapp/widgets/transactions/new_transaction_content.dart';
-import 'package:moneyapp/widgets/transactions/top_transaction_sheet.dart';
+import 'package:moneyapp/widgets/common/selection_app_bar.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
 
 /// Home Screen
@@ -32,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _animation;
   double _lastScrollOffset = 0;
   bool _isAppBarVisible = true;
-  List<String> selectedIds = [];
+  List<int> selectedIds = [];
 
   @override
   void initState() {
@@ -85,43 +83,69 @@ class _HomeScreenState extends State<HomeScreen>
       body: SafeArea(
         child: Column(
           children: [
-            SizeTransition(
-              sizeFactor: _animation,
-              child: FadeTransition(
-                opacity: _animation,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomAppBar(
-                      title: 'Transactions',
-                      leadingIconPath: AppIcons.transaction,
-                      actionIconPath: AppIcons.investment,
-                      onActionIconTap: () {
-                        Get.offNamed(AppRoutes.investment.path);
-                      },
-                    ),
-                    27.verticalSpace,
-                    Obx(
-                      () => CustomToggleSwitch(
-                        option1IconPath: AppIcons.export,
-                        option1Text: 'Spending',
-                        option2IconPath: AppIcons.import,
-                        option2Text: 'Income',
-                        selectedOption: controller.selectedToggleOption.value,
-                        onOption1Tap: controller.selectSpending,
-                        onOption2Tap: controller.selectIncome,
+            // Show selection app bar or regular app bar based on selection mode
+            if (selectedIds.isNotEmpty)
+              SelectionAppBar(
+                selectedCount: selectedIds.length,
+                onCancel: () {
+                  setState(() {
+                    selectedIds.clear();
+                  });
+                },
+                onAddHashtag: () {
+                  // TODO: Implement add hashtag for selected transactions
+                  print('Add hashtag to ${selectedIds.length} transactions');
+                },
+                onEditMCC: () {
+                  // TODO: Implement edit MCC for selected transactions
+                  print('Edit MCC for ${selectedIds.length} transactions');
+                },
+                onDelete: () {
+                  // TODO: Implement delete for selected transactions
+                  controller.deleteTransactions(selectedIds);
+                  setState(() {
+                    selectedIds.clear();
+                  });
+                },
+              )
+            else
+              SizeTransition(
+                sizeFactor: _animation,
+                child: FadeTransition(
+                  opacity: _animation,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CustomAppBar(
+                        title: 'Transactions',
+                        leadingIconPath: AppIcons.transaction,
+                        actionIconPath: AppIcons.investment,
+                        onActionIconTap: () {
+                          Get.offNamed(AppRoutes.investment.path);
+                        },
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
             Expanded(
               child: SingleChildScrollView(
                 controller: _scrollController,
                 child: Obx(() {
                   return Column(
                     children: [
+                      27.verticalSpace,
+                      Obx(
+                        () => CustomToggleSwitch(
+                          option1IconPath: AppIcons.export,
+                          option1Text: 'Spending',
+                          option2IconPath: AppIcons.import,
+                          option2Text: 'Income',
+                          selectedOption: controller.selectedToggleOption.value,
+                          onOption1Tap: controller.selectSpending,
+                          onOption2Tap: controller.selectIncome,
+                        ),
+                      ),
                       26.verticalSpace,
                       CustomText.richText(
                         children: [
@@ -144,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen>
                           CustomText.span(
                             'per',
                             size: 14.sp,
-                            color: const Color(0xffA5A5A5),
+                            color: AppColors.greyColor,
                             fontWeight: FontWeight.w400,
                           ),
                         ],
@@ -249,14 +273,14 @@ class _HomeScreenState extends State<HomeScreen>
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   border: Border.all(
-                                    color: const Color(0xffDFDFDF),
+                                    color: AppColors.greyColor,
                                   ),
                                   borderRadius: BorderRadius.circular(4.r),
                                 ),
                                 child: CustomText(
                                   duration,
                                   size: 16.sp,
-                                  color: const Color(0xff8B8B8B),
+                                  color: AppColors.greyColor,
                                 ),
                               ),
                           ],
@@ -296,10 +320,7 @@ class _HomeScreenState extends State<HomeScreen>
                             40.horizontalSpace,
                             InkWell(
                               onTap: () {
-                                FilterTopSheet.show(
-                                  context: context,
-                                  isOpenedFromMap: false,
-                                );
+                                Get.toNamed(AppRoutes.filter.path);
                               },
                               child: Image.asset(
                                 AppIcons.filter,
@@ -318,13 +339,12 @@ class _HomeScreenState extends State<HomeScreen>
                             const Spacer(),
                             InkWell(
                               onTap: () {
-                                TopTransactionSheet.show(
-                                  context: context,
-                                  title: 'new Transaction',
-                                  child: NewTransactionContent(
-                                    isExpenseSelected:
+                                Get.toNamed(
+                                  AppRoutes.newTransaction.path,
+                                  arguments: {
+                                    'isExpenseSelected':
                                         controller.isExpenseSelected,
-                                  ),
+                                  },
                                 );
                               },
                               child: Image.asset(
@@ -347,14 +367,14 @@ class _HomeScreenState extends State<HomeScreen>
                                 children: [
                                   CustomText(
                                     '2024',
-                                    color: const Color(0xff707070),
+                                    color: AppColors.greyColor,
                                     size: 16.sp,
                                   ),
                                   5.horizontalSpace,
                                   Icon(
                                     Icons.arrow_drop_down_rounded,
                                     size: 32.r,
-                                    color: const Color(0xff707070),
+                                    color: AppColors.greyColor,
                                   ),
                                 ],
                               ),
@@ -378,14 +398,14 @@ class _HomeScreenState extends State<HomeScreen>
                                 children: [
                                   CustomText(
                                     'Dezember',
-                                    color: const Color(0xff707070),
+                                    color: AppColors.greyColor,
                                     size: 16.sp,
                                   ),
                                   5.horizontalSpace,
                                   Icon(
                                     Icons.arrow_drop_down_rounded,
                                     size: 32.r,
-                                    color: const Color(0xff707070),
+                                    color: AppColors.greyColor,
                                   ),
                                 ],
                               ),
@@ -404,131 +424,28 @@ class _HomeScreenState extends State<HomeScreen>
                         child: Column(
                           spacing: 4.h,
                           children: [
-                            for (List<dynamic> entries in [
-                              ['1', '12.', '🏧 ATM', 2, '400,00'],
-                              ['2', '12.', '🏧 ATM', 1, '400,00'],
-                              ['3', '13.', '🛒 Aldi', 1, '400,00'],
-                              ['4', '12.', '🏧 ATM', 2, '400,00'],
-                              ['5', '12.', '🏧 ATM', 1, '400,00'],
-                              ['6', '12.', '🛒 Aldi', 1, '400,00'],
-                              ['7', '11.', '🏧 ATM', 2, '400,00'],
-                              ['8', '11.', '🏧 ATM', 1, '400,00'],
-                              ['9', '11.', '🛒 Aldi', 1, '400,00'],
-                            ])
-                              TransactionItem(
-                                id: entries[0],
-                                label: entries[1],
-                                title: entries[2],
-                                category: '${entries[3]}',
-                                isSelected: selectedIds.contains(entries[0]),
-                                amount: entries[4],
-
-                                onSelect: (id) {
-                                  setState(() {
-                                    if (selectedIds.contains(id)) {
-                                      selectedIds.remove(id);
-                                    } else {
-                                      selectedIds.add(id);
-                                    }
-                                  });
-                                },
-                                isSelectionMode: selectedIds.isNotEmpty,
-                              ),
+                            for (var transaction
+                                in controller.sortedTransactions)
+                              if (transaction.id != null)
+                                TransactionItem(
+                                  transaction: transaction,
+                                  isSelected: selectedIds.contains(
+                                    transaction.id,
+                                  ),
+                                  onSelect: (id) {
+                                    setState(() {
+                                      if (selectedIds.contains(id)) {
+                                        selectedIds.remove(id);
+                                      } else {
+                                        selectedIds.add(id);
+                                      }
+                                    });
+                                  },
+                                  isSelectionMode: selectedIds.isNotEmpty,
+                                ),
                           ],
                         ),
                       ),
-                      if (selectedIds.isNotEmpty) ...[
-                        56.verticalSpace,
-                        CustomText(
-                          '${selectedIds.length} Selected',
-                          size: 20.sp,
-                          color: const Color(0xff0088FF),
-                        ),
-                        16.verticalSpace,
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 14.w),
-                              height: 44.h,
-
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xffCFCFCF),
-                                ),
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(13.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.25),
-                                    blurRadius: 4.0,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: CustomText(
-                                  'add #',
-                                  size: 20.sp,
-                                  color: const Color(0xff0088FF),
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 14.w),
-                              height: 44.h,
-
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xffCFCFCF),
-                                ),
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(13.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.25),
-                                    blurRadius: 4.0,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: CustomText(
-                                  'edit category',
-                                  size: 20.sp,
-                                  color: const Color(0xff0071FF),
-                                ),
-                              ),
-                            ),
-                            //test change
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 14.w),
-                              height: 44.h,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xffCFCFCF),
-                                ),
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(13.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.25),
-                                    blurRadius: 4.0,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: CustomText(
-                                  'delete',
-                                  size: 20.sp,
-                                  color: const Color(0xffFF0000),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                       150.verticalSpace,
                     ],
                   );

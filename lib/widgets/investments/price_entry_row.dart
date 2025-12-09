@@ -10,6 +10,7 @@ class PriceEntryRow extends StatefulWidget {
   final String? initialPrice;
   final bool initialIsEditable;
   final Function(DateTime, String)? onSave;
+  final VoidCallback? onDelete;
 
   const PriceEntryRow({
     super.key,
@@ -17,6 +18,7 @@ class PriceEntryRow extends StatefulWidget {
     this.initialPrice,
     this.initialIsEditable = true,
     this.onSave,
+    this.onDelete,
   });
 
   @override
@@ -149,7 +151,7 @@ class _PriceEntryRowState extends State<PriceEntryRow> {
           ),
         ),
         isEditable ? 12.horizontalSpace : 15.horizontalSpace,
-        // Action Icon
+        // Edit/Save Icon
         InkWell(
           onTap: () {
             if (isEditable) {
@@ -176,6 +178,18 @@ class _PriceEntryRowState extends State<PriceEntryRow> {
             height: isEditable ? 25.r : 22.r,
           ),
         ),
+        // Delete Icon
+        if (widget.onDelete != null) ...[
+          6.horizontalSpace,
+          InkWell(
+            onTap: widget.onDelete,
+            child: Image.asset(
+              AppIcons.delete,
+              width: 22.r,
+              height: 22.r,
+            ),
+          ),
+        ],
       ],
     );
   }

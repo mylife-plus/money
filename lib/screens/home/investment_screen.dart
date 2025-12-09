@@ -18,7 +18,8 @@ class InvestmentScreen extends StatefulWidget {
   State<InvestmentScreen> createState() => _InvestmentScreenState();
 }
 
-class _InvestmentScreenState extends State<InvestmentScreen> with SingleTickerProviderStateMixin {
+class _InvestmentScreenState extends State<InvestmentScreen>
+    with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -91,6 +92,15 @@ class _InvestmentScreenState extends State<InvestmentScreen> with SingleTickerPr
                         Get.offNamed(AppRoutes.home.path);
                       },
                     ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
                     27.verticalSpace,
                     Obx(
                       () => CustomToggleSwitch(
@@ -103,21 +113,16 @@ class _InvestmentScreenState extends State<InvestmentScreen> with SingleTickerPr
                         onOption2Tap: controller.selectTrades,
                       ),
                     ),
+                    Obx(() {
+                      return controller.isPortfolioSelected
+                          ? PortfolioSection(
+                              isPortfolioSelected:
+                                  controller.isPortfolioSelected,
+                            )
+                          : TradesSection();
+                    }),
                   ],
                 ),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Obx(() {
-                  return controller.isPortfolioSelected
-                      ? PortfolioSection(
-                          isPortfolioSelected:
-                              controller.isPortfolioSelected,
-                        )
-                      : TradesSection();
-                }),
               ),
             ),
           ],

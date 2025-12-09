@@ -66,7 +66,7 @@ class SmoothLineChartWidget extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 50.w,
+              reservedSize: 30.w,
               getTitlesWidget: (value, meta) {
                 return Text(
                   _formatYAxisLabel(value),
@@ -78,7 +78,7 @@ class SmoothLineChartWidget extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 30.h,
+              reservedSize: 22.h,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index >= 0 && index < data.length) {

@@ -43,7 +43,7 @@ class CustomToggleSwitch extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(2.r),
       width: 289.w,
-      height: 52.h,
+      height: 40.h,
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(12.r),

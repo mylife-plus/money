@@ -1,44 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:moneyapp/widgets/common/custom_popup.dart';
-import 'package:moneyapp/widgets/transactions/edit_transaction_content.dart';
-import 'package:moneyapp/widgets/transactions/top_transaction_sheet.dart';
-import 'package:moneyapp/widgets/transactions/split_spending_content.dart';
+import 'package:get/get.dart';
+import 'package:moneyapp/models/transaction_model.dart';
+import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/widgets/transactions/transaction_content.dart';
-import 'package:moneyapp/widgets/transactions/transaction_popup_menu.dart';
 
 class TransactionItem extends StatefulWidget {
-  final String label;
-  final String title;
-  final String category;
-  final String amount;
-  final Color? labelColor;
-  final Color? titleColor;
-  final Color? categoryColor;
-  final Color? amountColor;
+  final Transaction transaction;
   final Color? backgroundColor;
   final Color? borderColor;
   final bool isSelected;
-  final Function(String id)? onSelect;
+  final Function(int id)? onSelect;
   final bool isSelectionMode;
-  final String id;
 
   const TransactionItem({
     super.key,
-    required this.label,
-    required this.title,
-    required this.category,
-    required this.amount,
-    this.labelColor = const Color(0xff707070),
-    this.titleColor = Colors.black,
-    this.categoryColor = const Color(0xff0088FF),
-    this.amountColor = const Color(0xffFF0000),
+    required this.transaction,
     this.backgroundColor = Colors.white,
     this.borderColor = const Color(0xffDFDFDF),
     required this.isSelected,
     this.isSelectionMode = false,
     this.onSelect,
-    required this.id,
   });
 
   @override
@@ -46,111 +28,142 @@ class TransactionItem extends StatefulWidget {
 }
 
 class _TransactionItemState extends State<TransactionItem> {
-  final GlobalKey<CustomPopupState> _popupKey = GlobalKey<CustomPopupState>();
+  void _showPopupMenu(BuildContext context, TapDownDetails details) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
 
-  void _handleSplit(BuildContext context) {
-    _popupKey.currentState?.dismiss();
-    TopTransactionSheet.show(
+    showMenu(
       context: context,
-      title: 'split Spending',
-      child: SplitSpendingContent(
-        label: widget.label,
-        title: widget.title,
-        category: widget.category,
-        amount: widget.amount,
+      position: RelativeRect.fromRect(
+        details.globalPosition & const Size(40, 40),
+        Offset.zero & overlay.size,
       ),
+      items: [
+        PopupMenuItem(
+          value: 'split',
+          child: Row(
+            children: [
+              Icon(Icons.call_split, size: 20.sp),
+              SizedBox(width: 12.w),
+              Text(
+                widget.transaction.isExpense
+                    ? 'Split Spending'
+                    : 'Split Income',
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 20.sp),
+              SizedBox(width: 12.w),
+              Text('Edit Transaction'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'select',
+          child: Row(
+            children: [
+              Icon(Icons.check_circle_outline, size: 20.sp),
+              SizedBox(width: 12.w),
+              Text('Select'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 20.sp, color: Colors.red),
+              SizedBox(width: 12.w),
+              Text('Delete', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (!mounted) return;
+      if (value != null) {
+        switch (value) {
+          case 'split':
+            _handleSplit();
+            break;
+          case 'edit':
+            _handleEdit();
+            break;
+          case 'select':
+            _handleSelect();
+            break;
+          case 'delete':
+            _handleDelete();
+            break;
+        }
+      }
+    });
+  }
+
+  void _handleSplit() {
+    final dateFormat = 'dd.';
+    final label = '${widget.transaction.date.day}.$dateFormat';
+    final title = widget.transaction.mcc.text;
+    final hashtags = widget.transaction.hashtags.isNotEmpty
+        ? widget.transaction.hashtags.first.name
+        : '';
+    final amount = widget.transaction.amount.toString();
+
+    Get.toNamed(
+      AppRoutes.splitSpending.path,
+      arguments: {
+        'label': label,
+        'title': title,
+        'category': hashtags,
+        'amount': amount,
+        'isExpense': widget.transaction.isExpense,
+      },
     );
   }
 
-  void _handleEdit(BuildContext context) {
-    _popupKey.currentState?.dismiss();
-    TopTransactionSheet.show(
-      context: context,
-      title: 'edit Transaction',
-      child: EditTransactionContent(
-        label: widget.label,
-        title: widget.title,
-        category: widget.category,
-        amount: widget.amount,
-      ),
+  void _handleEdit() {
+    Get.toNamed(
+      AppRoutes.editTransaction.path,
+      arguments: {'transaction': widget.transaction},
     );
   }
 
   void _handleSelect() {
-    _popupKey.currentState?.dismiss();
-    if (widget.onSelect != null) {
-      widget.onSelect!(widget.id);
+    if (widget.onSelect != null && widget.transaction.id != null) {
+      widget.onSelect!(widget.transaction.id!);
     }
   }
 
   void _handleDelete() {
-    _popupKey.currentState?.dismiss();
     // TODO: Implement delete logic
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return CustomPopup(
-          key: _popupKey,
-          position: PopupPosition.bottom,
-          backgroundColor: Colors.transparent,
-          showArrow: false,
-          contentPadding: EdgeInsets.zero,
-          contentBorderRadius: BorderRadius.circular(4.r),
-          barrierColor: Colors.black.withOpacity(0.1),
-          alignment: Alignment.topLeft,
-          offset: const Offset(0, 0),
-          contentDecoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(4.r),
-          ),
-          animationDuration: Duration.zero,
-          enabled: !widget.isSelectionMode,
-          content: TransactionPopupMenu(
-            transactionWidth: constraints.maxWidth,
-
-            label: widget.label,
-            title: widget.title,
-            category: widget.category,
-            amount: widget.amount,
-            labelColor: widget.labelColor,
-            titleColor: widget.titleColor,
-            categoryColor: widget.categoryColor,
-            amountColor: widget.amountColor,
-            backgroundColor: widget.backgroundColor,
-
-            onSplit: () {
-              _handleSplit(context);
+    return TransactionContent(
+      transaction: widget.transaction,
+      backgroundColor: widget.backgroundColor,
+      borderWidth: widget.isSelected ? 2 : 1,
+      borderColor: widget.isSelected ? Color(0xff0088FF) : widget.borderColor,
+      onCardTap: widget.isSelectionMode
+          ? _handleSelect
+          : () {
+              final RenderBox box = context.findRenderObject() as RenderBox;
+              final Offset position = box.localToGlobal(Offset.zero);
+              final Size size = box.size;
+              _showPopupMenu(
+                context,
+                TapDownDetails(
+                  globalPosition:
+                      position + Offset(size.width / 2, size.height / 2),
+                ),
+              );
             },
-            onEdit: () {
-              _handleEdit(context);
-            },
-            onSelect: _handleSelect,
-            onDelete: _handleDelete,
-          ),
-          child: InkWell(
-            onTap: widget.isSelectionMode ? _handleSelect : null,
-            child: TransactionContent(
-              label: widget.label,
-
-              title: widget.title,
-              category: widget.category,
-              amount: widget.amount,
-              labelColor: widget.labelColor,
-              titleColor: widget.titleColor,
-              categoryColor: widget.categoryColor,
-              amountColor: widget.amountColor,
-              backgroundColor: widget.backgroundColor,
-              borderWidth: widget.isSelected ? 2 : 1,
-              borderColor: widget.isSelected
-                  ? Color(0xff0088FF)
-                  : widget.borderColor,
-            ),
-          ),
-        );
-      },
     );
   }
 }

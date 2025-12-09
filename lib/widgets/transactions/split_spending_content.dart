@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
@@ -195,12 +196,19 @@ class _SplitSpendingContentState extends State<SplitSpendingContent> {
         children: [
           6.verticalSpace,
           TransactionItem(
-            label: widget.label,
-            id: '0',
+            transaction: Transaction(
+              id: 0,
+              isExpense: true,
+              date: DateTime.now(),
+              amount: double.tryParse(widget.amount.replaceAll(',', '.')) ?? 0.0,
+              mcc: MCC.fromAsset(
+                assetPath: AppIcons.transaction,
+                text: widget.title,
+                shortText: widget.title.substring(0, 1),
+              ),
+              note: '',
+            ),
             isSelected: false,
-            title: widget.title,
-            category: widget.category,
-            amount: widget.amount,
           ),
           21.verticalSpace,
           Row(

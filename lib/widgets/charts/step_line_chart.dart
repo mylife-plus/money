@@ -22,7 +22,7 @@ class StepLineChartWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 300.h,
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(5.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
@@ -77,7 +77,7 @@ class StepLineChartWidget extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 45,
+                reservedSize: 30,
                 interval: _getHorizontalInterval(),
                 getTitlesWidget: (value, meta) {
                   return Text(
@@ -203,8 +203,5 @@ class ChartDataPoint {
   final String label;
   final double value;
 
-  ChartDataPoint({
-    required this.label,
-    required this.value,
-  });
+  ChartDataPoint({required this.label, required this.value});
 }

@@ -1,39 +1,276 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:moneyapp/widgets/common/custom_popup.dart';
+import 'package:intl/intl.dart';
+import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/constants/app_theme.dart';
+import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 
 class TransactionContent extends StatelessWidget {
-  final String label;
-  final String title;
-  final String category;
-  final String amount;
-  final Color? labelColor;
-  final Color? titleColor;
-  final Color? categoryColor;
-  final Color? amountColor;
+  final Transaction transaction;
   final Color? backgroundColor;
   final Color? borderColor;
   final double borderWidth;
+  final VoidCallback? onCardTap;
 
   const TransactionContent({
     super.key,
-    required this.label,
-    required this.title,
-    required this.category,
-    required this.amount,
-    this.labelColor = const Color(0xff707070),
-    this.titleColor = Colors.black,
-    this.categoryColor = const Color(0xff0088FF),
-    this.amountColor = const Color(0xffFF0000),
+    required this.transaction,
     this.backgroundColor = Colors.white,
     this.borderColor = const Color(0xffDFDFDF),
     this.borderWidth = 1,
+    this.onCardTap,
   });
+
+  void _showNoteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CustomText(
+                    'Transaction Details',
+                    size: 18.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  InkWell(
+                    onTap: () => Navigator.pop(context),
+                    child: Icon(Icons.close, size: 24.sp),
+                  ),
+                ],
+              ),
+              16.verticalSpace,
+
+              // Date
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xffDFDFDF)),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                child: Row(
+                  children: [
+                    CustomText(
+                      'Date:',
+                      size: 14.sp,
+                      color: const Color(0xff707070),
+                    ),
+                    12.horizontalSpace,
+                    CustomText(
+                      DateFormat('dd.MM.yyyy').format(transaction.date),
+                      size: 16.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ],
+                ),
+              ),
+              8.verticalSpace,
+
+              // MCC Category
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xffDFDFDF)),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                child: Row(
+                  children: [
+                    CustomText(
+                      'MCC:',
+                      size: 14.sp,
+                      color: const Color(0xff707070),
+                    ),
+                    12.horizontalSpace,
+                    if (transaction.mcc.assetPath != null)
+                      Image.asset(
+                        transaction.mcc.assetPath!,
+                        width: 20.r,
+                        height: 20.r,
+                      ),
+                    8.horizontalSpace,
+                    CustomText(
+                      transaction.mcc.text,
+                      size: 16.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ],
+                ),
+              ),
+              8.verticalSpace,
+
+              // Amount
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xffDFDFDF)),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                child: Row(
+                  children: [
+                    CustomText(
+                      'Amount:',
+                      size: 14.sp,
+                      color: const Color(0xff707070),
+                    ),
+                    12.horizontalSpace,
+                    CustomText(
+                      transaction.getFormattedAmount(),
+                      size: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: transaction.isExpense
+                          ? const Color(0xffFF0000)
+                          : const Color(0xff00C00D),
+                    ),
+                    8.horizontalSpace,
+                    CustomText(
+                      transaction.isExpense ? '(Expense)' : '(Income)',
+                      size: 12.sp,
+                      color: const Color(0xff707070),
+                    ),
+                  ],
+                ),
+              ),
+              8.verticalSpace,
+
+              // Recipient
+              if (transaction.recipient.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 10.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomText(
+                        'Recipient:',
+                        size: 14.sp,
+                        color: const Color(0xff707070),
+                      ),
+                      4.verticalSpace,
+                      CustomText(
+                        transaction.recipient,
+                        size: 16.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ],
+                  ),
+                ),
+                8.verticalSpace,
+              ],
+
+              // Note
+              if (transaction.note.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 10.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomText(
+                        'Note:',
+                        size: 14.sp,
+                        color: const Color(0xff707070),
+                      ),
+                      4.verticalSpace,
+                      CustomText(
+                        transaction.note,
+                        size: 16.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ],
+                  ),
+                ),
+                8.verticalSpace,
+              ],
+
+              // Hashtags
+              if (transaction.hashtags.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 10.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xffDFDFDF)),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomText(
+                        'Hashtags:',
+                        size: 14.sp,
+                        color: const Color(0xff707070),
+                      ),
+                      8.verticalSpace,
+                      Wrap(
+                        alignment: WrapAlignment.start,
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: transaction.hashtags.map((hashtag) {
+                          return CategoryChip(
+                            category: hashtag.name,
+                            categoryGroup: hashtag.isMainGroup
+                                ? 'Main Group'
+                                : hashtag.name,
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final dateFormat = DateFormat('dd.');
+    final labelColor = const Color(0xff707070);
+    final titleColor = Colors.black;
+    final amountColor = transaction.isExpense
+        ? const Color(0xffFF0000)
+        : const Color(0xff00C00D);
+
     return Container(
       padding: EdgeInsets.symmetric(vertical: 7.r, horizontal: 12.w),
       decoration: BoxDecoration(
@@ -45,68 +282,61 @@ class TransactionContent extends StatelessWidget {
         children: [
           Expanded(
             flex: 220,
-            child: Row(
-              children: [
-                CustomText(label, size: 16.sp, color: labelColor),
-                7.horizontalSpace,
-                CustomText(title, size: 16.sp, color: titleColor),
-              ],
-            ),
-          ),
-          CustomPopup(
-            position: PopupPosition.bottom,
-            backgroundColor: Colors.transparent,
-            showArrow: false,
-            contentPadding: EdgeInsets.zero,
-            contentBorderRadius: BorderRadius.circular(4.r),
-            barrierColor: Colors.black.withOpacity(0.1),
-            // alignment: Alignment.bottomCenter,
-            offset: Offset(0, 9.h),
-            contentDecoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(4.r),
-            ),
-            animationDuration: Duration.zero,
-            content: Container(
-              decoration: BoxDecoration(
-                color: Color(0xff82C5FF),
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(7.r),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(5.r, 5.r, 5.r, 3.r),
-                child: Row(
-                  spacing: 5.w,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var category in ['Travel', 'Repair'])
-                      CategoryChip(
-                        category: category,
-                        categoryGroup: 'Shopping',
-                      ),
-                  ],
-                ),
+            child: GestureDetector(
+              onTap: onCardTap,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  CustomText(
+                    dateFormat.format(transaction.date),
+                    size: 16.sp,
+                    color: labelColor,
+                  ),
+                  7.horizontalSpace,
+                  Image.asset(
+                    transaction.mcc.assetPath ?? '',
+                    width: 16.r,
+                    height: 16.r,
+                  ),
+                  7.horizontalSpace,
+                  Flexible(
+                    child: CustomText(
+                      transaction.recipient,
+                      size: 16.sp,
+                      color: titleColor,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: CustomText.richText(
-              children: [
-                CustomText.span(category, size: 16.sp, color: categoryColor),
-                CustomText.span(
-                  ' #',
-                  size: 16.sp,
-                  color: const Color(0xff707070),
-                ),
-              ],
+          ),
+          8.horizontalSpace,
+          InkWell(
+            onTap: () => _showNoteDialog(context),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+              child: Image.asset(AppIcons.notesIcon, width: 21.r, height: 21.r),
             ),
           ),
+          8.horizontalSpace,
+
           Expanded(
-            flex: 116,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CustomText('€ $amount', size: 16.sp, color: amountColor),
-              ],
+            flex: 67,
+            child: GestureDetector(
+              onTap: onCardTap,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  CustomText(
+                    transaction.getFormattedAmount(),
+                    size: 16.sp,
+                    color: amountColor,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

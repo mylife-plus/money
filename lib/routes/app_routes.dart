@@ -8,6 +8,15 @@ enum AppRoutes {
   hashtagGroups,
   uploadTransaction,
   uploadInvestment,
+  newTransaction,
+  editTransaction,
+  splitSpending,
+  newTrade,
+  newInvestmentTransaction,
+  newPortfolioChange,
+  addMCC,
+  filter,
+  bitcoinPrices,
   // Add more routes here as needed
   // example: login, profile, etc.
 }
@@ -30,6 +39,24 @@ extension AppRoutesExtension on AppRoutes {
         return '/uploadTransactions';
       case AppRoutes.uploadInvestment:
         return '/uploadInvestments';
+      case AppRoutes.newTransaction:
+        return '/newTransaction';
+      case AppRoutes.editTransaction:
+        return '/editTransaction';
+      case AppRoutes.splitSpending:
+        return '/splitSpending';
+      case AppRoutes.newTrade:
+        return '/newTrade';
+      case AppRoutes.newInvestmentTransaction:
+        return '/newInvestmentTransaction';
+      case AppRoutes.newPortfolioChange:
+        return '/newPortfolioChange';
+      case AppRoutes.addMCC:
+        return '/addMCC';
+      case AppRoutes.filter:
+        return '/filter';
+      case AppRoutes.bitcoinPrices:
+        return '/bitcoinPrices';
       // Add more cases here
     }
   }

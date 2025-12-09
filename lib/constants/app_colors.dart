@@ -36,7 +36,9 @@ class AppColors {
 
   // Transparent
   static const Color transparent = Colors.transparent;
-
+  // Grey Color
+  static const Color greyColor = Color(0xFF8B8B8B);
+  static const Color greyBorder = Color(0xFFDFDFDF);
   // Expense Colors
   static const Color expenseYearBackground = Color(0xFFFF9696);
   static const Color expenseMonthBackground = Color(0xFFFFC8C8);

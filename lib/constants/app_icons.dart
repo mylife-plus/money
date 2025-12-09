@@ -13,9 +13,11 @@ class AppIcons {
   static const String filter = 'assets/icons/filter_icon.png';
   static const String categoryIcon = 'assets/icons/category_icon.png';
   static const String questionIcon = 'assets/icons/question_icon.png';
+  static const String notesIcon = 'assets/icons/notes_icon.png';
   static const String hashtagThinIcon = 'assets/icons/hashtag_thin.png';
   static const String dateIcon = 'assets/icons/calendar.png';
   static const String sort = 'assets/icons/sort_icon.png';
+  static const String shopIcon = 'assets/icons/shop_icon.png';
   static const String setting = 'assets/icons/setting_icon.png';
   static const String settingV2 = 'assets/icons/setting_icon_v2.png';
   static const String refresh = 'assets/icons/refresh_icon.png';
