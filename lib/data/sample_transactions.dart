@@ -258,6 +258,200 @@ class SampleTransactions {
       createdAt: DateTime.now().subtract(const Duration(days: 15)),
       updatedAt: DateTime.now().subtract(const Duration(days: 15)),
     ),
+
+    // === 2024 Transactions ===
+
+    // December 2024
+    Transaction(
+      id: 13,
+      isExpense: true,
+      date: DateTime(2024, 12, 25),
+      amount: 450.00,
+      mcc: _sampleMCCs[0], // Shopping
+      recipient: 'Christmas Shopping Mall',
+      note: 'Christmas gifts',
+      hashtags: [_sampleHashtags[0]], // Shopping
+      createdAt: DateTime(2024, 12, 25),
+      updatedAt: DateTime(2024, 12, 25),
+    ),
+    Transaction(
+      id: 14,
+      isExpense: false,
+      date: DateTime(2024, 12, 20),
+      amount: 500.00,
+      mcc: _sampleMCCs[5], // General
+      recipient: 'Year-end Bonus',
+      note: 'Company bonus',
+      hashtags: [],
+      createdAt: DateTime(2024, 12, 20),
+      updatedAt: DateTime(2024, 12, 20),
+    ),
+    Transaction(
+      id: 15,
+      isExpense: true,
+      date: DateTime(2024, 12, 15),
+      amount: 85.50,
+      mcc: _sampleMCCs[1], // Transport
+      recipient: 'DB Deutsche Bahn',
+      note: 'Train ticket to Munich',
+      hashtags: [_sampleHashtags[1]], // Travel
+      createdAt: DateTime(2024, 12, 15),
+      updatedAt: DateTime(2024, 12, 15),
+    ),
+
+    // June 2024
+    Transaction(
+      id: 16,
+      isExpense: true,
+      date: DateTime(2024, 6, 20),
+      amount: 1200.00,
+      mcc: _sampleMCCs[1], // Transport
+      recipient: 'Lufthansa Airlines',
+      note: 'Summer vacation to Greece',
+      hashtags: [_sampleHashtags[1]], // Travel
+      createdAt: DateTime(2024, 6, 20),
+      updatedAt: DateTime(2024, 6, 20),
+    ),
+    Transaction(
+      id: 17,
+      isExpense: true,
+      date: DateTime(2024, 6, 15),
+      amount: 320.00,
+      mcc: _sampleMCCs[0], // Shopping
+      recipient: 'IKEA',
+      note: 'New furniture',
+      hashtags: [_sampleHashtags[0]], // Shopping
+      createdAt: DateTime(2024, 6, 15),
+      updatedAt: DateTime(2024, 6, 15),
+    ),
+    Transaction(
+      id: 18,
+      isExpense: false,
+      date: DateTime(2024, 6, 1),
+      amount: 3500.00,
+      mcc: _sampleMCCs[5], // General
+      recipient: 'Company Payroll',
+      note: 'Monthly salary',
+      hashtags: [],
+      createdAt: DateTime(2024, 6, 1),
+      updatedAt: DateTime(2024, 6, 1),
+    ),
+
+    // January 2024
+    Transaction(
+      id: 19,
+      isExpense: true,
+      date: DateTime(2024, 1, 28),
+      amount: 150.00,
+      mcc: _sampleMCCs[0], // Shopping
+      recipient: 'MediaMarkt',
+      note: 'New headphones',
+      hashtags: [_sampleHashtags[0]], // Shopping
+      createdAt: DateTime(2024, 1, 28),
+      updatedAt: DateTime(2024, 1, 28),
+    ),
+    Transaction(
+      id: 20,
+      isExpense: true,
+      date: DateTime(2024, 1, 15),
+      amount: 95.00,
+      mcc: _sampleMCCs[1], // Transport
+      recipient: 'Shell Gas Station',
+      note: 'Fuel',
+      hashtags: [_sampleHashtags[4]], // Transport
+      createdAt: DateTime(2024, 1, 15),
+      updatedAt: DateTime(2024, 1, 15),
+    ),
+    Transaction(
+      id: 21,
+      isExpense: false,
+      date: DateTime(2024, 1, 5),
+      amount: 3500.00,
+      mcc: _sampleMCCs[5], // General
+      recipient: 'Company Payroll',
+      note: 'Monthly salary',
+      hashtags: [],
+      createdAt: DateTime(2024, 1, 5),
+      updatedAt: DateTime(2024, 1, 5),
+    ),
+
+    // === 2023 Transactions ===
+
+    // September 2023
+    Transaction(
+      id: 22,
+      isExpense: true,
+      date: DateTime(2023, 9, 25),
+      amount: 75.00,
+      mcc: _sampleMCCs[0], // Shopping
+      recipient: 'Rewe Supermarket',
+      note: 'Grocery shopping',
+      hashtags: [_sampleHashtags[0], _sampleHashtags[3]], // Shopping, Food
+      createdAt: DateTime(2023, 9, 25),
+      updatedAt: DateTime(2023, 9, 25),
+    ),
+    Transaction(
+      id: 23,
+      isExpense: true,
+      date: DateTime(2023, 9, 10),
+      amount: 250.00,
+      mcc: _sampleMCCs[4], // Crypto
+      recipient: 'Binance Exchange',
+      note: 'Crypto investment',
+      hashtags: [],
+      createdAt: DateTime(2023, 9, 10),
+      updatedAt: DateTime(2023, 9, 10),
+    ),
+    Transaction(
+      id: 24,
+      isExpense: false,
+      date: DateTime(2023, 9, 1),
+      amount: 3200.00,
+      mcc: _sampleMCCs[5], // General
+      recipient: 'Company Payroll',
+      note: 'Monthly salary',
+      hashtags: [],
+      createdAt: DateTime(2023, 9, 1),
+      updatedAt: DateTime(2023, 9, 1),
+    ),
+
+    // March 2023
+    Transaction(
+      id: 25,
+      isExpense: true,
+      date: DateTime(2023, 3, 20),
+      amount: 185.00,
+      mcc: _sampleMCCs[0], // Shopping
+      recipient: 'H&M',
+      note: 'Spring clothes',
+      hashtags: [_sampleHashtags[0]], // Shopping
+      createdAt: DateTime(2023, 3, 20),
+      updatedAt: DateTime(2023, 3, 20),
+    ),
+    Transaction(
+      id: 26,
+      isExpense: true,
+      date: DateTime(2023, 3, 15),
+      amount: 420.00,
+      mcc: _sampleMCCs[1], // Transport
+      recipient: 'Car Service Center',
+      note: 'Annual car service',
+      hashtags: [_sampleHashtags[2], _sampleHashtags[4]], // Repair, Transport
+      createdAt: DateTime(2023, 3, 15),
+      updatedAt: DateTime(2023, 3, 15),
+    ),
+    Transaction(
+      id: 27,
+      isExpense: false,
+      date: DateTime(2023, 3, 1),
+      amount: 3200.00,
+      mcc: _sampleMCCs[5], // General
+      recipient: 'Company Payroll',
+      note: 'Monthly salary',
+      hashtags: [],
+      createdAt: DateTime(2023, 3, 1),
+      updatedAt: DateTime(2023, 3, 1),
+    ),
   ];
 
   /// Get sample transactions

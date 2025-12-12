@@ -92,6 +92,7 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                         Get.offNamed(AppRoutes.home.path);
                       },
                     ),
+                    4.verticalSpace,
                   ],
                 ),
               ),
@@ -101,7 +102,7 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                 controller: _scrollController,
                 child: Column(
                   children: [
-                    27.verticalSpace,
+                    20.verticalSpace,
                     Obx(
                       () => CustomToggleSwitch(
                         option1IconPath: AppIcons.chartSquare,

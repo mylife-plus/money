@@ -35,22 +35,27 @@ class AddEditGroupPopup extends StatefulWidget {
 class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
   final TextEditingController _nameController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode();
+  final TextEditingController _newCategoryController = TextEditingController();
+  final FocusNode _newCategoryFocusNode = FocusNode();
   int? selectedParentGroup;
+  bool isAddingNewCategory = false;
+
+  // Special values for dropdown
+  static const int _selectCategoryValue = -1;
+  static const int _addCategoryValue = -2;
 
   @override
   void initState() {
     super.initState();
     _nameController.text = widget.initialName ?? '';
     if (widget.groupList != null && widget.groupList!.isNotEmpty) {
-      selectedParentGroup = widget.parentId;
+      selectedParentGroup = widget.parentId ?? _selectCategoryValue;
     }
 
     // Auto-focus name field
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.groupList == null || widget.groupList!.isEmpty) {
         _nameFocusNode.requestFocus();
-      } else {
-        selectedParentGroup = widget.parentId;
       }
 
       // Position cursor at the end
@@ -64,6 +69,8 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
   void dispose() {
     _nameController.dispose();
     _nameFocusNode.dispose();
+    _newCategoryController.dispose();
+    _newCategoryFocusNode.dispose();
     super.dispose();
   }
 
@@ -80,7 +87,33 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
       return;
     }
 
-    widget.onSave?.call(name, selectedParentGroup);
+    // If adding new category, validate and use the new category name
+    if (isAddingNewCategory) {
+      final newCategoryName = _newCategoryController.text.trim();
+      if (newCategoryName.isEmpty) {
+        Get.snackbar(
+          'Validation Error',
+          'Please enter a category name',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+      // For new category, we'll pass null as parentId
+      // and the caller should handle creating the new category
+      widget.onSave?.call(name, null);
+    } else if (selectedParentGroup == _selectCategoryValue) {
+      Get.snackbar(
+        'Validation Error',
+        'Please select a category',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    } else {
+      widget.onSave?.call(name, selectedParentGroup);
+    }
+
     Navigator.of(context).pop();
   }
 
@@ -161,55 +194,114 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: StatefulBuilder(
-                  builder: (context, setStateSB) {
-                    // default to provided parentId, otherwise the first group's id
-
-                    return DropdownButtonHideUnderline(
-                      child: DropdownButton<int?>(
-                        value:
-                            selectedParentGroup ??
-                            (widget.groupList!.isNotEmpty
-                                ? widget.groupList!.first.id
-                                : null),
-                        isExpanded: true,
-                        icon: Icon(
-                          Icons.keyboard_arrow_down,
-                          color: uiController.currentMainColor,
-                        ),
-                        items: widget.groupList!
-                            .map(
-                              (group) => DropdownMenuItem<int?>(
-                                value: group.id,
-                                child: Text(
-                                  group.name,
-                                  style: GoogleFonts.kumbhSans(
-                                    color: uiController.darkMode.value
-                                        ? Colors.white
-                                        : Colors.black,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (val) {
-                          setStateSB(() {
-                            selectedParentGroup = val;
-                          });
-                        },
-                        hint: Text(
-                          'Select Parent Group',
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int?>(
+                    value: selectedParentGroup,
+                    isExpanded: true,
+                    icon: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: uiController.currentMainColor,
+                    ),
+                    items: [
+                      // "Select category" option
+                      DropdownMenuItem<int?>(
+                        value: _selectCategoryValue,
+                        child: Text(
+                          'Select category',
                           style: GoogleFonts.kumbhSans(
                             color: Colors.grey.shade600,
+                            fontSize: 16,
                           ),
                         ),
                       ),
-                    );
-                  },
+                      // "Add category" option
+                      DropdownMenuItem<int?>(
+                        value: _addCategoryValue,
+                        child: Text(
+                          'Add category',
+                          style: GoogleFonts.kumbhSans(
+                            color: uiController.currentMainColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      // Existing categories
+                      ...widget.groupList!.map(
+                        (group) => DropdownMenuItem<int?>(
+                          value: group.id,
+                          child: Text(
+                            group.name,
+                            style: GoogleFonts.kumbhSans(
+                              color: uiController.darkMode.value
+                                  ? Colors.white
+                                  : Colors.black,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        selectedParentGroup = val;
+                        isAddingNewCategory = val == _addCategoryValue;
+
+                        // Focus on new category field when "Add category" is selected
+                        if (isAddingNewCategory) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _newCategoryFocusNode.requestFocus();
+                          });
+                        }
+                      });
+                    },
+                  ),
                 ),
               ),
               6.verticalSpace,
+
+              // New category text field (shown when "Add category" is selected)
+              if (isAddingNewCategory) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: TextSelectionTheme(
+                    data: TextSelectionThemeData(
+                      cursorColor: uiController.currentMainColor,
+                      selectionColor: uiController.currentMainColor.withValues(
+                        alpha: 0.3,
+                      ),
+                      selectionHandleColor: uiController.currentMainColor,
+                    ),
+                    child: TextField(
+                      controller: _newCategoryController,
+                      focusNode: _newCategoryFocusNode,
+                      style: GoogleFonts.kumbhSans(
+                        color: uiController.darkMode.value
+                            ? Colors.white
+                            : Colors.black,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter new category name',
+                        hintStyle: GoogleFonts.kumbhSans(
+                          color: Colors.grey.shade400,
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ),
+                6.verticalSpace,
+              ],
             ],
             // Name input field
             Container(

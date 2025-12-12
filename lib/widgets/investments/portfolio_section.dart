@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/models/investment_data.dart';
 import 'package:moneyapp/routes/app_routes.dart';
@@ -22,7 +23,7 @@ class PortfolioSection extends StatelessWidget {
         38.verticalSpace,
         Container(
           margin: EdgeInsets.symmetric(horizontal: 7.w),
-          padding: EdgeInsets.fromLTRB(13, 8, 0, 8),
+          padding: EdgeInsets.fromLTRB(5.w, 8.h, 20.w, 5.h),
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border.all(color: Color(0xffE3E3E3)),
@@ -57,9 +58,7 @@ class PortfolioSection extends StatelessWidget {
                       '12.10.2025',
                       size: 14.sp,
                       fontWeight: FontWeight.normal,
-                      color: isPortfolioSelected
-                          ? Color(0xffFF0000)
-                          : Color(0xff00C00D),
+                      color: AppColors.greyColor,
                     ),
                   ),
                 ],
@@ -139,19 +138,21 @@ class PortfolioSection extends StatelessWidget {
         ),
         25.verticalSpace,
         Padding(
-          padding: EdgeInsets.only(left: 9.w, right: 29.w),
+          padding: EdgeInsets.only(left: 9.w, right: 9.w),
           child: Row(
             children: [
               Expanded(
-                flex: 110,
+                flex: 100,
                 child: CustomText(
                   'Investment',
+                  textAlign: TextAlign.center,
+
                   color: Color(0xffCCCCCC),
                   size: 14.sp,
                 ),
               ),
               Expanded(
-                flex: 110,
+                flex: 100,
                 child: CustomText(
                   textAlign: TextAlign.center,
                   'Amount/Price',
@@ -161,7 +162,7 @@ class PortfolioSection extends StatelessWidget {
               ),
 
               Expanded(
-                flex: 120,
+                flex: 150,
                 child: CustomText(
                   'Total',
                   textAlign: TextAlign.center,

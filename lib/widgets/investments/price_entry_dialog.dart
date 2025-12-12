@@ -2,21 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_theme.dart';
-import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class PriceEntryDialog extends StatefulWidget {
   final DateTime? initialDate;
   final String? initialPrice;
   final Function(DateTime date, String price) onSave;
+  final VoidCallback? onDelete;
 
   const PriceEntryDialog({
     super.key,
     this.initialDate,
     this.initialPrice,
     required this.onSave,
+    this.onDelete,
   });
 
   @override
@@ -41,11 +42,21 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await DatePickerHelper.showStyledDatePicker(
-      context,
+    final picked = await showDatePicker(
+      context: context,
       initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: Colors.black),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -74,17 +85,65 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
       return;
     }
 
-    widget.onSave(selectedDate!, priceController.text.trim());
     Get.back();
+    widget.onSave(selectedDate!, priceController.text.trim());
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        title: CustomText(
+          'Delete Price Entry',
+          size: 18.sp,
+          fontWeight: FontWeight.w600,
+        ),
+        content: CustomText(
+          'Are you sure you want to delete this price entry? This action cannot be undone.',
+          size: 14.sp,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: CustomText(
+              'Cancel',
+              size: 14.sp,
+              color: const Color(0xff707070),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: CustomText(
+              'Delete',
+              size: 14.sp,
+              color: const Color(0xffFF0000),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (confirmed == true && widget.onDelete != null) {
+      widget.onDelete!();
+      Get.back();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditMode = widget.initialDate != null;
+
     return Dialog(
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       child: Container(
-        padding: EdgeInsets.all(20.w),
+        width: double.infinity,
+        padding: EdgeInsets.all(16.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,9 +153,9 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CustomText(
-                  widget.initialDate == null ? 'Add Price' : 'Edit Price',
+                  isEditMode ? 'Edit Price' : 'Add Price',
                   size: 18.sp,
-                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
                 ),
                 InkWell(
                   onTap: () => Get.back(),
@@ -104,114 +163,149 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
                 ),
               ],
             ),
-            20.verticalSpace,
-
+            18.verticalSpace,
             // Date Field
-            CustomText('Date', size: 14.sp, fontWeight: FontWeight.w500),
-            8.verticalSpace,
-            InkWell(
-              onTap: _pickDate,
-              child: Container(
-                height: 41.h,
-                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xffDFDFDF)),
-                  borderRadius: BorderRadius.circular(6.r),
-                ),
-                child: Row(
-                  children: [
-                    Image.asset(AppIcons.dateIcon, height: 20.r, width: 20.r),
-                    10.horizontalSpace,
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CustomText(
-                            selectedDate == null
-                                ? 'Select date'
-                                : DateFormat(
-                                    'dd.MM.yyyy',
-                                  ).format(selectedDate!),
-                            size: 16.sp,
-                            color: selectedDate == null
-                                ? Color(0xffB4B4B4)
-                                : Colors.black,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            16.verticalSpace,
-
-            // Price Field
-            CustomText('Price', size: 14.sp, fontWeight: FontWeight.w500),
-            8.verticalSpace,
             Container(
               height: 41.h,
               padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: const Color(0xffDFDFDF)),
-                borderRadius: BorderRadius.circular(6.r),
+                border: Border.all(color: AppColors.greyBorder),
+                borderRadius: BorderRadius.circular(4.r),
               ),
               child: TextField(
-                controller: priceController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                controller: TextEditingController(
+                  text: selectedDate != null
+                      ? DateFormat('dd.MM.yyyy').format(selectedDate!)
+                      : '',
+                ),
+                readOnly: true,
+                onTap: _pickDate,
                 decoration: InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Enter price',
-                  labelText: 'Price',
+                  hintText: 'Select Date',
+                  labelText: 'Date',
                   labelStyle: TextStyle(
-                    color: Color(0xffB4B4B4),
+                    color: AppColors.greyColor,
                     fontSize: 16.sp,
                   ),
                   hintStyle: TextStyle(
-                    color: Color(0xffB4B4B4),
+                    color: AppColors.greyColor,
                     fontSize: 16.sp,
                   ),
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
                 ),
                 style: TextStyle(fontSize: 16.sp),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            7.verticalSpace,
+
+            // Price Field
+            Container(
+              height: 41.h,
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.greyBorder),
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+              child: TextField(
+                controller: priceController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Price',
+                  labelText: 'Price',
+                  labelStyle: TextStyle(
+                    color: AppColors.greyColor,
+                    fontSize: 16.sp,
+                  ),
+                  hintStyle: TextStyle(
+                    color: AppColors.greyColor,
+                    fontSize: 16.sp,
+                  ),
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  suffixText: 'EUR',
+                  suffixStyle: TextStyle(
+                    color: AppColors.greyColor,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                style: TextStyle(fontSize: 16.sp),
+                textAlign: TextAlign.end,
               ),
             ),
 
-            24.verticalSpace,
+            23.verticalSpace,
 
-            // Save Button
-            Center(
-              child: InkWell(
-                onTap: _save,
-                child: Container(
-                  width: 136.w,
-                  height: 44.h,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff0088FF),
-                    borderRadius: BorderRadius.circular(13.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+            // Buttons
+            Row(
+              mainAxisAlignment: isEditMode
+                  ? MainAxisAlignment.spaceBetween
+                  : MainAxisAlignment.center,
+              children: [
+                if (isEditMode && widget.onDelete != null)
+                  Expanded(
+                    child: InkWell(
+                      onTap: _delete,
+                      child: Container(
+                        width: 120.w,
+                        height: 41.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffFFFFFF),
+                          borderRadius: BorderRadius.circular(13.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 4,
+                              offset: const Offset(0, 0),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: CustomText(
+                            'Delete',
+                            size: 16.sp,
+                            color: const Color(0xffFF0000),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                  child: Center(
-                    child: CustomText(
-                      'Save',
-                      size: 20.sp,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
+                if (isEditMode && widget.onDelete != null) 16.horizontalSpace,
+                Expanded(
+                  child: InkWell(
+                    onTap: _save,
+                    child: Container(
+                      width: 120.w,
+                      height: 41.h,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffFFFFFF),
+                        borderRadius: BorderRadius.circular(13.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: CustomText(
+                          isEditMode ? 'Save' : 'Add',
+                          size: 16.sp,
+                          color: const Color(0xff0071FF),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

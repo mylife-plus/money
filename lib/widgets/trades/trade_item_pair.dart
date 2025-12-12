@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class TradeItemPair extends StatelessWidget {
@@ -47,60 +48,65 @@ class TradeItemPair extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                flex: 65,
+                flex: 100,
                 child: CustomText(
                   'sold',
                   color: Color(0xffFF0000),
                   size: 16.sp,
                 ),
               ),
+
               Expanded(
-                flex: 99,
-                child: CustomText.richText(
-                  textAlign: TextAlign.center,
+                flex: 100,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    CustomText.span(
-                      '$soldAmount ',
-                      color: Colors.black,
-                      size: 16.sp,
+                    CustomText.richText(
+                      textAlign: TextAlign.center,
+                      children: [
+                        CustomText.span(
+                          '$soldAmount ',
+                          color: Colors.black,
+                          size: 16.sp,
+                        ),
+                        CustomText.span(
+                          soldSymbol,
+                          color: AppColors.greyColor,
+                          size: 12.sp,
+                        ),
+                      ],
                     ),
-                    CustomText.span(
-                      soldSymbol,
-                      color: Color(0xff929292),
-                      size: 12.sp,
+                    CustomText.richText(
+                      children: [
+                        CustomText.span(
+                          '$soldPrice ',
+                          color: Colors.black,
+                          size: 16.sp,
+                        ),
+                        CustomText.span(
+                          soldPriceSymbol,
+                          color: AppColors.greyColor,
+                          size: 12.sp,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               Expanded(
-                flex: 102,
+                flex: 150,
                 child: CustomText.richText(
-                  children: [
-                    CustomText.span(
-                      '$soldPrice ',
-                      color: Colors.black,
-                      size: 16.sp,
-                    ),
-                    CustomText.span(
-                      soldPriceSymbol,
-                      color: Color(0xff929292),
-                      size: 12.sp,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 87,
-                child: CustomText.richText(
+                  textAlign: TextAlign.right,
                   children: [
                     CustomText.span(
                       '$soldTotal ',
                       color: Colors.black,
-                      size: 16.sp,
+                      size: 18.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                     CustomText.span(
                       soldTotalSymbol,
-                      color: Color(0xff929292),
+                      color: AppColors.greyColor,
                       size: 12.sp,
                     ),
                   ],
@@ -120,60 +126,65 @@ class TradeItemPair extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                flex: 65,
+                flex: 100,
                 child: CustomText(
                   'bought',
                   color: Color(0xff00C00D),
                   size: 16.sp,
                 ),
               ),
+
               Expanded(
-                flex: 99,
-                child: CustomText.richText(
-                  textAlign: TextAlign.center,
+                flex: 100,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    CustomText.span(
-                      '$boughtAmount ',
-                      color: Colors.black,
-                      size: 16.sp,
+                    CustomText.richText(
+                      textAlign: TextAlign.right,
+                      children: [
+                        CustomText.span(
+                          '$boughtAmount ',
+                          color: Colors.black,
+                          size: 16.sp,
+                        ),
+                        CustomText.span(
+                          boughtSymbol,
+                          color: AppColors.greyColor,
+                          size: 12.sp,
+                        ),
+                      ],
                     ),
-                    CustomText.span(
-                      boughtSymbol,
-                      color: Color(0xff929292),
-                      size: 12.sp,
+                    CustomText.richText(
+                      children: [
+                        CustomText.span(
+                          '$boughtPrice ',
+                          color: Colors.black,
+                          size: 16.sp,
+                        ),
+                        CustomText.span(
+                          boughtPriceSymbol,
+                          color: AppColors.greyColor,
+                          size: 12.sp,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               Expanded(
-                flex: 102,
+                flex: 150,
                 child: CustomText.richText(
-                  children: [
-                    CustomText.span(
-                      '$boughtPrice ',
-                      color: Colors.black,
-                      size: 16.sp,
-                    ),
-                    CustomText.span(
-                      boughtPriceSymbol,
-                      color: Color(0xff929292),
-                      size: 12.sp,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 87,
-                child: CustomText.richText(
+                  textAlign: TextAlign.right,
                   children: [
                     CustomText.span(
                       '$boughtTotal ',
                       color: Colors.black,
-                      size: 16.sp,
+                      size: 18.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                     CustomText.span(
                       boughtTotalSymbol,
-                      color: Color(0xff929292),
+                      color: AppColors.greyColor,
                       size: 12.sp,
                     ),
                   ],

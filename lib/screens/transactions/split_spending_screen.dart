@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
@@ -303,7 +304,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isIncome ? const Color(0xffEEFFEE) : const Color(0xffFFEEEE),
+        color: isIncome ? const Color(0xffE5FFE7) : const Color(0xffFFEEEE),
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: Padding(
@@ -319,56 +320,74 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                 children: [
                   Row(
                     children: [
-                      InkWell(
-                        onTap: () {
-                          DatePickerHelper.showStyledDatePicker(
-                            context,
-                            initialDate: item.date,
-                          ).then((pickedDate) {
-                            if (pickedDate != null) {
+                      Container(
+                        height: 41.h,
+                        width: 109.w,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 7.w,
+                          vertical: 2.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: AppColors.greyBorder),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                        child: TextField(
+                          controller: TextEditingController(
+                            text: item.date != null
+                                ? DateFormat('dd.MM.yyyy').format(item.date!)
+                                : '',
+                          ),
+                          readOnly: true,
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: item.date ?? DateTime.now(),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    textButtonTheme: TextButtonThemeData(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
                               setState(() {
-                                item.date = pickedDate;
+                                item.date = picked;
                               });
                             }
-                          });
-                        },
-                        child: Container(
-                          height: 41.h,
-                          width: 109.w,
-                          padding: EdgeInsets.only(left: 7.w, right: 12.w),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: const Color(0xffDFDFDF)),
-                            borderRadius: BorderRadius.circular(6.r),
-                          ),
-                          child: Center(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (item.date != null)
-                                  CustomText(
-                                    'Date',
-                                    size: 12.sp,
-                                    color: const Color(0xffC1C1C1),
-                                  ),
-                                CustomText(
-                                  item.date == null
-                                      ? 'select Date'
-                                      : DateFormat(
-                                          'dd.MM.yyyy',
-                                        ).format(item.date!),
-                                  size: 16.sp,
-                                  color: item.date == null
-                                      ? const Color(0xffB4B4B4)
-                                      : Colors.black,
-                                ),
-                              ],
+                          },
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Select Date',
+                            labelText: 'Date',
+                            labelStyle: TextStyle(
+                              color: AppColors.greyColor,
+                              fontSize: 16.sp,
+                            ),
+                            hintStyle: TextStyle(
+                              color: AppColors.greyColor,
+                              fontSize: 16.sp,
+                            ),
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            suffixStyle: TextStyle(
+                              color: AppColors.greyColor,
+                              fontSize: 16.sp,
                             ),
                           ),
+                          style: TextStyle(fontSize: 16.sp),
+                          textAlign: TextAlign.end,
                         ),
                       ),
-                      10.horizontalSpace,
+                      8.horizontalSpace,
                       Expanded(
                         child: Container(
                           height: 41.h,
@@ -378,8 +397,8 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            border: Border.all(color: const Color(0xffDFDFDF)),
-                            borderRadius: BorderRadius.circular(6.r),
+                            border: Border.all(color: AppColors.greyBorder),
+                            borderRadius: BorderRadius.circular(4.r),
                           ),
                           child: TextField(
                             controller: item.amountController,
@@ -396,17 +415,17 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                                     : const Color(0xffFF0000),
                               ),
                               labelStyle: TextStyle(
-                                color: const Color(0xffB4B4B4),
+                                color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               hintStyle: TextStyle(
-                                color: const Color(0xffB4B4B4),
+                                color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                               suffixStyle: TextStyle(
-                                color: const Color(0xffB4B4B4),
+                                color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               suffixText: 'EUR',
@@ -436,7 +455,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                           width: 35.h,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            border: Border.all(color: const Color(0xffDFDFDF)),
+                            border: Border.all(color: AppColors.greyBorder),
                             borderRadius: BorderRadius.circular(4.r),
                             boxShadow: [
                               BoxShadow(
@@ -451,7 +470,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                               CustomText(
                                 'MCC',
                                 size: 12.sp,
-                                color: const Color(0xffC1C1C1),
+                                color: AppColors.greyColor,
                               ),
                               3.verticalSpace,
                               Center(
@@ -478,7 +497,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            border: Border.all(color: const Color(0xffDFDFDF)),
+                            border: Border.all(color: AppColors.greyBorder),
                             borderRadius: BorderRadius.circular(4.r),
                           ),
                           child: TextField(
@@ -488,11 +507,11 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                               hintText: 'Recipient',
                               labelText: 'Recipient',
                               labelStyle: TextStyle(
-                                color: const Color(0xffB4B4B4),
+                                color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               hintStyle: TextStyle(
-                                color: const Color(0xffB4B4B4),
+                                color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               isDense: true,
@@ -513,7 +532,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      border: Border.all(color: const Color(0xffDFDFDF)),
+                      border: Border.all(color: AppColors.greyBorder),
                       borderRadius: BorderRadius.circular(4.r),
                     ),
                     child: TextField(
@@ -523,11 +542,11 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                         hintText: 'Note',
                         labelText: 'Note',
                         labelStyle: TextStyle(
-                          color: const Color(0xffB4B4B4),
+                          color: AppColors.greyColor,
                           fontSize: 16.sp,
                         ),
                         hintStyle: TextStyle(
-                          color: const Color(0xffB4B4B4),
+                          color: AppColors.greyColor,
                           fontSize: 16.sp,
                         ),
                         isDense: true,
@@ -681,8 +700,8 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                         child: InkWell(
                           onTap: _saveTransaction,
                           child: Container(
-                            width: 136.w,
-                            height: 44.h,
+                            width: 120.w,
+                            height: 41.h,
                             decoration: BoxDecoration(
                               color: const Color(0xffFFFFFF),
                               borderRadius: BorderRadius.circular(13.r),
@@ -697,9 +716,9 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                             child: Center(
                               child: CustomText(
                                 'confirm',
-                                size: 20.sp,
+                                size: 16.sp,
                                 color: const Color(0xff0071FF),
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),

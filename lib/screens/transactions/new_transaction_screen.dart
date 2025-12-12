@@ -219,57 +219,76 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                       12.verticalSpace,
                       Row(
                         children: [
-                          InkWell(
-                            onTap: () {
-                              DatePickerHelper.showStyledDatePicker(
-                                context,
-                                initialDate: selectedDate,
-                              ).then((pickedDate) {
-                                if (pickedDate != null) {
+                          Container(
+                            height: 41.h,
+                            width: 109.w,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 7.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: AppColors.greyBorder),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: selectedDate != null
+                                    ? DateFormat(
+                                        'dd.MM.yyyy',
+                                      ).format(selectedDate!)
+                                    : '',
+                              ),
+                              readOnly: true,
+                              onTap: () async {
+                                final DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: selectedDate ?? DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime.now(),
+                                  builder: (context, child) {
+                                    return Theme(
+                                      data: Theme.of(context).copyWith(
+                                        textButtonTheme: TextButtonThemeData(
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        ),
+                                      ),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+                                if (picked != null) {
                                   setState(() {
-                                    selectedDate = pickedDate;
+                                    selectedDate = picked;
                                   });
                                 }
-                              });
-                            },
-                            child: Container(
-                              height: 41.h,
-                              width: 109.w,
-                              padding: EdgeInsets.only(left: 7.w, right: 12.w),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: Color(0xffDFDFDF)),
-                                borderRadius: BorderRadius.circular(6.r),
-                              ),
-
-                              child: Center(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (selectedDate != null)
-                                      CustomText(
-                                        'Date',
-                                        size: 12.sp,
-                                        color: Color(0xffC1C1C1),
-                                      ),
-                                    CustomText(
-                                      selectedDate == null
-                                          ? 'select Date'
-                                          : DateFormat(
-                                              'dd.MM.yyyy',
-                                            ).format(selectedDate!),
-                                      size: 16.sp,
-                                      color: selectedDate == null
-                                          ? Color(0xffB4B4B4)
-                                          : Colors.black,
-                                    ),
-                                  ],
+                              },
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                hintText: 'Select Date',
+                                labelText: 'Date',
+                                labelStyle: TextStyle(
+                                  color: AppColors.greyColor,
+                                  fontSize: 16.sp,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: AppColors.greyColor,
+                                  fontSize: 16.sp,
+                                ),
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                                suffixStyle: TextStyle(
+                                  color: AppColors.greyColor,
+                                  fontSize: 16.sp,
                                 ),
                               ),
+                              style: TextStyle(fontSize: 16.sp),
+                              textAlign: TextAlign.end,
                             ),
                           ),
-                          10.horizontalSpace,
+                          8.horizontalSpace,
                           InkWell(
                             onTap: () {
                               setState(() {
@@ -282,7 +301,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4.r),
                                 border: Border.all(
-                                  color: const Color(0xffDFDFDF),
+                                  color: AppColors.greyBorder,
                                   width: 1,
                                 ),
                                 color: Colors.white,
@@ -318,10 +337,8 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                border: Border.all(
-                                  color: const Color(0xffDFDFDF),
-                                ),
-                                borderRadius: BorderRadius.circular(6.r),
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
                               ),
                               child: TextField(
                                 controller: amountController,
@@ -332,17 +349,17 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                       ? 'Income'
                                       : 'Spending',
                                   labelStyle: TextStyle(
-                                    color: Color(0xffB4B4B4),
+                                    color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                   hintStyle: TextStyle(
-                                    color: Color(0xffB4B4B4),
+                                    color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
                                   suffixStyle: TextStyle(
-                                    color: Color(0xffB4B4B4),
+                                    color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                   suffixText: 'EUR',
@@ -373,9 +390,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                               width: 35.h,
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                border: Border.all(
-                                  color: const Color(0xffDFDFDF),
-                                ),
+                                border: Border.all(color: AppColors.greyBorder),
                                 borderRadius: BorderRadius.circular(4.r),
                                 boxShadow: [
                                   BoxShadow(
@@ -419,9 +434,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                border: Border.all(
-                                  color: const Color(0xffDFDFDF),
-                                ),
+                                border: Border.all(color: AppColors.greyBorder),
                                 borderRadius: BorderRadius.circular(4.r),
                               ),
                               child: TextField(
@@ -431,11 +444,11 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                   hintText: 'Recipient',
                                   labelText: 'Recipient',
                                   labelStyle: TextStyle(
-                                    color: Color(0xffB4B4B4),
+                                    color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                   hintStyle: TextStyle(
-                                    color: Color(0xffB4B4B4),
+                                    color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                   isDense: true,
@@ -457,7 +470,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          border: Border.all(color: const Color(0xffDFDFDF)),
+                          border: Border.all(color: AppColors.greyBorder),
                           borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: TextField(
@@ -467,11 +480,11 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                             hintText: 'Note',
                             labelText: 'Note',
                             labelStyle: TextStyle(
-                              color: Color(0xffB4B4B4),
+                              color: AppColors.greyColor,
                               fontSize: 16.sp,
                             ),
                             hintStyle: TextStyle(
-                              color: Color(0xffB4B4B4),
+                              color: AppColors.greyColor,
                               fontSize: 16.sp,
                             ),
                             isDense: true,
@@ -480,7 +493,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                           style: TextStyle(fontSize: 16.sp),
                         ),
                       ),
-                      10.verticalSpace,
+                      7.verticalSpace,
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -492,10 +505,13 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                           ),
                           InkWell(
                             onTap: _showHashtagSelectionDialog,
-                            child: Image.asset(
-                              AppIcons.plus,
-                              width: 16.w,
-                              height: 16.h,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                AppIcons.plus,
+                                width: 16.w,
+                                height: 16.h,
+                              ),
                             ),
                           ),
                         ],
@@ -536,8 +552,8 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                       InkWell(
                         onTap: _saveTransaction,
                         child: Container(
-                          width: 136.w,
-                          height: 44.h,
+                          width: 120.w,
+                          height: 41.h,
                           decoration: BoxDecoration(
                             color: const Color(0xffFFFFFF),
                             borderRadius: BorderRadius.circular(13.r),
@@ -552,9 +568,9 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                           child: Center(
                             child: CustomText(
                               isEditMode ? 'Save' : 'Add',
-                              size: 20.sp,
+                              size: 16.sp,
                               color: Color(0xff0071FF),
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ),

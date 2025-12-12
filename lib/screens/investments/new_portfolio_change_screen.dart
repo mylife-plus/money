@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
-import 'package:moneyapp/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/investments/investment_selector_button.dart';
 import 'package:moneyapp/widgets/trades/trade_transaction_toggle_switch_.dart';
@@ -188,50 +187,69 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                     child: Column(
                       children: [
                         Center(
-                          child: InkWell(
-                            onTap: () {
-                              DatePickerHelper.showStyledDatePicker(
-                                context,
-                                initialDate: selectedDate,
-                              ).then((pickedDate) {
-                                if (pickedDate != null) {
+                          child: Container(
+                            height: 41.h,
+                            width: 109.w,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 7.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: AppColors.greyBorder),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: selectedDate != null
+                                    ? DateFormat(
+                                        'dd.MM.yyyy',
+                                      ).format(selectedDate!)
+                                    : '',
+                              ),
+                              readOnly: true,
+                              onTap: () async {
+                                final DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: selectedDate ?? DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime.now(),
+                                  builder: (context, child) {
+                                    return Theme(
+                                      data: Theme.of(context).copyWith(
+                                        textButtonTheme: TextButtonThemeData(
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        ),
+                                      ),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+                                if (picked != null) {
                                   setState(() {
-                                    selectedDate = pickedDate;
+                                    selectedDate = picked;
                                   });
                                 }
-                              });
-                            },
-                            child: Container(
-                              // width: 100.w,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 5.w,
-                                vertical: 4.h,
+                              },
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                hintText: 'Select Date',
+                                labelText: 'Date',
+                                labelStyle: TextStyle(
+                                  color: AppColors.greyColor,
+                                  fontSize: 16.sp,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: AppColors.greyColor,
+                                  fontSize: 16.sp,
+                                ),
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
                               ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: AppColors.greyBorder),
-                                borderRadius: BorderRadius.circular(6.r),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CustomText(
-                                    'Date',
-                                    color: AppColors.greyColor,
-                                    size: 12.sp,
-                                  ),
-                                  CustomText(
-                                    selectedDate == null
-                                        ? 'select Date'
-                                        : DateFormat(
-                                            'dd.MM.yyyy',
-                                          ).format(selectedDate!),
-                                    size: 20.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.black,
-                                  ),
-                                ],
-                              ),
+                              style: TextStyle(fontSize: 16.sp),
+                              textAlign: TextAlign.end,
                             ),
                           ),
                         ),
@@ -263,7 +281,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                       color: Color(0xffFF0000),
                                       size: 16.sp,
                                     ),
-                                    6.verticalSpace,
+                                    7.verticalSpace,
                                     Row(
                                       children: [
                                         Expanded(
@@ -287,7 +305,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         ),
                                       ],
                                     ),
-                                    6.verticalSpace,
+                                    7.verticalSpace,
                                     Row(
                                       children: [
                                         Expanded(
@@ -309,7 +327,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         ),
                                       ],
                                     ),
-                                    9.verticalSpace,
+                                    7.verticalSpace,
                                   ],
                                 ),
                               ),
@@ -333,10 +351,10 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                   children: [
                                     CustomText(
                                       'bought',
-                                      color: Color(0xff009E0B),
+                                      color: Color(0xff00C00D),
                                       size: 16.sp,
                                     ),
-                                    6.verticalSpace,
+                                    7.verticalSpace,
                                     Row(
                                       children: [
                                         Expanded(
@@ -360,7 +378,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         ),
                                       ],
                                     ),
-                                    6.verticalSpace,
+                                    7.verticalSpace,
                                     Row(
                                       children: [
                                         Expanded(
@@ -382,7 +400,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         ),
                                       ],
                                     ),
-                                    9.verticalSpace,
+                                    7.verticalSpace,
                                   ],
                                 ),
                               ),
@@ -392,8 +410,8 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                           // Transaction Section
                           Container(
                             padding: EdgeInsets.symmetric(
-                              horizontal: 16.w,
-                              vertical: 5.h,
+                              horizontal: 15.w,
+                              vertical: 6.h,
                             ),
                             decoration: BoxDecoration(
                               color: isAddingInvestment
@@ -455,16 +473,15 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                           ? 'Income'
                                           : 'Spending',
                                       size: 16.sp,
-                                      fontWeight: FontWeight.w500,
                                       color: isAddingInvestment
                                           ? Color(0xff00C00D)
                                           : Color(0xffFF0000),
                                     ),
                                   ],
                                 ),
-                                6.verticalSpace,
+                                7.verticalSpace,
                                 buildDescriptionField(),
-                                6.verticalSpace,
+                                7.verticalSpace,
                                 Row(
                                   children: [
                                     Expanded(
@@ -472,7 +489,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         'Amount',
                                         '0.00',
                                         showCurrencySymbol: true,
-                                        controller: _priceController,
+                                        controller: _amountController,
                                       ),
                                     ),
                                     4.horizontalSpace,
@@ -490,7 +507,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                     ),
                                   ],
                                 ),
-                                4.verticalSpace,
+                                7.verticalSpace,
                                 Row(
                                   children: [
                                     Expanded(
@@ -512,6 +529,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                     ),
                                   ],
                                 ),
+                                7.verticalSpace,
                               ],
                             ),
                           ),
@@ -523,8 +541,8 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                             Get.back();
                           },
                           child: Container(
-                            width: 136.w,
-                            height: 44.h,
+                            width: 120.w,
+                            height: 41.h,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(13.r),
@@ -539,9 +557,9 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                             child: Center(
                               child: CustomText(
                                 'add',
-                                size: 20.sp,
+                                size: 16.sp,
                                 color: Color(0xff0071FF),
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),

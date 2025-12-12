@@ -3,8 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_theme.dart';
 import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
+import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/services/hashtag_group_service.dart';
+import 'package:moneyapp/widgets/common/add_edit_group_popup.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class HashtagSelectionDialog extends StatefulWidget {
@@ -19,9 +22,10 @@ class HashtagSelectionDialog extends StatefulWidget {
 class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
   final HashtagGroupsController hashtagController =
       Get.find<HashtagGroupsController>();
+  final HashtagGroupService _hashtagGroupService = HashtagGroupService();
   final TextEditingController searchController = TextEditingController();
   List<HashtagGroup> filteredHashtags = [];
-  int? selectedCategoryId;
+  List<HashtagGroup> allHashtags = [];
 
   @override
   void initState() {
@@ -31,19 +35,33 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
   }
 
   void _initializeHashtags() {
-    // Get all hashtags (both main groups and subgroups) in a flat list
-    final allGroups = hashtagController.allGroups;
-    filteredHashtags = [];
-
-    for (final mainGroup in allGroups) {
-      // Add the main group itself
-      filteredHashtags.add(mainGroup);
-
-      // Add all subgroups
+    // Get all subgroups (hashtags) from all main groups
+    allHashtags = [];
+    for (final mainGroup in hashtagController.allGroups) {
       if (mainGroup.subgroups != null && mainGroup.subgroups!.isNotEmpty) {
-        filteredHashtags.addAll(mainGroup.subgroups!);
+        allHashtags.addAll(mainGroup.subgroups!);
       }
     }
+
+    // Initially show only first 5
+    setState(() {
+      filteredHashtags = allHashtags.take(5).toList();
+    });
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      if (searchController.text.isEmpty) {
+        // Show only first 5 when no search
+        filteredHashtags = allHashtags.take(5).toList();
+      } else {
+        // Show all matching results when searching
+        final searchText = searchController.text.toLowerCase();
+        filteredHashtags = allHashtags.where((hashtag) {
+          return hashtag.name.toLowerCase().contains(searchText);
+        }).toList();
+      }
+    });
   }
 
   @override
@@ -51,40 +69,6 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
     searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.dispose();
-  }
-
-  void _onSearchChanged() {
-    setState(() {
-      if (searchController.text.isEmpty) {
-        if (selectedCategoryId != null) {
-          // Filter by selected main category
-          filteredHashtags = [];
-          final mainGroup = hashtagController.allGroups.firstWhereOrNull(
-            (g) => g.id == selectedCategoryId,
-          );
-          if (mainGroup != null) {
-            filteredHashtags.add(mainGroup);
-            if (mainGroup.subgroups != null) {
-              filteredHashtags.addAll(mainGroup.subgroups!);
-            }
-          }
-        } else {
-          _initializeHashtags();
-        }
-      } else {
-        // Search through all hashtags
-        final searchText = searchController.text.toLowerCase();
-        _initializeHashtags();
-        filteredHashtags = filteredHashtags.where((hashtag) {
-          final matchesSearch = hashtag.name.toLowerCase().contains(searchText);
-          final matchesCategory =
-              selectedCategoryId == null ||
-              hashtag.id == selectedCategoryId ||
-              hashtag.parentId == selectedCategoryId;
-          return matchesSearch && matchesCategory;
-        }).toList();
-      }
-    });
   }
 
   String _getCategoryName(HashtagGroup hashtag) {
@@ -96,6 +80,94 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
       );
       return mainGroup?.name ?? 'Unknown';
     }
+  }
+
+  Future<void> _showAddHashtagDialog() async {
+    // Ensure UiController is available
+    if (!Get.isRegistered<UiController>()) {
+      Get.put(UiController());
+    }
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AddEditGroupPopup(
+          isHashtagMode: true,
+          isMainGroup: false,
+          groupList: hashtagController.allGroups,
+          onSave: (name, parentId) async {
+            if (name.isEmpty) {
+              Get.snackbar(
+                'Invalid Name',
+                'Hashtag name cannot be empty',
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+              );
+              return;
+            }
+
+            if (parentId == null) {
+              Get.snackbar(
+                'Invalid Category',
+                'Please select a category',
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+              );
+              return;
+            }
+
+            try {
+              final newSubgroup = await _hashtagGroupService.addCustomGroup(
+                name,
+                parentId: parentId,
+              );
+
+              if (newSubgroup == null) {
+                Get.snackbar(
+                  'Unable to Add',
+                  'Unable to add hashtag. Please try again.',
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+                return;
+              } else if (newSubgroup.id == -1) {
+                Get.snackbar(
+                  'Duplicate Hashtag',
+                  'Hashtag with this name already exists.',
+                  backgroundColor: Colors.orange,
+                  colorText: Colors.white,
+                );
+                return;
+              } else if (newSubgroup.id == -4) {
+                Get.snackbar(
+                  'Name Conflict',
+                  'This name is already used by the parent group.',
+                  backgroundColor: Colors.orange,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+
+              // Reload hashtag groups
+              await hashtagController.loadHashtagGroups();
+
+              // Select the newly created hashtag
+              widget.onSelected(newSubgroup);
+              Get.back(); // Close the selection dialog
+            } catch (e) {
+              debugPrint('[HashtagSelectionDialog] Error adding hashtag: $e');
+              Get.snackbar(
+                'Unable to Add',
+                'Unable to add hashtag. Please try again.',
+                backgroundColor: Colors.red,
+                colorText: Colors.white,
+              );
+            }
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -128,22 +200,26 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
 
             // Search field
             Container(
-              height: 41.h,
-              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 9.h),
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(color: const Color(0xffDFDFDF)),
-                borderRadius: BorderRadius.circular(4.r),
+                borderRadius: BorderRadius.circular(6.r),
               ),
               child: TextField(
                 controller: searchController,
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   hintText: 'Search Hashtag',
+                  labelText: 'Search Hashtag',
                   suffixIcon: Icon(
                     Icons.search,
                     size: 20.sp,
                     color: const Color(0xffB4B4B4),
+                  ),
+                  suffixIconConstraints: BoxConstraints(
+                    minWidth: 24.w,
+                    minHeight: 24.h,
                   ),
                   labelStyle: TextStyle(
                     color: Color(0xffB4B4B4),
@@ -161,7 +237,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
             ),
             16.verticalSpace,
 
-            // Hashtag List
+            // Hashtag List (shows 5 initially, all when searching)
             Expanded(
               child: filteredHashtags.isEmpty
                   ? Center(
@@ -220,36 +296,70 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
 
             12.verticalSpace,
 
-            // Add New Hashtag Button
-            InkWell(
-              onTap: () {
-                Get.back();
-                // Navigate to hashtag management screen
-                // Adjust the route based on your app's routing
-                Get.toNamed(AppRoutes.hashtagGroups.path);
-              },
-              child: Container(
-                height: 44.h,
-                decoration: BoxDecoration(
-                  color: const Color(0xff0088FF),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, color: Colors.white, size: 20.sp),
-                      8.horizontalSpace,
-                      CustomText(
-                        'Add New Hashtag',
-                        size: 16.sp,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+            // Bottom buttons row
+            Row(
+              children: [
+                // See List button (left)
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.hashtagGroups.path);
+                    },
+                    child: Container(
+                      height: 41.h,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffFFFFFF),
+                        borderRadius: BorderRadius.circular(13.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 0),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: Center(
+                        child: CustomText(
+                          'See List',
+                          size: 16.sp,
+                          color: const Color(0xff0071FF),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                16.horizontalSpace,
+                // Add New Hashtag button (right)
+                Expanded(
+                  child: InkWell(
+                    onTap: _showAddHashtagDialog,
+                    child: Container(
+                      height: 41.h,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffFFFFFF),
+                        borderRadius: BorderRadius.circular(13.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: CustomText(
+                          'Add New',
+                          size: 16.sp,
+                          color: const Color(0xff0071FF),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

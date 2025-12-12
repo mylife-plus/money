@@ -490,24 +490,24 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                           onTap: _saveMCC,
                           child: Container(
                             width: 136.w,
-                            height: 44.h,
+                            height: 41.h,
                             decoration: BoxDecoration(
-                              color: const Color(0xff0088FF),
+                              color: const Color(0xffFFFFFF),
                               borderRadius: BorderRadius.circular(13.r),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.25),
                                   blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                                  offset: const Offset(0, 0),
                                 ),
                               ],
                             ),
                             child: Center(
                               child: CustomText(
                                 existingMCC != null ? 'Update' : 'Save',
-                                size: 20.sp,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
+                                size: 16.sp,
+                                color: const Color(0xff0071FF),
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/models/investment_recommendation.dart';
-import 'package:moneyapp/widgets/common/custom_text.dart';
-import 'package:moneyapp/widgets/investments/investment_selection_dialog.dart';
+import 'package:moneyapp/screens/home/investment_list_screen.dart';
 
 class InvestmentSelectorButton extends StatefulWidget {
   final TextEditingController controller;
@@ -42,58 +42,40 @@ class _InvestmentSelectorButtonState extends State<InvestmentSelectorButton> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () async {
-        await showDialog<InvestmentRecommendation>(
-          context: context,
-          builder: (context) => InvestmentSelectionDialog(
-            onSelected: (investment) {
-              widget.controller.text = investment.text;
-              widget.onSelected?.call(investment);
-            },
-          ),
-        );
-      },
-      child: Container(
-        height: 41.h,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xffDFDFDF)),
-          borderRadius: BorderRadius.circular(6.r),
+    return Container(
+      height: 41.h,
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.greyBorder),
+        borderRadius: BorderRadius.circular(4.r),
+      ),
+      child: TextField(
+        controller: widget.controller,
+        readOnly: true,
+        onTap: () async {
+          final result = await Navigator.push<InvestmentRecommendation>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const InvestmentListScreen(),
+            ),
+          );
+
+          if (result != null) {
+            widget.controller.text = result.text;
+            widget.onSelected?.call(result);
+          }
+        },
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: widget.hintText,
+          labelText: 'Investment',
+          labelStyle: TextStyle(color: AppColors.greyColor, fontSize: 16.sp),
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
         ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 7.w),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CustomText(
-                'Investment',
-                size: 12.sp,
-                color: Color(0xffCACACA),
-              ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: CustomText(
-                    widget.controller.text.isEmpty
-                        ? widget.hintText
-                        : widget.controller.text,
-                    size: 16.sp,
-                    color: widget.controller.text.isEmpty
-                        ? const Color(0xffB4B4B4)
-                        : Colors.black,
-                  ),
-                ),
-              ),
-              8.horizontalSpace,
-              Icon(
-                Icons.arrow_drop_down,
-                size: 20.sp,
-                color: const Color(0xffB4B4B4),
-              ),
-            ],
-          ),
-        ),
+        style: TextStyle(fontSize: 16.sp),
+        textAlign: TextAlign.end,
       ),
     );
   }

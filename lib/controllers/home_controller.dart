@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:moneyapp/data/sample_transactions.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 
@@ -12,11 +13,32 @@ class HomeController extends GetxController {
   // Transactions
   final RxList<Transaction> transactions = <Transaction>[].obs;
 
+  // Expandable state tracking
+  final RxSet<int> expandedYears = <int>{}.obs;
+  final RxSet<String> expandedMonths = <String>{}.obs; // Format: "year-month"
+
   @override
   void onInit() {
     super.onInit();
     // Load sample transactions
     transactions.value = SampleTransactions.getSampleTransactions();
+
+    // Expand latest year and month by default
+    _expandLatestYearAndMonth();
+  }
+
+  /// Expand the latest year and month by default
+  void _expandLatestYearAndMonth() {
+    if (sortedYears.isNotEmpty) {
+      final latestYear = sortedYears.first;
+      expandedYears.add(latestYear);
+
+      final monthsInYear = getSortedMonths(latestYear);
+      if (monthsInYear.isNotEmpty) {
+        final latestMonth = monthsInYear.first;
+        expandedMonths.add('$latestYear-$latestMonth');
+      }
+    }
   }
 
   // Getters
@@ -80,5 +102,102 @@ class HomeController extends GetxController {
   /// Delete multiple transactions by IDs
   void deleteTransactions(List<int> ids) {
     transactions.removeWhere((t) => t.id != null && ids.contains(t.id));
+  }
+
+  /// Toggle year expansion
+  void toggleYearExpansion(int year) {
+    if (expandedYears.contains(year)) {
+      expandedYears.remove(year);
+      // Also collapse all months in this year
+      expandedMonths.removeWhere((key) => key.startsWith('$year-'));
+    } else {
+      expandedYears.add(year);
+    }
+  }
+
+  /// Toggle month expansion
+  void toggleMonthExpansion(int year, int month) {
+    final key = '$year-$month';
+    if (expandedMonths.contains(key)) {
+      expandedMonths.remove(key);
+    } else {
+      expandedMonths.add(key);
+    }
+  }
+
+  /// Check if year is expanded
+  bool isYearExpanded(int year) {
+    return expandedYears.contains(year);
+  }
+
+  /// Check if month is expanded
+  bool isMonthExpanded(int year, int month) {
+    return expandedMonths.contains('$year-$month');
+  }
+
+  /// Group transactions by year
+  Map<int, List<Transaction>> get transactionsByYear {
+    final Map<int, List<Transaction>> grouped = {};
+    for (var transaction in filteredTransactions) {
+      final year = transaction.date.year;
+      if (!grouped.containsKey(year)) {
+        grouped[year] = [];
+      }
+      grouped[year]!.add(transaction);
+    }
+    return grouped;
+  }
+
+  /// Get years sorted (newest first)
+  List<int> get sortedYears {
+    return transactionsByYear.keys.toList()..sort((a, b) => b.compareTo(a));
+  }
+
+  /// Group transactions by month for a specific year
+  Map<int, List<Transaction>> getTransactionsByMonth(int year) {
+    final yearTransactions = transactionsByYear[year] ?? [];
+    final Map<int, List<Transaction>> grouped = {};
+    for (var transaction in yearTransactions) {
+      final month = transaction.date.month;
+      if (!grouped.containsKey(month)) {
+        grouped[month] = [];
+      }
+      grouped[month]!.add(transaction);
+    }
+    return grouped;
+  }
+
+  /// Get months sorted (newest first) for a specific year
+  List<int> getSortedMonths(int year) {
+    final monthsMap = getTransactionsByMonth(year);
+    return monthsMap.keys.toList()..sort((a, b) => b.compareTo(a));
+  }
+
+  /// Get transactions for a specific year and month
+  List<Transaction> getTransactionsForMonth(int year, int month) {
+    final monthsMap = getTransactionsByMonth(year);
+    return TransactionHelper.sortByDateDesc(monthsMap[month] ?? []);
+  }
+
+  /// Calculate total for a year
+  double calculateYearTotal(int year) {
+    final yearTransactions = transactionsByYear[year] ?? [];
+    return yearTransactions.fold(0.0, (sum, t) {
+      return sum + (t.isExpense ? -t.amount : t.amount);
+    });
+  }
+
+  /// Calculate total for a month
+  double calculateMonthTotal(int year, int month) {
+    final monthTransactions = getTransactionsForMonth(year, month);
+    return monthTransactions.fold(0.0, (sum, t) {
+      return sum + (t.isExpense ? -t.amount : t.amount);
+    });
+  }
+
+  /// Get month name from number
+  String getMonthName(int month) {
+    final date = DateTime(2024, month);
+    return DateFormat('MMMM').format(date);
   }
 }

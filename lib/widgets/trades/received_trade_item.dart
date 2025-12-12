@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class ReceivedTradeItem extends StatelessWidget {
@@ -38,67 +39,72 @@ class ReceivedTradeItem extends StatelessWidget {
             title,
             textAlign: TextAlign.start,
             color: Colors.black,
-            size: 15.sp,
+            size: 16.sp,
           ),
           8.verticalSpace,
 
           Row(
             children: [
               Expanded(
-                flex: 66,
+                flex: 100,
                 child: CustomText(
                   'received',
                   color: Color(0xff00C00D),
-                  size: 15.sp,
+                  size: 16.sp,
                 ),
               ),
+
               Expanded(
-                flex: 98,
-                child: CustomText.richText(
-                  textAlign: TextAlign.center,
+                flex: 100,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    CustomText.span(
-                      '$amount ',
-                      color: Colors.black,
-                      size: 16.sp,
+                    CustomText.richText(
+                      textAlign: TextAlign.center,
+                      children: [
+                        CustomText.span(
+                          '$amount ',
+                          color: Colors.black,
+                          size: 16.sp,
+                        ),
+                        CustomText.span(
+                          symbol,
+                          color: AppColors.greyColor,
+                          size: 12.sp,
+                        ),
+                      ],
                     ),
-                    CustomText.span(
-                      symbol,
-                      color: Color(0xff929292),
-                      size: 12.sp,
+                    CustomText.richText(
+                      children: [
+                        CustomText.span(
+                          '$price ',
+                          color: Colors.black,
+                          size: 16.sp,
+                        ),
+                        CustomText.span(
+                          priceSymbol,
+                          color: AppColors.greyColor,
+                          size: 12.sp,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               Expanded(
-                flex: 102,
+                flex: 150,
                 child: CustomText.richText(
-                  children: [
-                    CustomText.span(
-                      '$price ',
-                      color: Colors.black,
-                      size: 16.sp,
-                    ),
-                    CustomText.span(
-                      priceSymbol,
-                      color: Color(0xff929292),
-                      size: 12.sp,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 87,
-                child: CustomText.richText(
+                  textAlign: TextAlign.end,
                   children: [
                     CustomText.span(
                       '$total ',
                       color: Colors.black,
-                      size: 16.sp,
+                      size: 18.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                     CustomText.span(
                       totalSymbol,
-                      color: Color(0xff929292),
+                      color: AppColors.greyColor,
                       size: 12.sp,
                     ),
                   ],

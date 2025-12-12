@@ -13,6 +13,7 @@ class TransactionContent extends StatelessWidget {
   final Color? borderColor;
   final double borderWidth;
   final VoidCallback? onCardTap;
+  final VoidCallback? onCardLongPress;
 
   const TransactionContent({
     super.key,
@@ -21,6 +22,7 @@ class TransactionContent extends StatelessWidget {
     this.borderColor = const Color(0xffDFDFDF),
     this.borderWidth = 1,
     this.onCardTap,
+    this.onCardLongPress,
   });
 
   void _showNoteDialog(BuildContext context) {
@@ -271,20 +273,21 @@ class TransactionContent extends StatelessWidget {
         ? const Color(0xffFF0000)
         : const Color(0xff00C00D);
 
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 7.r, horizontal: 12.w),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4.r),
-        color: backgroundColor,
-        border: Border.all(color: borderColor!, width: borderWidth),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 220,
-            child: GestureDetector(
-              onTap: onCardTap,
-              behavior: HitTestBehavior.opaque,
+    return GestureDetector(
+      onTap: onCardTap,
+      onLongPress: onCardLongPress,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 0.h, horizontal: 12.w),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4.r),
+          color: backgroundColor,
+          border: Border.all(color: borderColor!, width: borderWidth),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 220,
               child: Row(
                 children: [
                   CustomText(
@@ -311,35 +314,38 @@ class TransactionContent extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-          8.horizontalSpace,
-          InkWell(
-            onTap: () => _showNoteDialog(context),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-              child: Image.asset(AppIcons.notesIcon, width: 21.r, height: 21.r),
+            8.horizontalSpace,
+            InkWell(
+              onTap: () => _showNoteDialog(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                child: Image.asset(
+                  AppIcons.notesIcon,
+                  width: 21.r,
+                  height: 21.r,
+                ),
+              ),
             ),
-          ),
-          8.horizontalSpace,
+            8.horizontalSpace,
 
-          Expanded(
-            flex: 67,
-            child: GestureDetector(
-              onTap: onCardTap,
-              behavior: HitTestBehavior.opaque,
+            Expanded(
+              flex: 80,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  CustomText(
-                    transaction.getFormattedAmount(),
-                    size: 16.sp,
-                    color: amountColor,
+                  Expanded(
+                    child: CustomText(
+                      transaction.getFormattedAmount(),
+                      textAlign: TextAlign.end,
+                      size: 16.sp,
+                      color: amountColor,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

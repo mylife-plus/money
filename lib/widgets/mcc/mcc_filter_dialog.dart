@@ -97,22 +97,26 @@ class _MCCFilterDialogState extends State<MCCFilterDialog> {
 
             // Search field
             Container(
-              height: 41.h,
-              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 9.h),
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(color: const Color(0xffDFDFDF)),
-                borderRadius: BorderRadius.circular(4.r),
+                borderRadius: BorderRadius.circular(6.r),
               ),
               child: TextField(
                 controller: searchController,
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   hintText: 'Search MCC',
+                  labelText: 'Search MCC',
                   suffixIcon: Icon(
                     Icons.search,
                     size: 20.sp,
                     color: const Color(0xffB4B4B4),
+                  ),
+                  suffixIconConstraints: BoxConstraints(
+                    minWidth: 24.w,
+                    minHeight: 24.h,
                   ),
                   labelStyle: TextStyle(
                     color: Color(0xffB4B4B4),
@@ -218,17 +222,25 @@ class _MCCFilterDialogState extends State<MCCFilterDialog> {
                 Get.back();
               },
               child: Container(
-                height: 44.h,
+                width: 200.w,
+                height: 41.h,
                 decoration: BoxDecoration(
-                  color: const Color(0xff0088FF),
-                  borderRadius: BorderRadius.circular(8.r),
+                  color: const Color(0xffFFFFFF),
+                  borderRadius: BorderRadius.circular(13.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: CustomText(
                     'Apply (${selectedMCCs.length})',
                     size: 16.sp,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                    color: const Color(0xff0071FF),
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),

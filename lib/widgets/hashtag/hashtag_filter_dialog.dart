@@ -239,17 +239,25 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
                 Get.back();
               },
               child: Container(
-                height: 44.h,
+                width: double.infinity,
+                height: 41.h,
                 decoration: BoxDecoration(
-                  color: const Color(0xff0088FF),
-                  borderRadius: BorderRadius.circular(8.r),
+                  color: const Color(0xffFFFFFF),
+                  borderRadius: BorderRadius.circular(13.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: CustomText(
                     'Apply (${selectedHashtags.length})',
                     size: 16.sp,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                    color: const Color(0xff0071FF),
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),

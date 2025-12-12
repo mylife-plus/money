@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/constants/app_theme.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
@@ -48,8 +49,8 @@ class SelectionAppBar extends StatelessWidget {
                 CustomText(
                   '$selectedCount Selected',
                   color: const Color(0xff0088FF),
-                  size: 20.sp,
-                  fontWeight: FontWeight.w700,
+                  size: 18.sp,
+                  fontWeight: FontWeight.w500,
                 ),
                 const Spacer(),
                 GestureDetector(
@@ -60,9 +61,9 @@ class SelectionAppBar extends StatelessWidget {
                       vertical: 8.h,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xffF5F5F5),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: const Color(0xffCFCFCF)),
+                      border: Border.all(color: AppColors.greyBorder),
                     ),
                     child: CustomText(
                       'Cancel',
@@ -128,9 +129,9 @@ class _ActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 44.h,
+        height: 41.h,
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xffCFCFCF)),
+          border: Border.all(color: AppColors.greyBorder),
           color: Colors.white,
           borderRadius: BorderRadius.circular(10.r),
           boxShadow: [
@@ -145,7 +146,7 @@ class _ActionButton extends StatelessWidget {
           child: CustomText(
             label,
             size: 16.sp,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w400,
             color: color,
           ),
         ),

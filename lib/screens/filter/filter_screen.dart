@@ -150,115 +150,121 @@ class _FilterScreenState extends State<FilterScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: InkWell(
-                              onTap: () => _pickFromDate(context),
-                              child: Container(
-                                height: 41.h,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 7.w,
-                                  vertical: 2.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(
-                                    color: AppColors.greyBorder,
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: Row(
+                                children: [
+                                  Image.asset(
+                                    AppIcons.dateIcon,
+                                    height: 20.r,
+                                    width: 20.r,
+                                    color: AppColors.greyColor,
                                   ),
-                                  borderRadius: BorderRadius.circular(6.r),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Image.asset(
-                                      AppIcons.dateIcon,
-                                      height: 20.r,
-                                      width: 20.r,
-                                    ),
-                                    10.horizontalSpace,
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (fromDate != null)
-                                            CustomText(
-                                              'From Date',
-                                              size: 12.sp,
-                                              color: Color(0xffC1C1C1),
-                                            ),
-                                          CustomText(
-                                            fromDate == null
-                                                ? 'from date'
-                                                : DateFormat(
-                                                    'dd.MM.yyyy',
-                                                  ).format(fromDate!),
-                                            size: 16.sp,
-                                            color: fromDate == null
-                                                ? Color(0xffB4B4B4)
-                                                : Colors.black,
-                                          ),
-                                        ],
+                                  10.horizontalSpace,
+                                  Expanded(
+                                    child: TextField(
+                                      controller: TextEditingController(
+                                        text: fromDate != null
+                                            ? DateFormat(
+                                                'dd.MM.yyyy',
+                                              ).format(fromDate!)
+                                            : '',
+                                      ),
+                                      readOnly: true,
+                                      onTap: () => _pickFromDate(context),
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'from date',
+                                        labelText: fromDate != null
+                                            ? 'From Date'
+                                            : null,
+                                        labelStyle: TextStyle(
+                                          color: AppColors.greyColor,
+                                          fontSize: 12.sp,
+                                        ),
+                                        hintStyle: TextStyle(
+                                          color: AppColors.greyColor,
+                                          fontSize: 16.sp,
+                                        ),
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        color: Colors.black,
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                           10.horizontalSpace,
                           Expanded(
-                            child: InkWell(
-                              onTap: () => _pickToDate(context),
-                              child: Container(
-                                height: 41.h,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 7.w,
-                                  vertical: 2.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(
-                                    color: AppColors.greyBorder,
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: Row(
+                                children: [
+                                  Image.asset(
+                                    AppIcons.dateIcon,
+                                    height: 20.r,
+                                    width: 20.r,
+                                    color: AppColors.greyColor,
                                   ),
-                                  borderRadius: BorderRadius.circular(6.r),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Image.asset(
-                                      AppIcons.dateIcon,
-                                      height: 20.r,
-                                      width: 20.r,
-                                    ),
-                                    10.horizontalSpace,
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (toDate != null)
-                                            CustomText(
-                                              'To Date',
-                                              size: 12.sp,
-                                              color: Color(0xffC1C1C1),
-                                            ),
-                                          CustomText(
-                                            toDate == null
-                                                ? 'to date'
-                                                : DateFormat(
-                                                    'dd.MM.yyyy',
-                                                  ).format(toDate!),
-                                            size: 16.sp,
-                                            color: toDate == null
-                                                ? Color(0xffB4B4B4)
-                                                : Colors.black,
-                                          ),
-                                        ],
+                                  10.horizontalSpace,
+                                  Expanded(
+                                    child: TextField(
+                                      controller: TextEditingController(
+                                        text: toDate != null
+                                            ? DateFormat(
+                                                'dd.MM.yyyy',
+                                              ).format(toDate!)
+                                            : '',
+                                      ),
+                                      readOnly: true,
+                                      onTap: () => _pickToDate(context),
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'to date',
+                                        labelText: toDate != null
+                                            ? 'To Date'
+                                            : null,
+                                        labelStyle: TextStyle(
+                                          color: AppColors.greyColor,
+                                          fontSize: 12.sp,
+                                        ),
+                                        hintStyle: TextStyle(
+                                          color: AppColors.greyColor,
+                                          fontSize: 16.sp,
+                                        ),
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        color: Colors.black,
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -320,7 +326,7 @@ class _FilterScreenState extends State<FilterScreen> {
                               decoration: BoxDecoration(
                                 color: Color(0xffF5F5F5),
                                 borderRadius: BorderRadius.circular(4.r),
-                                border: Border.all(color: Color(0xffDFDFDF)),
+                                border: Border.all(color: AppColors.greyBorder),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -340,7 +346,7 @@ class _FilterScreenState extends State<FilterScreen> {
                                     child: Icon(
                                       Icons.close,
                                       size: 16.sp,
-                                      color: Color(0xff707070),
+                                      color: AppColors.greyColor,
                                     ),
                                   ),
                                 ],
@@ -454,54 +460,63 @@ class _FilterScreenState extends State<FilterScreen> {
                       25.verticalSpace,
                       // Action buttons
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          InkWell(
-                            onTap: _resetFilter,
-                            child: Container(
-                              height: 44.h,
-                              width: 144.w,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(13.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 4.0,
-                                    offset: Offset(0, 0),
+                          Expanded(
+                            child: InkWell(
+                              onTap: _resetFilter,
+                              child: Container(
+                                height: 41.h,
+                                width: 144.w,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(13.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      blurRadius: 4.0,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: CustomText(
+                                    'reset',
+                                    size: 16.sp,
+                                    color: Color(0xffFF0000),
                                   ),
-                                ],
-                              ),
-                              child: Center(
-                                child: CustomText(
-                                  'reset',
-                                  size: 20.sp,
-                                  color: Color(0xffFF0000),
                                 ),
                               ),
                             ),
                           ),
-                          InkWell(
-                            onTap: _applyFilter,
-                            child: Container(
-                              height: 44.h,
-                              width: 144.w,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(13.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 4.0,
-                                    offset: Offset(0, 0),
+                          22.horizontalSpace,
+                          Expanded(
+                            child: InkWell(
+                              onTap: _applyFilter,
+                              child: Container(
+                                height: 41.h,
+                                width: 144.w,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(13.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      blurRadius: 4.0,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: CustomText(
+                                    'filter',
+                                    size: 16.sp,
+                                    color: Color(0xff0071FF),
                                   ),
-                                ],
-                              ),
-                              child: Center(
-                                child: CustomText(
-                                  'filter',
-                                  size: 20.sp,
-                                  color: Color(0xff0071FF),
                                 ),
                               ),
                             ),

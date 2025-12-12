@@ -8,8 +8,48 @@ import 'package:moneyapp/models/investment_recommendation.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/investments/investment_selection_dialog.dart';
 
-class InvestmentListScreen extends StatelessWidget {
+class InvestmentListScreen extends StatefulWidget {
   const InvestmentListScreen({super.key});
+
+  @override
+  State<InvestmentListScreen> createState() => _InvestmentListScreenState();
+}
+
+class _InvestmentListScreenState extends State<InvestmentListScreen> {
+  final TextEditingController searchController = TextEditingController();
+  List<InvestmentRecommendation> filteredInvestments = [];
+  late final InvestmentController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<InvestmentController>();
+    filteredInvestments = controller.recommendations;
+    searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      if (searchController.text.isEmpty) {
+        filteredInvestments = controller.recommendations;
+      } else {
+        filteredInvestments = controller.recommendations
+            .where(
+              (investment) => investment.text.toLowerCase().contains(
+                searchController.text.toLowerCase(),
+              ),
+            )
+            .toList();
+      }
+    });
+  }
 
   Future<void> _showAddDialog(BuildContext context) async {
     await showDialog<InvestmentRecommendation>(
@@ -85,8 +125,6 @@ class InvestmentListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final InvestmentController controller = Get.find();
-
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -105,66 +143,102 @@ class InvestmentListScreen extends StatelessWidget {
                       height: 21.h,
                     ),
                   ),
-                  CustomText('Investments', size: 16.sp, color: Colors.black),
-                  21.horizontalSpace,
+                  Expanded(
+                    child: CustomText(
+                      'Investments',
+                      textAlign: TextAlign.center,
+                      size: 16.sp,
+                      color: Colors.black,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => _showAddDialog(context),
+                    child: Image.asset(
+                      AppIcons.plus,
+                      color: AppColors.greyColor,
+                      width: 21.h,
+                      height: 21.h,
+                    ),
+                  ),
                 ],
               ),
             ),
-            30.verticalSpace,
+            38.verticalSpace,
+
+            // Search field
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28.w),
+              child: Container(
+                height: 41.h,
+                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.greyBorder),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'Search Investment',
+                    suffixIcon: Icon(
+                      Icons.search,
+                      size: 20.sp,
+                      color: AppColors.greyColor,
+                    ),
+                    suffixIconConstraints: BoxConstraints(
+                      minWidth: 24.w,
+                      minHeight: 24.h,
+                    ),
+                    label: Text('Search Investment'),
+
+                    labelStyle: TextStyle(
+                      color: AppColors.greyColor,
+                      fontSize: 16.sp,
+                    ),
+                    hintStyle: TextStyle(
+                      color: AppColors.greyColor,
+                      fontSize: 16.sp,
+                    ),
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  style: TextStyle(fontSize: 16.sp),
+                ),
+              ),
+            ),
+            16.verticalSpace,
 
             Expanded(
-              child: Obx(
-                () => ListView.separated(
+              child: Obx(() {
+                // Update filtered list when recommendations change
+                if (searchController.text.isEmpty) {
+                  filteredInvestments = controller.recommendations;
+                } else {
+                  filteredInvestments = controller.recommendations
+                      .where(
+                        (investment) => investment.text.toLowerCase().contains(
+                          searchController.text.toLowerCase(),
+                        ),
+                      )
+                      .toList();
+                }
+
+                return ListView.separated(
                   padding: EdgeInsets.symmetric(horizontal: 28.w),
-                  itemCount: controller.recommendations.length,
+                  itemCount: filteredInvestments.length,
                   separatorBuilder: (context, index) => 4.verticalSpace,
                   itemBuilder: (context, index) {
-                    final investment = controller.recommendations[index];
+                    final investment = filteredInvestments[index];
                     return _InvestmentListItem(
                       investment: investment,
+                      onTap: () => Navigator.pop(context, investment),
                       onEdit: () => _showEditDialog(context, investment),
                       onDelete: () => _deleteInvestment(context, investment),
                     );
                   },
-                ),
-              ),
-            ),
-
-            // Add button at the bottom
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 20.h),
-              child: InkWell(
-                onTap: () => _showAddDialog(context),
-                child: Container(
-                  height: 44.h,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff0088FF),
-                    borderRadius: BorderRadius.circular(8.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, color: Colors.white, size: 20.sp),
-                        8.horizontalSpace,
-                        CustomText(
-                          'Add New Investment',
-                          size: 16.sp,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+                );
+              }),
             ),
           ],
         ),
@@ -175,31 +249,33 @@ class InvestmentListScreen extends StatelessWidget {
 
 class _InvestmentListItem extends StatelessWidget {
   final InvestmentRecommendation investment;
+  final VoidCallback? onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _InvestmentListItem({
     required this.investment,
+    this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Image/Icon Container
-        Container(
-          height: 35.h,
-          width: 40.w,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xffDFDFDF)),
-            borderRadius: BorderRadius.circular(6.r),
-          ),
-          child: Center(
-            child: investment.isAssetImage
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: investment.color,
+          border: Border.all(color: AppColors.greyBorder),
+          borderRadius: BorderRadius.circular(4.r),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Image/Icon Container
+            investment.isAssetImage
                 ? Image.asset(investment.assetPath!, width: 16.w, height: 16.h)
                 : investment.isFileImage
                 ? Image.file(investment.imageFile!, width: 16.w, height: 16.h)
@@ -208,71 +284,28 @@ class _InvestmentListItem extends StatelessWidget {
                     size: 16.sp,
                     color: const Color(0xffB4B4B4),
                   ),
-          ),
-        ),
-        6.horizontalSpace,
-        // Investment Name Field
-        Expanded(
-          child: Container(
-            height: 35.h,
-            padding: EdgeInsets.symmetric(horizontal: 8.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xffDFDFDF)),
-              borderRadius: BorderRadius.circular(6.r),
-            ),
-            child: Center(
+            23.horizontalSpace,
+
+            Expanded(
               child: CustomText(
                 investment.text,
-                size: 14.sp,
+                size: 20.sp,
                 color: Colors.black,
               ),
             ),
-          ),
-        ),
-        4.horizontalSpace,
-        // Short Text Field
-        Container(
-          height: 35.h,
-          width: 56.w,
-          padding: EdgeInsets.symmetric(horizontal: 8.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xffDFDFDF)),
-            borderRadius: BorderRadius.circular(6.r),
-          ),
-          child: Center(
-            child: CustomText(
-              investment.shortText,
-              size: 14.sp,
-              color: Colors.black,
+            4.horizontalSpace,
+            // Short Text Field
+            CustomText(investment.shortText, size: 20.sp, color: Colors.black),
+            20.horizontalSpace,
+
+            // Edit Icon (only show in non-selection mode)
+            InkWell(
+              onTap: onEdit,
+              child: Image.asset(AppIcons.edit, width: 22.r, height: 22.r),
             ),
-          ),
+          ],
         ),
-        4.horizontalSpace,
-        // Color Indicator
-        Container(
-          height: 35.h,
-          width: 40.w,
-          decoration: BoxDecoration(
-            color: investment.color ?? Colors.white,
-            border: Border.all(color: const Color(0xffDFDFDF)),
-            borderRadius: BorderRadius.circular(6.r),
-          ),
-        ),
-        12.horizontalSpace,
-        // Edit Icon
-        InkWell(
-          onTap: onEdit,
-          child: Image.asset(AppIcons.edit, width: 22.r, height: 22.r),
-        ),
-        8.horizontalSpace,
-        // Delete Icon
-        InkWell(
-          onTap: onDelete,
-          child: Icon(Icons.delete, size: 22.r, color: const Color(0xffFF0000)),
-        ),
-      ],
+      ),
     );
   }
 }

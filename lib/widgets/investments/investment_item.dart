@@ -25,7 +25,7 @@ class InvestmentItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(13.w, 2.h, 10.w, 3.h),
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(color: Color(0xffDFDFDF)),
@@ -34,18 +34,17 @@ class InvestmentItem extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            flex: 110,
+            flex: 100,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Image.asset(image, height: 16.r, width: 16.r),
-                2.verticalSpace,
                 CustomText(name, color: Colors.black, size: 18.sp),
               ],
             ),
           ),
           Expanded(
-            flex: 110,
+            flex: 100,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -83,7 +82,7 @@ class InvestmentItem extends StatelessWidget {
           ),
 
           Expanded(
-            flex: 120,
+            flex: 150,
             child: CustomText.richText(
               textAlign: TextAlign.right,
               children: [

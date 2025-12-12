@@ -47,6 +47,10 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
       builder: (context) => PriceEntryDialog(
         initialDate: entry.date,
         initialPrice: entry.price,
+        onDelete: () {
+          Navigator.pop(context);
+          _deleteEntry(index);
+        },
         onSave: (date, price) {
           setState(() {
             priceEntries[index] = PriceEntry(date: date, price: price);
@@ -151,6 +155,7 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
                     onTap: _showAddPriceDialog,
                     child: Image.asset(
                       AppIcons.plus,
+                      color: AppColors.greyColor,
                       width: 21.h,
                       height: 21.h,
                     ),
@@ -158,109 +163,69 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
                 ],
               ),
             ),
+            38.verticalSpace,
 
             // Content
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: EdgeInsets.only(bottom: 33.h),
+                  padding: EdgeInsets.only(
+                    bottom: 33.h,
+                    left: 35.w,
+                    right: 24.w,
+                  ),
                   child: Column(
-                    spacing: 5.h,
+                    spacing: 6.h,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Column headers
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CustomText(
-                            'Date',
-                            size: 12.sp,
-                            color: Color(0xffC0C0C0),
-                          ),
-                          76.horizontalSpace,
-                          CustomText(
-                            'Price',
-                            size: 12.sp,
-                            color: Color(0xffC0C0C0),
-                          ),
-                          37.horizontalSpace,
-                        ],
-                      ),
-
-                      // Existing price entries
                       for (int i = 0; i < priceEntries.length; i++)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Date Container
-                            Container(
-                              height: 30.h,
-                              width: 90.w,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 5.w,
-                                vertical: 2.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(
-                                  color: const Color(0xffDFDFDF),
-                                ),
-                                borderRadius: BorderRadius.circular(6.r),
-                              ),
-                              child: Center(
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 6.h,
+                            horizontal: 11.w,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4.r),
+                            border: Border.all(color: AppColors.greyBorder),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Date Container
+                              Expanded(
                                 child: CustomText(
                                   DateFormat(
                                     'dd.MM.yyyy',
                                   ).format(priceEntries[i].date),
-                                  size: 16.sp,
-                                  textAlign: TextAlign.center,
+                                  size: 20.sp,
                                   color: Colors.black,
                                 ),
                               ),
-                            ),
-                            7.horizontalSpace,
-                            // Price Container
-                            Container(
-                              height: 30.h,
-                              width: 98.w,
-                              padding: EdgeInsets.symmetric(horizontal: 6.w),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(
-                                  color: const Color(0xffDFDFDF),
+
+                              // Price Container
+                              CustomText(
+                                '\$ ${priceEntries[i].price}',
+                                size: 20.sp,
+                                color: Colors.black,
+                              ),
+                              CustomText(
+                                ' USD',
+                                size: 12.sp,
+                                color: AppColors.greyColor,
+                              ),
+                              20.horizontalSpace,
+                              // Edit Icon
+                              InkWell(
+                                onTap: () => _showEditPriceDialog(i),
+                                child: Image.asset(
+                                  AppIcons.edit,
+                                  width: 22.r,
+                                  height: 22.r,
                                 ),
-                                borderRadius: BorderRadius.circular(6.r),
                               ),
-                              child: Center(
-                                child: CustomText(
-                                  '\$ ${priceEntries[i].price}',
-                                  size: 16.sp,
-                                  textAlign: TextAlign.center,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                            15.horizontalSpace,
-                            // Edit Icon
-                            InkWell(
-                              onTap: () => _showEditPriceDialog(i),
-                              child: Image.asset(
-                                AppIcons.edit,
-                                width: 22.r,
-                                height: 22.r,
-                              ),
-                            ),
-                            6.horizontalSpace,
-                            // Delete Icon
-                            InkWell(
-                              onTap: () => _deleteEntry(i),
-                              child: Image.asset(
-                                AppIcons.delete,
-                                width: 22.r,
-                                height: 22.r,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                     ],
                   ),

@@ -12,6 +12,8 @@ import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/custom_toggle_switch.dart';
 import 'package:moneyapp/widgets/common/custom_toggle_switch_small.dart';
 import 'package:moneyapp/widgets/common/selection_app_bar.dart';
+import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
+import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
 
 /// Home Screen
@@ -92,13 +94,29 @@ class _HomeScreenState extends State<HomeScreen>
                     selectedIds.clear();
                   });
                 },
-                onAddHashtag: () {
-                  // TODO: Implement add hashtag for selected transactions
-                  print('Add hashtag to ${selectedIds.length} transactions');
+                onAddHashtag: () async {
+                  await showDialog(
+                    context: context,
+                    builder: (context) => HashtagSelectionDialog(
+                      onSelected: (hashtag) {
+                        setState(() {
+                          Get.back();
+                        });
+                      },
+                    ),
+                  );
                 },
-                onEditMCC: () {
-                  // TODO: Implement edit MCC for selected transactions
-                  print('Edit MCC for ${selectedIds.length} transactions');
+                onEditMCC: () async {
+                  await showDialog(
+                    context: context,
+                    builder: (context) => MCCSelectionDialog(
+                      onSelected: (item) {
+                        setState(() {
+                          Get.back();
+                        });
+                      },
+                    ),
+                  );
                 },
                 onDelete: () {
                   // TODO: Implement delete for selected transactions
@@ -124,6 +142,7 @@ class _HomeScreenState extends State<HomeScreen>
                           Get.offNamed(AppRoutes.investment.path);
                         },
                       ),
+                      4.verticalSpace,
                     ],
                   ),
                 ),
@@ -134,318 +153,383 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Obx(() {
                   return Column(
                     children: [
-                      27.verticalSpace,
-                      Obx(
-                        () => CustomToggleSwitch(
-                          option1IconPath: AppIcons.export,
-                          option1Text: 'Spending',
-                          option2IconPath: AppIcons.import,
-                          option2Text: 'Income',
-                          selectedOption: controller.selectedToggleOption.value,
-                          onOption1Tap: controller.selectSpending,
-                          onOption2Tap: controller.selectIncome,
+                      if (selectedIds.isEmpty) ...[
+                        20.verticalSpace,
+                        Obx(
+                          () => CustomToggleSwitch(
+                            option1IconPath: AppIcons.export,
+                            option1Text: 'Spending',
+                            option2IconPath: AppIcons.import,
+                            option2Text: 'Income',
+                            selectedOption:
+                                controller.selectedToggleOption.value,
+                            onOption1Tap: controller.selectSpending,
+                            onOption2Tap: controller.selectIncome,
+                          ),
                         ),
-                      ),
-                      26.verticalSpace,
-                      CustomText.richText(
-                        children: [
-                          CustomText.span(
-                            'Average ',
-                            size: 14.sp,
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          CustomText.span(
-                            controller.isExpenseSelected
-                                ? 'spending '
-                                : 'income ',
-                            size: 14.sp,
-                            color: controller.isExpenseSelected
-                                ? const Color(0xffFF0000)
-                                : const Color(0xff00C00D),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          CustomText.span(
-                            'per',
-                            size: 14.sp,
-                            color: AppColors.greyColor,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ],
-                      ),
-                      15.verticalSpace,
-                      _buildAverageContainer(controller.isExpenseSelected),
-                      15.verticalSpace,
-                      Container(
-                        margin: EdgeInsets.symmetric(horizontal: 7.w),
-                        padding: const EdgeInsets.fromLTRB(13, 8, 0, 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xffE3E3E3)),
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        height: 227.h,
-                        child: Column(
+                        26.verticalSpace,
+                        CustomText.richText(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Image.asset(
-                                  AppIcons.refresh,
-                                  height: 21.r,
-                                  width: 21.r,
-                                ),
+                            CustomText.span(
+                              'Average ',
+                              size: 14.sp,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            CustomText.span(
+                              controller.isExpenseSelected
+                                  ? 'spending '
+                                  : 'income ',
+                              size: 14.sp,
+                              color: controller.isExpenseSelected
+                                  ? const Color(0xffFF0000)
+                                  : const Color(0xff00C00D),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            CustomText.span(
+                              'per',
+                              size: 14.sp,
+                              color: AppColors.greyColor,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ],
+                        ),
+                        15.verticalSpace,
+                        _buildAverageContainer(controller.isExpenseSelected),
+                        15.verticalSpace,
+                        Container(
+                          margin: EdgeInsets.symmetric(horizontal: 7.w),
+                          padding: EdgeInsets.fromLTRB(5.w, 8.h, 13.w, 0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xffE3E3E3)),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          height: 227.h,
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Image.asset(
+                                    AppIcons.refresh,
+                                    height: 21.r,
+                                    width: 21.r,
+                                  ),
 
-                                CustomToggleSwitchSmall(
-                                  option1Text: 'year',
-                                  option2Text: 'month',
-                                  backgroundColor: controller.isExpenseSelected
-                                      ? const Color(0xffFFB2B2)
-                                      : const Color(0xffB1FFB6),
-                                  selectedOption: controller
-                                      .selectedChartDurationOption
-                                      .value,
-                                  onOption1Tap: controller.selectYear,
-                                  onOption2Tap: controller.selectMonth,
-                                ),
-                                CustomText(
-                                  '\$ 2,720',
-                                  size: 20.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: controller.isExpenseSelected
-                                      ? const Color(0xffFF0000)
-                                      : const Color(0xff00C00D),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.only(right: 15.w),
-                                  child: CustomText(
-                                    'Dez 2025',
-                                    size: 14.sp,
-                                    fontWeight: FontWeight.normal,
+                                  CustomToggleSwitchSmall(
+                                    option1Text: 'year',
+                                    option2Text: 'month',
+                                    backgroundColor:
+                                        controller.isExpenseSelected
+                                        ? const Color(0xffFFB2B2)
+                                        : const Color(0xffB1FFB6),
+                                    selectedOption: controller
+                                        .selectedChartDurationOption
+                                        .value,
+                                    onOption1Tap: controller.selectYear,
+                                    onOption2Tap: controller.selectMonth,
+                                  ),
+                                  CustomText(
+                                    '\$ 2,720',
+                                    size: 20.sp,
+                                    fontWeight: FontWeight.bold,
                                     color: controller.isExpenseSelected
                                         ? const Color(0xffFF0000)
                                         : const Color(0xff00C00D),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Expanded(
-                              child: StepLineChartWidget(
-                                data: [
-                                  ChartDataPoint(label: '2004', value: 2400),
-                                  ChartDataPoint(label: '2007', value: 1800),
-                                  ChartDataPoint(label: '2010', value: 1300),
-                                  ChartDataPoint(label: '2013', value: 2100),
-                                  ChartDataPoint(label: '2016', value: 2400),
-                                  ChartDataPoint(label: '2019', value: 1700),
-                                  ChartDataPoint(label: '2022', value: 2000),
-                                  ChartDataPoint(label: '2025', value: 2700),
+                                  Padding(
+                                    padding: EdgeInsets.only(right: 15.w),
+                                    child: CustomText(
+                                      'Dez 2025',
+                                      size: 14.sp,
+                                      fontWeight: FontWeight.normal,
+                                      color: controller.isExpenseSelected
+                                          ? const Color(0xffFF0000)
+                                          : const Color(0xff00C00D),
+                                    ),
+                                  ),
                                 ],
-                                lineColor: controller.isExpenseSelected
-                                    ? const Color(0xffFF0000)
-                                    : const Color(0xff00C00D),
                               ),
-                            ),
-                          ],
+                              Expanded(
+                                child: StepLineChartWidget(
+                                  data: [
+                                    ChartDataPoint(label: '2004', value: 2400),
+                                    ChartDataPoint(label: '2007', value: 1800),
+                                    ChartDataPoint(label: '2010', value: 1300),
+                                    ChartDataPoint(label: '2013', value: 2100),
+                                    ChartDataPoint(label: '2016', value: 2400),
+                                    ChartDataPoint(label: '2019', value: 1700),
+                                    ChartDataPoint(label: '2022', value: 2000),
+                                    ChartDataPoint(label: '2025', value: 2700),
+                                  ],
+                                  lineColor: controller.isExpenseSelected
+                                      ? const Color(0xffFF0000)
+                                      : const Color(0xff00C00D),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      20.verticalSpace,
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 7.w),
+                        20.verticalSpace,
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 7.w),
 
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            for (var duration in [
-                              '1m',
-                              '2m',
-                              '4m',
-                              '6m',
-                              '1y',
-                              '2y',
-                              '4y',
-                            ])
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 10.w,
-                                  vertical: 5.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              for (var duration in [
+                                '1m',
+                                '2m',
+                                '4m',
+                                '6m',
+                                '1y',
+                                '2y',
+                                '4y',
+                              ])
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10.w,
+                                    vertical: 5.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(
+                                      color: AppColors.greyColor,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4.r),
+                                  ),
+                                  child: CustomText(
+                                    duration,
+                                    size: 16.sp,
                                     color: AppColors.greyColor,
                                   ),
-                                  borderRadius: BorderRadius.circular(4.r),
                                 ),
-                                child: CustomText(
-                                  duration,
-                                  size: 16.sp,
-                                  color: AppColors.greyColor,
+                            ],
+                          ),
+                        ),
+                        20.verticalSpace,
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          child: CustomSlider(
+                            min: 0,
+                            max: 10000,
+                            startValue: 2000,
+                            endValue: 8000,
+                            lineColor: controller.isExpenseSelected
+                                ? const Color(0xffFF9494)
+                                : const Color(0xff9DFFA3),
+                            handleColor: const Color(0xFFFFE478),
+                            onChanged: (start, end) {
+                              print(
+                                'Range: \$${start.toInt()} - \$${end.toInt()}',
+                              );
+                            },
+                          ),
+                        ),
+                        30.verticalSpace,
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 18.0.w),
+                          child: Row(
+                            children: [
+                              InkWell(
+                                child: Image.asset(
+                                  AppIcons.sort,
+                                  height: 24.r,
+                                  width: 24.r,
                                 ),
                               ),
-                          ],
+                              40.horizontalSpace,
+                              InkWell(
+                                onTap: () {
+                                  Get.toNamed(AppRoutes.filter.path);
+                                },
+                                child: Image.asset(
+                                  AppIcons.filter,
+                                  height: 24.r,
+                                  width: 24.r,
+                                ),
+                              ),
+                              40.horizontalSpace,
+                              InkWell(
+                                child: Image.asset(
+                                  AppIcons.search,
+                                  height: 24.r,
+                                  width: 24.r,
+                                ),
+                              ),
+                              const Spacer(),
+                              InkWell(
+                                onTap: () {
+                                  Get.toNamed(
+                                    AppRoutes.newTransaction.path,
+                                    arguments: {
+                                      'isExpenseSelected':
+                                          controller.isExpenseSelected,
+                                    },
+                                  );
+                                },
+                                child: Image.asset(
+                                  AppIcons.plus,
+                                  height: 21.r,
+                                  width: 21.r,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      20.verticalSpace,
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: CustomSlider(
-                          min: 0,
-                          max: 10000,
-                          startValue: 2000,
-                          endValue: 8000,
-                          lineColor: controller.isExpenseSelected
-                              ? const Color(0xffFF9494)
-                              : const Color(0xff9DFFA3),
-                          handleColor: const Color(0xFFFFE478),
-                          onChanged: (start, end) {
-                            print(
-                              'Range: \$${start.toInt()} - \$${end.toInt()}',
-                            );
-                          },
-                        ),
-                      ),
-                      30.verticalSpace,
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 18.0.w),
-                        child: Row(
-                          children: [
-                            InkWell(
-                              child: Image.asset(
-                                AppIcons.sort,
-                                height: 24.r,
-                                width: 24.r,
-                              ),
-                            ),
-                            40.horizontalSpace,
-                            InkWell(
-                              onTap: () {
-                                Get.toNamed(AppRoutes.filter.path);
-                              },
-                              child: Image.asset(
-                                AppIcons.filter,
-                                height: 24.r,
-                                width: 24.r,
-                              ),
-                            ),
-                            40.horizontalSpace,
-                            InkWell(
-                              child: Image.asset(
-                                AppIcons.search,
-                                height: 24.r,
-                                width: 24.r,
-                              ),
-                            ),
-                            const Spacer(),
-                            InkWell(
-                              onTap: () {
-                                Get.toNamed(
-                                  AppRoutes.newTransaction.path,
-                                  arguments: {
-                                    'isExpenseSelected':
-                                        controller.isExpenseSelected,
-                                  },
-                                );
-                              },
-                              child: Image.asset(
-                                AppIcons.plus,
-                                height: 21.r,
-                                width: 21.r,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                       25.verticalSpace,
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 15.w),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      // Hierarchical Year/Month/Transaction structure
+                      Obx(() {
+                        final years = controller.sortedYears;
+                        return Column(
                           children: [
-                            InkWell(
-                              child: Row(
-                                children: [
-                                  CustomText(
-                                    '2024',
-                                    color: AppColors.greyColor,
-                                    size: 16.sp,
+                            for (var year in years) ...[
+                              // Year Row
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 15.w),
+                                child: InkWell(
+                                  onTap: () =>
+                                      controller.toggleYearExpansion(year),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          CustomText(
+                                            year.toString(),
+                                            color: AppColors.greyColor,
+                                            size: 16.sp,
+                                          ),
+                                          5.horizontalSpace,
+                                          Icon(
+                                            controller.isYearExpanded(year)
+                                                ? Icons.arrow_drop_up_rounded
+                                                : Icons.arrow_drop_down_rounded,
+                                            size: 32.r,
+                                            color: AppColors.greyColor,
+                                          ),
+                                        ],
+                                      ),
+                                      CustomText(
+                                        '€ ${controller.calculateYearTotal(year).abs().toStringAsFixed(2).replaceAll('.', ',')}',
+                                        color: controller.isExpenseSelected
+                                            ? const Color(0xffFF0000)
+                                            : const Color(0xff00A40B),
+                                        size: 16.sp,
+                                      ),
+                                    ],
                                   ),
-                                  5.horizontalSpace,
-                                  Icon(
-                                    Icons.arrow_drop_down_rounded,
-                                    size: 32.r,
-                                    color: AppColors.greyColor,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            CustomText(
-                              '€ 12.000,23',
-                              color: const Color(0xffFF0000),
-                              size: 16.sp,
-                            ),
-                          ],
-                        ),
-                      ),
-                      18.verticalSpace,
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 15.w),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            InkWell(
-                              child: Row(
-                                children: [
-                                  CustomText(
-                                    'Dezember',
-                                    color: AppColors.greyColor,
-                                    size: 16.sp,
-                                  ),
-                                  5.horizontalSpace,
-                                  Icon(
-                                    Icons.arrow_drop_down_rounded,
-                                    size: 32.r,
-                                    color: AppColors.greyColor,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            CustomText(
-                              '€ 1.220,33',
-                              color: const Color(0xffFF0000),
-                              size: 16.sp,
-                            ),
-                          ],
-                        ),
-                      ),
-                      13.verticalSpace,
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w),
-                        child: Column(
-                          spacing: 4.h,
-                          children: [
-                            for (var transaction
-                                in controller.sortedTransactions)
-                              if (transaction.id != null)
-                                TransactionItem(
-                                  transaction: transaction,
-                                  isSelected: selectedIds.contains(
-                                    transaction.id,
-                                  ),
-                                  onSelect: (id) {
-                                    setState(() {
-                                      if (selectedIds.contains(id)) {
-                                        selectedIds.remove(id);
-                                      } else {
-                                        selectedIds.add(id);
-                                      }
-                                    });
-                                  },
-                                  isSelectionMode: selectedIds.isNotEmpty,
                                 ),
+                              ),
+
+                              // Months (shown when year is expanded)
+                              if (controller.isYearExpanded(year)) ...[
+                                18.verticalSpace,
+                                for (var month in controller.getSortedMonths(
+                                  year,
+                                )) ...[
+                                  // Month Row
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 15.w,
+                                    ),
+                                    child: InkWell(
+                                      onTap: () => controller
+                                          .toggleMonthExpansion(year, month),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              CustomText(
+                                                controller.getMonthName(month),
+                                                color: AppColors.greyColor,
+                                                size: 16.sp,
+                                              ),
+                                              5.horizontalSpace,
+                                              Icon(
+                                                controller.isMonthExpanded(
+                                                      year,
+                                                      month,
+                                                    )
+                                                    ? Icons
+                                                          .arrow_drop_up_rounded
+                                                    : Icons
+                                                          .arrow_drop_down_rounded,
+                                                size: 32.r,
+                                                color: AppColors.greyColor,
+                                              ),
+                                            ],
+                                          ),
+                                          CustomText(
+                                            '€ ${controller.calculateMonthTotal(year, month).abs().toStringAsFixed(2).replaceAll('.', ',')}',
+                                            color: controller.isExpenseSelected
+                                                ? const Color(0xffFF0000)
+                                                : const Color(0xff00A40B),
+                                            size: 16.sp,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Transactions (shown when month is expanded)
+                                  if (controller.isMonthExpanded(
+                                    year,
+                                    month,
+                                  )) ...[
+                                    13.verticalSpace,
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 6.w,
+                                      ),
+                                      child: Column(
+                                        spacing: 4.h,
+                                        children: [
+                                          for (var transaction
+                                              in controller
+                                                  .getTransactionsForMonth(
+                                                    year,
+                                                    month,
+                                                  ))
+                                            if (transaction.id != null)
+                                              TransactionItem(
+                                                transaction: transaction,
+                                                isSelected: selectedIds
+                                                    .contains(transaction.id),
+                                                onSelect: (id) {
+                                                  setState(() {
+                                                    if (selectedIds.contains(
+                                                      id,
+                                                    )) {
+                                                      selectedIds.remove(id);
+                                                    } else {
+                                                      selectedIds.add(id);
+                                                    }
+                                                  });
+                                                },
+                                                isSelectionMode:
+                                                    selectedIds.isNotEmpty,
+                                              ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+
+                                  18.verticalSpace,
+                                ],
+                              ],
+
+                              if (year != years.last) 18.verticalSpace,
+                            ],
                           ],
-                        ),
-                      ),
+                        );
+                      }),
                       150.verticalSpace,
                     ],
                   );
