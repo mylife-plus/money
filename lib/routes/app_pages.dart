@@ -4,7 +4,7 @@ import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/routes/app_routes.dart';
-import 'package:moneyapp/screens/filter/filter_screen.dart';
+import 'package:moneyapp/screens/filter/transaction_filter_screen.dart';
 import 'package:moneyapp/screens/hashtag/hashtag_group_screen.dart';
 import 'package:moneyapp/screens/home/home_screen.dart';
 import 'package:moneyapp/screens/home/investment_list_screen.dart';
@@ -101,8 +101,8 @@ class AppPages {
       }),
     ),
     GetPage(
-      name: AppRoutes.filter.path,
-      page: () => const FilterScreen(),
+      name: AppRoutes.transactionFilter.path,
+      page: () => const TransactionFilterScreen(),
       binding: BindingsBuilder(() {
         Get.lazyPut<MCCController>(() => MCCController());
         Get.lazyPut<HashtagGroupsController>(() => HashtagGroupsController());

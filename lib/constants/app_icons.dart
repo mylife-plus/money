@@ -34,6 +34,7 @@ class AppIcons {
 
   // Transaction & Finance Icons
   static const String transaction = 'assets/icons/transaction_icon.png';
+  static const String clock = 'assets/icons/clock.png';
   static const String atm = 'assets/icons/atm_icon.png';
   static const String cart = 'assets/icons/cart_icon.png';
   static const String car = 'assets/icons/car_icon.png';

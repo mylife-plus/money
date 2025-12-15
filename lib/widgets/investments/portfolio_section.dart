@@ -32,38 +32,6 @@ class PortfolioSection extends StatelessWidget {
           height: 227.h,
           child: Column(
             children: [
-              Row(
-                children: [
-                  Image.asset(AppIcons.refresh, height: 21.r, width: 21.r),
-                  Spacer(flex: 96),
-                  CustomText.richText(
-                    children: [
-                      CustomText.span(
-                        '\$ 360,000',
-                        size: 20.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      CustomText.span(
-                        ' +410%',
-                        size: 14.sp,
-                        color: Color(0xff00C00D),
-                      ),
-                    ],
-                  ),
-                  Spacer(flex: 36),
-                  Padding(
-                    padding: EdgeInsets.only(right: 15.w),
-                    child: CustomText(
-                      '12.10.2025',
-                      size: 14.sp,
-                      fontWeight: FontWeight.normal,
-                      color: AppColors.greyColor,
-                    ),
-                  ),
-                ],
-              ),
-              12.verticalSpace,
               Expanded(
                 child: SmoothLineChartWidget(
                   data: [
@@ -94,13 +62,12 @@ class PortfolioSection extends StatelessWidget {
               for (var duration in [
                 '7d',
                 '2w',
-                '1m',
                 '2m',
                 '4m',
                 '6m',
-                '1y',
                 '2y',
                 '4y',
+                'All',
               ])
                 Container(
                   width: 36.w,
@@ -122,6 +89,7 @@ class PortfolioSection extends StatelessWidget {
           ),
         ),
         20.verticalSpace,
+
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 9.w),
           child: CustomSlider(
@@ -136,7 +104,39 @@ class PortfolioSection extends StatelessWidget {
             },
           ),
         ),
-        25.verticalSpace,
+        12.verticalSpace,
+        Row(
+          children: [
+            70.horizontalSpace,
+            Spacer(),
+            CustomText.richText(
+              children: [
+                CustomText.span(
+                  '\$ 360,000',
+                  size: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                CustomText.span(
+                  ' +410%',
+                  size: 14.sp,
+                  color: Color(0xff00C00D),
+                ),
+              ],
+            ),
+            Spacer(),
+            Padding(
+              padding: EdgeInsets.only(right: 15.w),
+              child: CustomText(
+                '12.10.2025',
+                size: 14.sp,
+                fontWeight: FontWeight.normal,
+                color: AppColors.greyColor,
+              ),
+            ),
+          ],
+        ),
+        13.verticalSpace,
         Padding(
           padding: EdgeInsets.only(left: 9.w, right: 9.w),
           child: Row(
@@ -162,7 +162,7 @@ class PortfolioSection extends StatelessWidget {
               ),
 
               Expanded(
-                flex: 150,
+                flex: 125,
                 child: CustomText(
                   'Total',
                   textAlign: TextAlign.center,

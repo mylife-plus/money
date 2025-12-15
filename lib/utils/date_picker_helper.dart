@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moneyapp/constants/app_colors.dart';
 
 /// A helper class for showing date pickers with consistent theming across the app
 class DatePickerHelper {
@@ -24,6 +25,11 @@ class DatePickerHelper {
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.black,
+              surface: AppColors.background,
+            ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.black, // sets Cancel/OK text color

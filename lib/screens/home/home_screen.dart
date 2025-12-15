@@ -5,6 +5,8 @@ import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/screens/filter/transaction_filter_screen.dart';
+import 'package:moneyapp/screens/transactions/transaction_search_screen.dart';
 import 'package:moneyapp/widgets/charts/step_line_chart.dart';
 import 'package:moneyapp/widgets/common/custom_app_bar.dart';
 import 'package:moneyapp/widgets/common/custom_slider.dart';
@@ -15,6 +17,7 @@ import 'package:moneyapp/widgets/common/selection_app_bar.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
+import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 
 /// Home Screen
 /// Main landing screen of the app
@@ -33,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen>
   double _lastScrollOffset = 0;
   bool _isAppBarVisible = true;
   List<int> selectedIds = [];
+  SortOption _selectedSortOption = SortOption.mostRecent;
 
   @override
   void initState() {
@@ -208,50 +212,50 @@ class _HomeScreenState extends State<HomeScreen>
                           height: 227.h,
                           child: Column(
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Image.asset(
-                                    AppIcons.refresh,
-                                    height: 21.r,
-                                    width: 21.r,
-                                  ),
+                              // Row(
+                              //   mainAxisAlignment:
+                              //       MainAxisAlignment.spaceBetween,
+                              //   children: [
+                              //     Image.asset(
+                              //       AppIcons.refresh,
+                              //       height: 21.r,
+                              //       width: 21.r,
+                              //     ),
 
-                                  CustomToggleSwitchSmall(
-                                    option1Text: 'year',
-                                    option2Text: 'month',
-                                    backgroundColor:
-                                        controller.isExpenseSelected
-                                        ? const Color(0xffFFB2B2)
-                                        : const Color(0xffB1FFB6),
-                                    selectedOption: controller
-                                        .selectedChartDurationOption
-                                        .value,
-                                    onOption1Tap: controller.selectYear,
-                                    onOption2Tap: controller.selectMonth,
-                                  ),
-                                  CustomText(
-                                    '\$ 2,720',
-                                    size: 20.sp,
-                                    fontWeight: FontWeight.bold,
-                                    color: controller.isExpenseSelected
-                                        ? const Color(0xffFF0000)
-                                        : const Color(0xff00C00D),
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsets.only(right: 15.w),
-                                    child: CustomText(
-                                      'Dez 2025',
-                                      size: 14.sp,
-                                      fontWeight: FontWeight.normal,
-                                      color: controller.isExpenseSelected
-                                          ? const Color(0xffFF0000)
-                                          : const Color(0xff00C00D),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              //     CustomToggleSwitchSmall(
+                              //       option1Text: 'year',
+                              //       option2Text: 'month',
+                              //       backgroundColor:
+                              //           controller.isExpenseSelected
+                              //           ? const Color(0xffFFB2B2)
+                              //           : const Color(0xffB1FFB6),
+                              //       selectedOption: controller
+                              //           .selectedChartDurationOption
+                              //           .value,
+                              //       onOption1Tap: controller.selectYear,
+                              //       onOption2Tap: controller.selectMonth,
+                              //     ),
+                              //     CustomText(
+                              //       '\$ 2,720',
+                              //       size: 20.sp,
+                              //       fontWeight: FontWeight.bold,
+                              //       color: controller.isExpenseSelected
+                              //           ? const Color(0xffFF0000)
+                              //           : const Color(0xff00C00D),
+                              //     ),
+                              //     Padding(
+                              //       padding: EdgeInsets.only(right: 15.w),
+                              //       child: CustomText(
+                              //         'Dez 2025',
+                              //         size: 14.sp,
+                              //         fontWeight: FontWeight.normal,
+                              //         color: controller.isExpenseSelected
+                              //             ? const Color(0xffFF0000)
+                              //             : const Color(0xff00C00D),
+                              //       ),
+                              //     ),
+                              //   ],
+                              // ),
                               Expanded(
                                 child: StepLineChartWidget(
                                   data: [
@@ -286,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 '6m',
                                 '1y',
                                 '2y',
-                                '4y',
+                                'All',
                               ])
                                 Container(
                                   padding: EdgeInsets.symmetric(
@@ -334,6 +338,19 @@ class _HomeScreenState extends State<HomeScreen>
                           child: Row(
                             children: [
                               InkWell(
+                                onTap: () async {
+                                  final result = await TopSortSheet.show(
+                                    context: context,
+                                    title: 'Sorting',
+                                    selectedOption: _selectedSortOption,
+                                  );
+                                  if (result != null) {
+                                    setState(() {
+                                      _selectedSortOption = result;
+                                    });
+                                    // TODO: Apply sorting logic
+                                  }
+                                },
                                 child: Image.asset(
                                   AppIcons.sort,
                                   height: 24.r,
@@ -343,7 +360,10 @@ class _HomeScreenState extends State<HomeScreen>
                               40.horizontalSpace,
                               InkWell(
                                 onTap: () {
-                                  Get.toNamed(AppRoutes.filter.path);
+                                  Get.to(
+                                    () => TransactionFilterScreen(),
+                                    transition: Transition.upToDown,
+                                  );
                                 },
                                 child: Image.asset(
                                   AppIcons.filter,
@@ -353,6 +373,9 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                               40.horizontalSpace,
                               InkWell(
+                                onTap: () {
+                                  Get.to(() => const TransactionSearchScreen());
+                                },
                                 child: Image.asset(
                                   AppIcons.search,
                                   height: 24.r,
@@ -407,8 +430,8 @@ class _HomeScreenState extends State<HomeScreen>
                                           5.horizontalSpace,
                                           Icon(
                                             controller.isYearExpanded(year)
-                                                ? Icons.arrow_drop_up_rounded
-                                                : Icons.arrow_drop_down_rounded,
+                                                ? Icons.arrow_drop_down_rounded
+                                                : Icons.arrow_drop_up_rounded,
                                             size: 32.r,
                                             color: AppColors.greyColor,
                                           ),
@@ -458,9 +481,9 @@ class _HomeScreenState extends State<HomeScreen>
                                                       month,
                                                     )
                                                     ? Icons
-                                                          .arrow_drop_up_rounded
+                                                          .arrow_drop_down_rounded
                                                     : Icons
-                                                          .arrow_drop_down_rounded,
+                                                          .arrow_drop_up_rounded,
                                                 size: 32.r,
                                                 color: AppColors.greyColor,
                                               ),

@@ -13,16 +13,21 @@ import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/mcc/mcc_filter_dialog.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_filter_dialog.dart';
 
-class FilterScreen extends StatefulWidget {
-  const FilterScreen({super.key});
+class TransactionFilterScreen extends StatefulWidget {
+  const TransactionFilterScreen({super.key});
 
   @override
-  State<FilterScreen> createState() => _FilterScreenState();
+  State<TransactionFilterScreen> createState() =>
+      _TransactionFilterScreenState();
 }
 
-class _FilterScreenState extends State<FilterScreen> {
-  late final MCCController mccController;
-  late final HashtagGroupsController hashtagController;
+class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
+  // late final MCCController mccController;
+  // late final HashtagGroupsController hashtagController;
+  MCCController mccController = Get.put(MCCController());
+  HashtagGroupsController hashtagController = Get.put(
+    HashtagGroupsController(),
+  );
 
   DateTime? fromDate;
   DateTime? toDate;

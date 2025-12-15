@@ -105,6 +105,7 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                     20.verticalSpace,
                     Obx(
                       () => CustomToggleSwitch(
+                        iconColorShouldEffect: true,
                         option1IconPath: AppIcons.chartSquare,
                         option1Text: 'Portfolio',
                         option2IconPath: AppIcons.bitcoinConvert,

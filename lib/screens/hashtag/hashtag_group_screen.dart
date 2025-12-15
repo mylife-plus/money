@@ -588,6 +588,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           isHashtagMode: true,
           isMainGroup: false,
           parentId: hashtagGroupId,
+          groupList: _controller.allGroups,
           onSave: (name, parentId) async {
             // Use the existing save logic
             if (name.isEmpty) {
@@ -603,7 +604,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             try {
               final newSubgroup = await _hashtagGroupService.addCustomGroup(
                 name,
-                parentId: hashtagGroupId,
+                parentId: parentId ?? hashtagGroupId,
               );
 
               if (newSubgroup == null) {

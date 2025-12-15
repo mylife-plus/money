@@ -27,16 +27,14 @@ class HomeController extends GetxController {
     _expandLatestYearAndMonth();
   }
 
-  /// Expand the latest year and month by default
+  /// Expand all years and months by default
   void _expandLatestYearAndMonth() {
-    if (sortedYears.isNotEmpty) {
-      final latestYear = sortedYears.first;
-      expandedYears.add(latestYear);
+    for (var year in sortedYears) {
+      expandedYears.add(year);
 
-      final monthsInYear = getSortedMonths(latestYear);
-      if (monthsInYear.isNotEmpty) {
-        final latestMonth = monthsInYear.first;
-        expandedMonths.add('$latestYear-$latestMonth');
+      final monthsInYear = getSortedMonths(year);
+      for (var month in monthsInYear) {
+        expandedMonths.add('$year-$month');
       }
     }
   }

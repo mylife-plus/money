@@ -15,7 +15,7 @@ enum AppRoutes {
   newInvestmentTransaction,
   newPortfolioChange,
   addMCC,
-  filter,
+  transactionFilter,
   bitcoinPrices,
   // Add more routes here as needed
   // example: login, profile, etc.
@@ -53,7 +53,7 @@ extension AppRoutesExtension on AppRoutes {
         return '/newPortfolioChange';
       case AppRoutes.addMCC:
         return '/addMCC';
-      case AppRoutes.filter:
+      case AppRoutes.transactionFilter:
         return '/filter';
       case AppRoutes.bitcoinPrices:
         return '/bitcoinPrices';

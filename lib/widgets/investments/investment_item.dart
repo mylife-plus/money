@@ -82,7 +82,7 @@ class InvestmentItem extends StatelessWidget {
           ),
 
           Expanded(
-            flex: 150,
+            flex: 125,
             child: CustomText.richText(
               textAlign: TextAlign.right,
               children: [

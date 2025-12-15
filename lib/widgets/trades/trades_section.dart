@@ -5,11 +5,22 @@ import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/screens/filter/portfolio_filter_screen.dart';
+import 'package:moneyapp/screens/filter/transaction_filter_screen.dart';
+import 'package:moneyapp/screens/investments/trade_search_screen.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
+import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 
-class TradesSection extends StatelessWidget {
+class TradesSection extends StatefulWidget {
   const TradesSection({super.key});
+
+  @override
+  State<TradesSection> createState() => _TradesSectionState();
+}
+
+class _TradesSectionState extends State<TradesSection> {
+  SortOption _selectedSortOption = SortOption.mostRecent;
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +35,39 @@ class TradesSection extends StatelessWidget {
           child: Row(
             children: [
               InkWell(
+                onTap: () async {
+                  final result = await TopSortSheet.show(
+                    context: context,
+                    title: 'Sorting',
+                    selectedOption: _selectedSortOption,
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _selectedSortOption = result;
+                    });
+                    // TODO: Apply sorting logic
+                  }
+                },
                 child: Image.asset(AppIcons.sort, height: 24.r, width: 24.r),
               ),
               40.horizontalSpace,
               InkWell(
+                onTap: () {
+                  Get.to(
+                    () => PortfolioFilterScreen(),
+                    transition: Transition.upToDown,
+                  );
+                },
                 child: Image.asset(AppIcons.filter, height: 24.r, width: 24.r),
               ),
               40.horizontalSpace,
               InkWell(
+                onTap: () {
+                  Get.to(
+                    () => const TradeSearchScreen(),
+                    transition: Transition.rightToLeft,
+                  );
+                },
                 child: Image.asset(AppIcons.search, height: 24.r, width: 24.r),
               ),
               Spacer(),
@@ -69,8 +105,8 @@ class TradesSection extends StatelessWidget {
                         5.horizontalSpace,
                         Icon(
                           controller.isYearExpanded(year)
-                              ? Icons.arrow_drop_up_rounded
-                              : Icons.arrow_drop_down_rounded,
+                              ? Icons.arrow_drop_down_rounded
+                              : Icons.arrow_drop_up_rounded,
                           size: 32.r,
                           color: AppColors.greyColor,
                         ),
@@ -99,8 +135,8 @@ class TradesSection extends StatelessWidget {
                             5.horizontalSpace,
                             Icon(
                               controller.isMonthExpanded(year, month)
-                                  ? Icons.arrow_drop_up_rounded
-                                  : Icons.arrow_drop_down_rounded,
+                                  ? Icons.arrow_drop_down_rounded
+                                  : Icons.arrow_drop_up_rounded,
                               size: 32.r,
                               color: AppColors.greyColor,
                             ),

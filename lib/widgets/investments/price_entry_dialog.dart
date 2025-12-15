@@ -46,10 +46,15 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
       context: context,
       initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.black,
+              surface: AppColors.background,
+            ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: Colors.black),
             ),
@@ -216,7 +221,7 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Price',
+                  hintText: '0',
                   labelText: 'Price',
                   labelStyle: TextStyle(
                     color: AppColors.greyColor,

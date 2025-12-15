@@ -27,6 +27,9 @@ class CustomToggleSwitch extends StatelessWidget {
   /// Callback when option 2 is tapped
   final VoidCallback onOption2Tap;
 
+  ///
+  final bool iconColorShouldEffect;
+
   const CustomToggleSwitch({
     super.key,
     required this.option1IconPath,
@@ -36,6 +39,7 @@ class CustomToggleSwitch extends StatelessWidget {
     required this.selectedOption,
     required this.onOption1Tap,
     required this.onOption2Tap,
+    this.iconColorShouldEffect = false,
   });
 
   @override
@@ -65,7 +69,14 @@ class CustomToggleSwitch extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(option1IconPath, width: 33.r, height: 33.r),
+                    Image.asset(
+                      option1IconPath,
+                      width: 33.r,
+                      height: 33.r,
+                      color: iconColorShouldEffect
+                          ? (selectedOption == 1 ? null : AppColors.greyColor)
+                          : null,
+                    ),
                     3.horizontalSpace,
                     CustomText(
                       option1Text,
@@ -98,7 +109,14 @@ class CustomToggleSwitch extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(option2IconPath, width: 33.r, height: 33.r),
+                    Image.asset(
+                      option2IconPath,
+                      width: 33.r,
+                      height: 33.r,
+                      color: iconColorShouldEffect
+                          ? (selectedOption == 2 ? null : AppColors.greyColor)
+                          : null,
+                    ),
                     3.horizontalSpace,
                     CustomText(
                       option2Text,
@@ -108,7 +126,7 @@ class CustomToggleSwitch extends StatelessWidget {
                           : FontWeight.w500,
                       color: selectedOption == 2
                           ? Colors.black
-                          : const Color(0xff6E6E6E),
+                          : AppColors.greyColor,
                     ),
                   ],
                 ),

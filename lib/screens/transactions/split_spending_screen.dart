@@ -348,6 +348,11 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                               builder: (context, child) {
                                 return Theme(
                                   data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: AppColors.primary,
+                                      onPrimary: Colors.black,
+                                      surface: AppColors.background,
+                                    ),
                                     textButtonTheme: TextButtonThemeData(
                                       style: TextButton.styleFrom(
                                         foregroundColor: Colors.black,
@@ -556,53 +561,71 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                     ),
                   ),
                   7.verticalSpace,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CustomText(
-                        'Hashtags',
-                        size: 14.sp,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                      InkWell(
-                        onTap: () => _showHashtagSelectionDialog(index),
-                        child: Image.asset(
-                          AppIcons.plus,
-                          width: 16.w,
-                          height: 16.h,
-                        ),
-                      ),
-                    ],
-                  ),
-                  7.verticalSpace,
+
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Wrap(
                       alignment: WrapAlignment.start,
                       spacing: 8.w,
                       runSpacing: 8.h,
-                      children: item.hashtags.map((hashtag) {
-                        String categoryGroup = 'Main Group';
-                        if (hashtag.isSubgroup) {
-                          final mainGroup = hashtagController.allGroups
-                              .firstWhereOrNull(
-                                (g) => g.id == hashtag.parentId,
-                              );
-                          categoryGroup = mainGroup?.name ?? 'Unknown';
-                        }
-                        return CategoryChip(
-                          category: hashtag.name,
-                          categoryGroup: categoryGroup,
-                          onRemove: () {
-                            setState(() {
-                              item.hashtags.removeWhere(
-                                (h) => h.id == hashtag.id,
-                              );
-                            });
-                          },
-                        );
-                      }).toList(),
+                      children: [
+                        InkWell(
+                          onTap: () => _showHashtagSelectionDialog(index),
+                          child: Container(
+                            height: 42.h,
+                            width: 37.w,
+                            padding: EdgeInsets.fromLTRB(5.r, 0.r, 5.r, 0.r),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4.r),
+                              border: Border.all(color: AppColors.greyBorder),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 4.r,
+                                  offset: Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CustomText(
+                                  'Add',
+                                  size: 12.sp,
+                                  color: AppColors.greyColor,
+                                ),
+                                CustomText(
+                                  '#',
+                                  size: 16.sp,
+                                  color: Color(0xff0088FF),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        ...item.hashtags.map((hashtag) {
+                          String categoryGroup = 'Main Group';
+                          if (hashtag.isSubgroup) {
+                            final mainGroup = hashtagController.allGroups
+                                .firstWhereOrNull(
+                                  (g) => g.id == hashtag.parentId,
+                                );
+                            categoryGroup = mainGroup?.name ?? 'Unknown';
+                          }
+                          return CategoryChip(
+                            category: hashtag.name,
+                            categoryGroup: categoryGroup,
+                            onRemove: () {
+                              setState(() {
+                                item.hashtags.removeWhere(
+                                  (h) => h.id == hashtag.id,
+                                );
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ],
                     ),
                   ),
                 ],

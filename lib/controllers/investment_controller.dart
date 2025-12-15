@@ -148,15 +148,13 @@ class InvestmentController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Expand the latest year and month by default
-    if (sortedYears.isNotEmpty) {
-      final latestYear = sortedYears.first;
-      expandedYears.add(latestYear);
+    // Expand all years and months by default
+    for (var year in sortedYears) {
+      expandedYears.add(year);
 
-      final months = getSortedMonths(latestYear);
-      if (months.isNotEmpty) {
-        final latestMonth = months.first;
-        expandedMonths.add('$latestYear-$latestMonth');
+      final months = getSortedMonths(year);
+      for (var month in months) {
+        expandedMonths.add('$year-$month');
       }
     }
   }

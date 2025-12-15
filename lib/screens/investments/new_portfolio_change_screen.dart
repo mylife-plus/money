@@ -217,6 +217,11 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                   builder: (context, child) {
                                     return Theme(
                                       data: Theme.of(context).copyWith(
+                                        colorScheme: ColorScheme.light(
+                                          primary: AppColors.primary,
+                                          onPrimary: Colors.black,
+                                          surface: AppColors.background,
+                                        ),
                                         textButtonTheme: TextButtonThemeData(
                                           style: TextButton.styleFrom(
                                             foregroundColor: Colors.black,

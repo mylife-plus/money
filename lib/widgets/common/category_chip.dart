@@ -34,7 +34,7 @@ class CategoryChip extends StatelessWidget {
           InkWell(
             onTap: onTap,
             child: Container(
-              height: 41.h,
+              height: 42.h,
               padding: EdgeInsets.fromLTRB(8.r, 0.r, 11.r, 0.r),
               decoration: BoxDecoration(
                 color: backgroundColor,
