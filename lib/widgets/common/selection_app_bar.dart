@@ -15,10 +15,10 @@ class SelectionAppBar extends StatelessWidget {
   final VoidCallback onCancel;
 
   /// Callback when add hashtag is tapped
-  final VoidCallback onAddHashtag;
+  final VoidCallback? onAddHashtag;
 
   /// Callback when edit MCC is tapped
-  final VoidCallback onEditMCC;
+  final VoidCallback? onEditMCC;
 
   /// Callback when delete is tapped
   final VoidCallback onDelete;
@@ -27,8 +27,8 @@ class SelectionAppBar extends StatelessWidget {
     super.key,
     required this.selectedCount,
     required this.onCancel,
-    required this.onAddHashtag,
-    required this.onEditMCC,
+    this.onAddHashtag,
+    this.onEditMCC,
     required this.onDelete,
   });
 
@@ -81,22 +81,26 @@ class SelectionAppBar extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(21.w, 0, 21.w, 15.h),
             child: Row(
               children: [
-                Expanded(
-                  child: _ActionButton(
-                    label: 'add #',
-                    color: const Color(0xff0088FF),
-                    onTap: onAddHashtag,
+                if (onAddHashtag != null) ...[
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'add #',
+                      color: const Color(0xff0088FF),
+                      onTap: onAddHashtag!,
+                    ),
                   ),
-                ),
-                12.horizontalSpace,
-                Expanded(
-                  child: _ActionButton(
-                    label: 'edit MCC',
-                    color: const Color(0xff0071FF),
-                    onTap: onEditMCC,
+                  12.horizontalSpace,
+                ],
+                if (onEditMCC != null) ...[
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'edit MCC',
+                      color: const Color(0xff0071FF),
+                      onTap: onEditMCC!,
+                    ),
                   ),
-                ),
-                12.horizontalSpace,
+                  12.horizontalSpace,
+                ],
                 Expanded(
                   child: _ActionButton(
                     label: 'delete',

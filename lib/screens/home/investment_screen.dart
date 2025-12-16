@@ -25,6 +25,7 @@ class _InvestmentScreenState extends State<InvestmentScreen>
   late Animation<double> _animation;
   double _lastScrollOffset = 0;
   bool _isAppBarVisible = true;
+  bool _isSelectionMode = false;
 
   @override
   void initState() {
@@ -77,51 +78,60 @@ class _InvestmentScreenState extends State<InvestmentScreen>
       body: SafeArea(
         child: Column(
           children: [
-            SizeTransition(
-              sizeFactor: _animation,
-              child: FadeTransition(
-                opacity: _animation,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomAppBar(
-                      title: 'Investments',
-                      leadingIconPath: AppIcons.investment,
-                      actionIconPath: AppIcons.transaction,
-                      onActionIconTap: () {
-                        Get.offNamed(AppRoutes.home.path);
-                      },
-                    ),
-                    4.verticalSpace,
-                  ],
+            if (!_isSelectionMode)
+              SizeTransition(
+                sizeFactor: _animation,
+                child: FadeTransition(
+                  opacity: _animation,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CustomAppBar(
+                        title: 'Investments',
+                        leadingIconPath: AppIcons.investment,
+                        actionIconPath: AppIcons.transaction,
+                        onActionIconTap: () {
+                          Get.offNamed(AppRoutes.home.path);
+                        },
+                      ),
+                      4.verticalSpace,
+                    ],
+                  ),
                 ),
               ),
-            ),
             Expanded(
               child: SingleChildScrollView(
                 controller: _scrollController,
                 child: Column(
                   children: [
-                    20.verticalSpace,
-                    Obx(
-                      () => CustomToggleSwitch(
-                        iconColorShouldEffect: true,
-                        option1IconPath: AppIcons.chartSquare,
-                        option1Text: 'Portfolio',
-                        option2IconPath: AppIcons.bitcoinConvert,
-                        option2Text: 'Trades',
-                        selectedOption: controller.selectedToggleOption.value,
-                        onOption1Tap: controller.selectPortfolio,
-                        onOption2Tap: controller.selectTrades,
+                    if (!_isSelectionMode) ...[
+                      20.verticalSpace,
+                      Obx(
+                        () => CustomToggleSwitch(
+                          iconColorShouldEffect: true,
+                          option1IconPath: AppIcons.chartSquare,
+                          option1Text: 'Portfolio',
+                          option2IconPath: AppIcons.bitcoinConvert,
+                          option2Text: 'Trades',
+                          selectedOption: controller.selectedToggleOption.value,
+                          onOption1Tap: controller.selectPortfolio,
+                          onOption2Tap: controller.selectTrades,
+                        ),
                       ),
-                    ),
+                    ],
                     Obx(() {
                       return controller.isPortfolioSelected
                           ? PortfolioSection(
                               isPortfolioSelected:
                                   controller.isPortfolioSelected,
                             )
-                          : TradesSection();
+                          : TradesSection(
+                              onSelectionModeChanged: (isSelectionMode) {
+                                setState(() {
+                                  _isSelectionMode = isSelectionMode;
+                                });
+                              },
+                            );
                     }),
                   ],
                 ),

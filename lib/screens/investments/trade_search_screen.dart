@@ -126,7 +126,7 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
                             onChanged: _performSearch,
                             decoration: InputDecoration(
                               border: InputBorder.none,
-                              hintText: 'Search trades...',
+                              hintText: '',
                               labelText: 'Search',
                               labelStyle: TextStyle(
                                 color: AppColors.greyColor,

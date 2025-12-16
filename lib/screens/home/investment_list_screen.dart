@@ -180,7 +180,7 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
                   controller: searchController,
                   decoration: InputDecoration(
                     border: InputBorder.none,
-                    hintText: 'Search Investment',
+                    hintText: '',
                     suffixIcon: Icon(
                       Icons.search,
                       size: 20.sp,

@@ -107,7 +107,7 @@ class _MCCFilterDialogState extends State<MCCFilterDialog> {
                 controller: searchController,
                 decoration: InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Search MCC',
+                  hintText: '',
                   labelText: 'Search MCC',
                   suffixIcon: Icon(
                     Icons.search,

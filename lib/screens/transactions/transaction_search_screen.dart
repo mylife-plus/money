@@ -135,7 +135,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                             onChanged: _performSearch,
                             decoration: InputDecoration(
                               border: InputBorder.none,
-                              hintText: 'Search transactions...',
+                              hintText: '',
                               labelText: 'Search',
                               labelStyle: TextStyle(
                                 color: AppColors.greyColor,

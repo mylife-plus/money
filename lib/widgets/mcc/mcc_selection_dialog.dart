@@ -96,7 +96,7 @@ class _MCCSelectionDialogState extends State<MCCSelectionDialog> {
                 controller: searchController,
                 decoration: InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Search MCC',
+                  hintText: '',
                   labelText: 'Search MCC',
                   suffixIcon: Icon(
                     Icons.search,

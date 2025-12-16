@@ -32,6 +32,47 @@ class PortfolioSection extends StatelessWidget {
           height: 227.h,
           child: Column(
             children: [
+              Row(
+                children: [
+                  24.horizontalSpace,
+                  Padding(
+                    padding: EdgeInsets.only(right: 15.w),
+                    child: CustomText(
+                      '12.10.2025',
+                      size: 14.sp,
+                      fontWeight: FontWeight.normal,
+                      color: AppColors.greyColor,
+                    ),
+                  ),
+
+                  Spacer(),
+                  CustomText.richText(
+                    children: [
+                      CustomText.span(
+                        '\$ 360,000',
+                        size: 20.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+
+                      CustomText.span(
+                        ' USD',
+                        size: 12.sp,
+                        color: AppColors.greyColor,
+                      ),
+                      CustomText.span(
+                        '  +410%',
+                        size: 14.sp,
+                        color: Color(0xff00C00D),
+                      ),
+                    ],
+                  ),
+                  Spacer(),
+                  70.horizontalSpace,
+                ],
+              ),
+              12.verticalSpace,
+
               Expanded(
                 child: SmoothLineChartWidget(
                   data: [
@@ -104,39 +145,8 @@ class PortfolioSection extends StatelessWidget {
             },
           ),
         ),
-        12.verticalSpace,
-        Row(
-          children: [
-            70.horizontalSpace,
-            Spacer(),
-            CustomText.richText(
-              children: [
-                CustomText.span(
-                  '\$ 360,000',
-                  size: 20.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                CustomText.span(
-                  ' +410%',
-                  size: 14.sp,
-                  color: Color(0xff00C00D),
-                ),
-              ],
-            ),
-            Spacer(),
-            Padding(
-              padding: EdgeInsets.only(right: 15.w),
-              child: CustomText(
-                '12.10.2025',
-                size: 14.sp,
-                fontWeight: FontWeight.normal,
-                color: AppColors.greyColor,
-              ),
-            ),
-          ],
-        ),
-        13.verticalSpace,
+
+        16.verticalSpace,
         Padding(
           padding: EdgeInsets.only(left: 9.w, right: 9.w),
           child: Row(

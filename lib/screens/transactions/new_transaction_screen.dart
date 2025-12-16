@@ -446,7 +446,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                 controller: recipientController,
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
-                                  hintText: 'Recipient',
+                                  hintText: '',
                                   labelText: 'Recipient',
                                   labelStyle: TextStyle(
                                     color: AppColors.greyColor,
@@ -482,7 +482,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                           controller: noteController,
                           decoration: InputDecoration(
                             border: InputBorder.none,
-                            hintText: 'Note',
+                            hintText: '',
                             labelText: 'Note',
                             labelStyle: TextStyle(
                               color: AppColors.greyColor,

@@ -263,7 +263,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                           controller: nameController,
                           decoration: InputDecoration(
                             border: InputBorder.none,
-                            hintText: 'Enter MCC name',
+                            hintText: '',
                             labelText: 'MCC Name',
                             labelStyle: TextStyle(
                               color: const Color(0xffB4B4B4),
@@ -418,7 +418,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                             controller: newCategoryController,
                             decoration: InputDecoration(
                               border: InputBorder.none,
-                              hintText: 'Enter new category name',
+                              hintText: '',
                               labelText: 'Category Name',
                               labelStyle: TextStyle(
                                 color: const Color(0xffB4B4B4),

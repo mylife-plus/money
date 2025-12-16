@@ -138,14 +138,14 @@ class StepLineChartWidget extends StatelessWidget {
                 show: showDot,
                 getDotPainter: (spot, percent, barData, index) {
                   // Show circle only on last point
-                  if (index == data.length - 1) {
-                    return FlDotCirclePainter(
-                      radius: 6,
-                      color: lineColor,
-                      strokeWidth: 3,
-                      strokeColor: Colors.white,
-                    );
-                  }
+                  // if (index == data.length - 1) {
+                  //   return FlDotCirclePainter(
+                  //     radius: 6,
+                  //     color: lineColor,
+                  //     strokeWidth: 3,
+                  //     strokeColor: Colors.white,
+                  //   );
+                  // }
                   return FlDotCirclePainter(
                     radius: 0,
                     color: Colors.transparent,

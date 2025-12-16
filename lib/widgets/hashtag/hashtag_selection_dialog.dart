@@ -210,7 +210,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                 controller: searchController,
                 decoration: InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Search Hashtag',
+                  hintText: '',
                   labelText: 'Search Hashtag',
                   suffixIcon: Icon(
                     Icons.search,

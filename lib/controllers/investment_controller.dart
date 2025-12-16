@@ -5,6 +5,7 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/models/investment_recommendation.dart';
 
 class Trade {
+  final int? id;
   final DateTime date;
   final String soldAmount;
   final String soldSymbol;
@@ -20,6 +21,7 @@ class Trade {
   final String boughtTotalSymbol;
 
   Trade({
+    this.id,
     required this.date,
     required this.soldAmount,
     required this.soldSymbol,
@@ -49,6 +51,7 @@ class InvestmentController extends GetxController {
   // Sample trades data
   final RxList<Trade> trades = <Trade>[
     Trade(
+      id: 1,
       date: DateTime(2024, 12, 12),
       soldAmount: '1',
       soldSymbol: 'BTC',
@@ -64,6 +67,7 @@ class InvestmentController extends GetxController {
       boughtTotalSymbol: 'USD',
     ),
     Trade(
+      id: 2,
       date: DateTime(2024, 12, 1),
       soldAmount: '30,000',
       soldSymbol: 'EUR',
@@ -79,6 +83,7 @@ class InvestmentController extends GetxController {
       boughtTotalSymbol: 'USD',
     ),
     Trade(
+      id: 3,
       date: DateTime(2024, 12, 1),
       soldAmount: '30,000',
       soldSymbol: 'EUR',
@@ -94,6 +99,7 @@ class InvestmentController extends GetxController {
       boughtTotalSymbol: 'USD',
     ),
     Trade(
+      id: 4,
       date: DateTime(2023, 11, 15),
       soldAmount: '5',
       soldSymbol: 'ETH',
@@ -297,5 +303,10 @@ class InvestmentController extends GetxController {
   String getMonthName(int month) {
     final date = DateTime(2024, month);
     return DateFormat('MMMM').format(date);
+  }
+
+  /// Delete trades by IDs
+  void deleteTrades(List<int> tradeIds) {
+    trades.removeWhere((trade) => trade.id != null && tradeIds.contains(trade.id));
   }
 }

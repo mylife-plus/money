@@ -509,7 +509,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                             controller: item.recipientController,
                             decoration: InputDecoration(
                               border: InputBorder.none,
-                              hintText: 'Recipient',
+                              hintText: '',
                               labelText: 'Recipient',
                               labelStyle: TextStyle(
                                 color: AppColors.greyColor,
@@ -544,7 +544,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                       controller: item.noteController,
                       decoration: InputDecoration(
                         border: InputBorder.none,
-                        hintText: 'Note',
+                        hintText: '',
                         labelText: 'Note',
                         labelStyle: TextStyle(
                           color: AppColors.greyColor,

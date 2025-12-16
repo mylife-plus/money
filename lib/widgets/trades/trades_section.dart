@@ -9,11 +9,17 @@ import 'package:moneyapp/screens/filter/portfolio_filter_screen.dart';
 import 'package:moneyapp/screens/filter/transaction_filter_screen.dart';
 import 'package:moneyapp/screens/investments/trade_search_screen.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
+import 'package:moneyapp/widgets/common/selection_app_bar.dart';
 import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 
 class TradesSection extends StatefulWidget {
-  const TradesSection({super.key});
+  final Function(bool)? onSelectionModeChanged;
+
+  const TradesSection({
+    super.key,
+    this.onSelectionModeChanged,
+  });
 
   @override
   State<TradesSection> createState() => _TradesSectionState();
@@ -21,6 +27,13 @@ class TradesSection extends StatefulWidget {
 
 class _TradesSectionState extends State<TradesSection> {
   SortOption _selectedSortOption = SortOption.mostRecent;
+  List<int> selectedIds = [];
+
+  void _updateSelectionMode(bool isSelectionMode) {
+    if (widget.onSelectionModeChanged != null) {
+      widget.onSelectionModeChanged!(isSelectionMode);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,58 +42,78 @@ class _TradesSectionState extends State<TradesSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        40.verticalSpace,
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 18.0.w),
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () async {
-                  final result = await TopSortSheet.show(
-                    context: context,
-                    title: 'Sorting',
-                    selectedOption: _selectedSortOption,
-                  );
-                  if (result != null) {
-                    setState(() {
-                      _selectedSortOption = result;
-                    });
-                    // TODO: Apply sorting logic
-                  }
-                },
-                child: Image.asset(AppIcons.sort, height: 24.r, width: 24.r),
-              ),
-              40.horizontalSpace,
-              InkWell(
-                onTap: () {
-                  Get.to(
-                    () => PortfolioFilterScreen(),
-                    transition: Transition.upToDown,
-                  );
-                },
-                child: Image.asset(AppIcons.filter, height: 24.r, width: 24.r),
-              ),
-              40.horizontalSpace,
-              InkWell(
-                onTap: () {
-                  Get.to(
-                    () => const TradeSearchScreen(),
-                    transition: Transition.rightToLeft,
-                  );
-                },
-                child: Image.asset(AppIcons.search, height: 24.r, width: 24.r),
-              ),
-              Spacer(),
-              InkWell(
-                onTap: () {
-                  Get.toNamed(AppRoutes.newPortfolioChange.path);
-                },
-                child: Image.asset(AppIcons.plus, height: 21.r, width: 21.r),
-              ),
-            ],
+        // Show selection app bar or regular controls based on selection mode
+        if (selectedIds.isNotEmpty)
+          SelectionAppBar(
+            selectedCount: selectedIds.length,
+            onCancel: () {
+              setState(() {
+                selectedIds.clear();
+                _updateSelectionMode(false);
+              });
+            },
+            onDelete: () {
+              controller.deleteTrades(selectedIds);
+              setState(() {
+                selectedIds.clear();
+                _updateSelectionMode(false);
+              });
+            },
+          )
+        else ...[
+          40.verticalSpace,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 18.0.w),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () async {
+                    final result = await TopSortSheet.show(
+                      context: context,
+                      title: 'Sorting',
+                      selectedOption: _selectedSortOption,
+                    );
+                    if (result != null) {
+                      setState(() {
+                        _selectedSortOption = result;
+                      });
+                      // TODO: Apply sorting logic
+                    }
+                  },
+                  child: Image.asset(AppIcons.sort, height: 24.r, width: 24.r),
+                ),
+                40.horizontalSpace,
+                InkWell(
+                  onTap: () {
+                    Get.to(
+                      () => PortfolioFilterScreen(),
+                      transition: Transition.upToDown,
+                    );
+                  },
+                  child: Image.asset(AppIcons.filter, height: 24.r, width: 24.r),
+                ),
+                40.horizontalSpace,
+                InkWell(
+                  onTap: () {
+                    Get.to(
+                      () => const TradeSearchScreen(),
+                      transition: Transition.rightToLeft,
+                    );
+                  },
+                  child: Image.asset(AppIcons.search, height: 24.r, width: 24.r),
+                ),
+                Spacer(),
+                InkWell(
+                  onTap: () {
+                    Get.toNamed(AppRoutes.newPortfolioChange.path);
+                  },
+                  child: Image.asset(AppIcons.plus, height: 21.r, width: 21.r),
+                ),
+              ],
+            ),
           ),
-        ),
-        16.verticalSpace,
+          16.verticalSpace,
+        ],
 
         // Dynamic year/month/day/trade hierarchy
         Obx(() {
@@ -214,20 +247,37 @@ class _TradesSectionState extends State<TradesSection> {
                                 month,
                                 day,
                               ))
-                                TradeItemPair(
-                                  soldAmount: trade.soldAmount,
-                                  soldSymbol: trade.soldSymbol,
-                                  soldPrice: trade.soldPrice,
-                                  soldPriceSymbol: trade.soldPriceSymbol,
-                                  soldTotal: trade.soldTotal,
-                                  soldTotalSymbol: trade.soldTotalSymbol,
-                                  boughtAmount: trade.boughtAmount,
-                                  boughtSymbol: trade.boughtSymbol,
-                                  boughtPrice: trade.boughtPrice,
-                                  boughtPriceSymbol: trade.boughtPriceSymbol,
-                                  boughtTotal: trade.boughtTotal,
-                                  boughtTotalSymbol: trade.boughtTotalSymbol,
-                                ),
+                                if (trade.id != null)
+                                  TradeItemPair(
+                                    tradeId: trade.id,
+                                    soldAmount: trade.soldAmount,
+                                    soldSymbol: trade.soldSymbol,
+                                    soldPrice: trade.soldPrice,
+                                    soldPriceSymbol: trade.soldPriceSymbol,
+                                    soldTotal: trade.soldTotal,
+                                    soldTotalSymbol: trade.soldTotalSymbol,
+                                    boughtAmount: trade.boughtAmount,
+                                    boughtSymbol: trade.boughtSymbol,
+                                    boughtPrice: trade.boughtPrice,
+                                    boughtPriceSymbol: trade.boughtPriceSymbol,
+                                    boughtTotal: trade.boughtTotal,
+                                    boughtTotalSymbol: trade.boughtTotalSymbol,
+                                    isSelected: selectedIds.contains(trade.id),
+                                    onSelect: (id) {
+                                      setState(() {
+                                        if (selectedIds.contains(id)) {
+                                          selectedIds.remove(id);
+                                        } else {
+                                          selectedIds.add(id);
+                                        }
+                                        _updateSelectionMode(selectedIds.isNotEmpty);
+                                      });
+                                    },
+                                    onDelete: (id) {
+                                      controller.deleteTrades([id]);
+                                    },
+                                    isSelectionMode: selectedIds.isNotEmpty,
+                                  ),
                             ],
                           ),
                         ),
