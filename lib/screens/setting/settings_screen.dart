@@ -3,7 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
-import 'package:moneyapp/routes/app_pages.dart';
+import 'package:moneyapp/controllers/home_controller.dart';
+import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
+import 'package:moneyapp/services/database/database_helper.dart';
+import 'package:moneyapp/services/test_data_service.dart';
+
 import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/screens/setting/settings_tile.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
@@ -61,7 +65,10 @@ class SettingsScreen extends StatelessWidget {
                     icon: Image.asset(AppIcons.hashtag),
                     title: 'Hashtag',
                     onTap: () {
-                      Get.toNamed(AppRoutes.hashtagGroups.path);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.hashtagGroups.path,
+                      );
                     },
                   ),
                 ],
@@ -123,7 +130,10 @@ class SettingsScreen extends StatelessWidget {
                   SettingsTile(
                     title: '📥 Upload 💸Transactions ',
                     onTap: () {
-                      Get.toNamed(AppRoutes.uploadTransaction.path);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.uploadTransaction.path,
+                      );
                     },
                   ),
                   SettingsTile(
@@ -133,14 +143,22 @@ class SettingsScreen extends StatelessWidget {
                   SettingsTile(
                     title: '📥 Upload 💰Investments',
                     onTap: () {
-                      Get.toNamed(AppRoutes.uploadInvestment.path);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.uploadInvestment.path,
+                      );
                     },
                   ),
                   SettingsTile(title: '📤 Export 💰Investments ', onTap: () {}),
                   SettingsTile(
                     title: 'Erase All Data',
-                    onTap: () {},
+                    onTap: () => _showClearDataDialog(context),
                     titleColor: Color(0xffED1A2D),
+                  ),
+                  SettingsTile(
+                    icon: Icon(Icons.bug_report_outlined, size: 24.r),
+                    title: 'Load Test Data (Dev)',
+                    onTap: () => _showLoadTestDataDialog(context),
                   ),
                 ],
               ),
@@ -167,5 +185,153 @@ class SettingsScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _showClearDataDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Erase All Data'),
+        content: const Text(
+          '⚠️ DANGER: This will PERMANENTLY DELETE all your transactions, categories, and settings.\n\n'
+          'This action cannot be undone.\n\n'
+          'Are you absolutely sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Erase Everything'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // Show progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text("Erasing data..."),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      try {
+        // Clear DB
+        await DatabaseHelper.instance.clearAllData();
+
+        // Reload Controllers to refresh UI (will show empty list)
+        if (Get.isRegistered<HomeController>()) {
+          await Get.find<HomeController>().loadTransactions();
+        }
+        if (Get.isRegistered<HashtagGroupsController>()) {
+          await Get.find<HashtagGroupsController>().loadHashtagGroups();
+        }
+
+        if (context.mounted) {
+          Navigator.pop(context); // close progress
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('All data erased successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context); // close progress
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showLoadTestDataDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Load Test Data'),
+        content: const Text(
+          '⚠️ WARNING: This will DELETE all existing transactions and categories/hashtags.\n\n'
+          'It will create random test data (2015-Now) with new categories.\n\n'
+          'Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Load Data'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // Show progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text("Generating data..."),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      try {
+        await TestDataService().generateTestData();
+
+        // Reload Controllers to refresh UI
+        if (Get.isRegistered<HomeController>()) {
+          await Get.find<HomeController>().loadTransactions();
+        }
+        if (Get.isRegistered<HashtagGroupsController>()) {
+          await Get.find<HashtagGroupsController>().loadHashtagGroups();
+        }
+        if (context.mounted) {
+          Navigator.pop(context); // close progress
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Test data loaded successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context); // close progress
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 }

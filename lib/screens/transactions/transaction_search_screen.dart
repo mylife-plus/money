@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
+import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
@@ -46,25 +47,35 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
     }
 
     final controller = Get.find<HomeController>();
+    final mccController = Get.find<MCCController>();
     final allTransactions = <Transaction>[];
 
-    // Collect all transactions from all years and months
-    for (var year in controller.sortedYears) {
-      for (var month in controller.getSortedMonths(year)) {
-        allTransactions.addAll(controller.getTransactionsForMonth(year, month));
-      }
-    }
+    // Collect all transactions directly from the source
+    // Note: We might want to filter by the current expense/income toggle if desired,
+    // but typically search searches everything.
+    // If we want to search everything:
+    allTransactions.addAll(controller.transactions);
+
+    // If we wanted to search only filtered (e.g. only expenses if on expense tab):
+    // allTransactions.addAll(controller.filteredTransactions);
 
     // Filter transactions based on search query
     final lowerQuery = query.toLowerCase();
     _filteredTransactions = allTransactions.where((transaction) {
       final recipient = transaction.recipient.toLowerCase();
-      final mccText = transaction.mcc.text.toLowerCase();
+      final mcc = mccController.getMCCById(transaction.mccId);
+      final mccText = mcc?.name.toLowerCase() ?? '';
+      final mccCode = mcc?.mccCode?.toLowerCase() ?? '';
+      final hashtags = transaction.hashtags
+          .map((h) => h.name.toLowerCase())
+          .join(' ');
       final note = transaction.note.toLowerCase();
-      final amount = transaction.amount.toString();
+      final amount = transaction.amount.toStringAsFixed(2).replaceAll('.', ',');
 
       return recipient.contains(lowerQuery) ||
           mccText.contains(lowerQuery) ||
+          mccCode.contains(lowerQuery) ||
+          hashtags.contains(lowerQuery) ||
           note.contains(lowerQuery) ||
           amount.contains(lowerQuery);
     }).toList();
@@ -86,7 +97,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,

@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:moneyapp/models/chart_data_point.dart';
 
 /// Step Line Chart Widget
 /// Creates a beautiful step line chart matching the design
@@ -29,6 +30,22 @@ class StepLineChartWidget extends StatelessWidget {
       ),
       child: LineChart(
         LineChartData(
+          // Tooltip settings
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                return touchedBarSpots.map((barSpot) {
+                  return LineTooltipItem(
+                    barSpot.y.toStringAsFixed(2).replaceAll('.', ','),
+                    const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }).toList();
+              },
+            ),
+          ),
           // Grid settings
           gridData: FlGridData(
             show: true,
@@ -55,6 +72,10 @@ class StepLineChartWidget extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 24.h,
+                // Dynamic interval: Show roughly 5 labels max to prevent overlap
+                interval: data.length > 5
+                    ? (data.length / 5).ceilToDouble()
+                    : 1,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
                   if (index >= 0 && index < data.length) {
@@ -169,10 +190,23 @@ class StepLineChartWidget extends StatelessWidget {
   }
 
   double _getMaxY() {
-    if (data.isEmpty) return 3000;
+    if (data.isEmpty) return 100; // Default low value if empty
+
     final maxValue = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    // Round up to nearest 1000
-    return ((maxValue / 1000).ceil() * 1000).toDouble();
+
+    if (maxValue <= 0) return 100; // Default if all values are 0
+
+    // Adaptive rounding based on magnitude
+    if (maxValue <= 100) {
+      // Round up to nearest 10 (e.g., 45 -> 50)
+      return ((maxValue / 10).ceil() * 10).toDouble();
+    } else if (maxValue <= 1000) {
+      // Round up to nearest 100 (e.g., 250 -> 300)
+      return ((maxValue / 100).ceil() * 100).toDouble();
+    } else {
+      // Round up to nearest 1000 (e.g., 1200 -> 2000)
+      return ((maxValue / 1000).ceil() * 1000).toDouble();
+    }
   }
 
   double _getHorizontalInterval() {
@@ -186,7 +220,7 @@ class StepLineChartWidget extends StatelessWidget {
       if (kValue % 1 == 0) {
         return '${kValue.toInt()}k';
       } else {
-        return '${kValue.toStringAsFixed(1)}k';
+        return '${kValue.toStringAsFixed(1).replaceAll('.', ',')}k';
       }
     }
     return value.toInt().toString();
@@ -196,12 +230,4 @@ class StepLineChartWidget extends StatelessWidget {
     // 0 = middle, 1 = forward (right then up), 2 = backward (up then right)
     return 1.0; // Forward direction for step line
   }
-}
-
-/// Data point for the chart
-class ChartDataPoint {
-  final String label;
-  final double value;
-
-  ChartDataPoint({required this.label, required this.value});
 }

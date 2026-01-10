@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_colors.dart';
-import 'package:moneyapp/constants/app_icons.dart';
+
 import 'package:moneyapp/models/investment_data.dart';
 import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/widgets/common/custom_slider.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/investments/investment_item.dart';
 import 'package:moneyapp/widgets/charts/smooth_line_chart.dart';
-import 'package:moneyapp/widgets/charts/step_line_chart.dart';
+import 'package:moneyapp/models/chart_data_point.dart';
 
 class PortfolioSection extends StatelessWidget {
   final bool isPortfolioSelected;
@@ -141,7 +140,7 @@ class PortfolioSection extends StatelessWidget {
             lineColor: const Color(0xff0088FF),
             handleColor: const Color(0xFFFFE478),
             onChanged: (start, end) {
-              print('Range: \$${start.toInt()} - \$${end.toInt()}');
+              // print('Range: \$${start.toInt()} - \$${end.toInt()}');
             },
           ),
         ),
@@ -192,7 +191,7 @@ class PortfolioSection extends StatelessWidget {
               for (var investment in InvestmentData.getSampleData())
                 InkWell(
                   onTap: () {
-                    Get.toNamed(AppRoutes.bitcoinPrices.path);
+                    Navigator.pushNamed(context, AppRoutes.bitcoinPrices.path);
                   },
                   child: InvestmentItem(
                     backgroundColor: investment.backgroundColor,

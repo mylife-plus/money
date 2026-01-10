@@ -81,7 +81,7 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,

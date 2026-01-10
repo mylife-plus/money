@@ -88,7 +88,7 @@ class _MCCFilterDialogState extends State<MCCFilterDialog> {
                   fontWeight: FontWeight.w600,
                 ),
                 InkWell(
-                  onTap: () => Get.back(),
+                  onTap: () => Navigator.pop(context),
                   child: Icon(Icons.close, size: 24.sp),
                 ),
               ],
@@ -219,7 +219,7 @@ class _MCCFilterDialogState extends State<MCCFilterDialog> {
             InkWell(
               onTap: () {
                 widget.onSelectionChanged(selectedMCCs);
-                Get.back();
+                Navigator.pop(context);
               },
               child: Container(
                 width: 200.w,

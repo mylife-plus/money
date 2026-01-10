@@ -362,23 +362,28 @@ class _SearchableHashtagWidgetState extends State<SearchableHashtagWidget> {
       );
     }
 
-    final result = await Get.to(
-      () => HashtagGroupScreen(
-        allowMultipleSelection: true,
-        selectedHashtagGroups: previouslySelected,
-        onMultipleHashtagGroupsSelected: (selectedGroups) {
-          if (widget.onMultipleGroupsSelectedFromPicker != null) {
-            widget.onMultipleGroupsSelectedFromPicker!(selectedGroups);
-            for (final group in selectedGroups) {
-              _recentService.saveRecentHashtagGroup(group);
+    if (!mounted) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HashtagGroupScreen(
+          allowMultipleSelection: true,
+          selectedHashtagGroups: previouslySelected,
+          onMultipleHashtagGroupsSelected: (selectedGroups) {
+            if (widget.onMultipleGroupsSelectedFromPicker != null) {
+              widget.onMultipleGroupsSelectedFromPicker!(selectedGroups);
+              for (final group in selectedGroups) {
+                _recentService.saveRecentHashtagGroup(group);
+              }
+              _loadRecentHashtags();
+            } else {
+              for (final group in selectedGroups) {
+                _selectGroup(group);
+              }
             }
-            _loadRecentHashtags();
-          } else {
-            for (final group in selectedGroups) {
-              _selectGroup(group);
-            }
-          }
-        },
+          },
+        ),
       ),
     );
 

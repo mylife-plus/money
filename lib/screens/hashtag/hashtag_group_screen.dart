@@ -16,7 +16,6 @@ import 'package:moneyapp/widgets/hashtag/inline_add_main_group_widget.dart';
 import 'package:moneyapp/widgets/hashtag/inline_add_subgroup_widget.dart';
 import 'package:moneyapp/widgets/hashtag/inline_edit_subgroup_widget.dart';
 import 'package:moneyapp/widgets/hashtag/delete_hashtag_group_dialog.dart';
-import 'package:moneyapp/widgets/hashtag/cannot_delete_hashtag_group_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HashtagGroupScreen extends StatefulWidget {
@@ -131,6 +130,24 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     super.dispose();
   }
 
+  void _showSnackbar(String title, String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(message),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   /// Refresh hashtag groups from database (used after CRUD operations)
   Future<void> _refreshHashtagGroupsFromDatabase() async {
     try {
@@ -176,11 +193,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         '[HashtagGroupsView][_refreshHashtagGroupsFromDatabase] Exception type: ${e.runtimeType}',
       );
 
-      Get.snackbar(
+      _showSnackbar(
         'Unable to Refresh',
         'Unable to refresh hashtag groups. Please try again.',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
       );
     }
     debugPrint(
@@ -190,8 +205,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
   /// Show delete confirmation dialog
   void _showDeleteConfirmation(HashtagGroup hashtagGroup) {
-    Get.dialog(
-      DeleteHashtagGroupDialog(
+    showDialog(
+      context: context,
+      builder: (context) => DeleteHashtagGroupDialog(
         hashtagGroup: hashtagGroup,
         onConfirm: () => _deleteHashtagGroup(hashtagGroup.id!),
       ),
@@ -209,7 +225,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
       if (result == true) {
         // Successfully deleted
-        Get.back(); // Close confirmation dialog
+        Navigator.of(context).pop(); // Close confirmation dialog
 
         // Remove from recent selections before refreshing
         final group = await _hashtagGroupService.getGroupById(hashtagGroupId);
@@ -254,51 +270,32 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         );
         await _refreshHashtagGroupsFromDatabase();
 
-        Get.snackbar(
+        _showSnackbar(
           'Success',
           'Hashtag group deleted successfully!',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          isError: false,
         );
-      } else if (result == null) {
-        // Cannot delete due to memories
-        Get.back(); // Close confirmation dialog
-
-        // Get the group name and memory count for the error dialog
-        final group = await _hashtagGroupService.getGroupById(hashtagGroupId);
-        final memoryCount = group != null
-            ? await _hashtagGroupService.getMemoryCountForGroup(group.name)
-            : 0;
-
-        _showCannotDeleteDialog(group?.name ?? 'Unknown', memoryCount);
       } else {
         // Failed to delete
-        Get.snackbar(
+        _showSnackbar(
           'Unable to Delete',
           'Unable to delete hashtag group. Please try again.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
         );
       }
     } catch (e) {
       debugPrint('[HashtagGroupsView][_deleteHashtagGroup] Error: $e');
-      Get.snackbar(
-        'Unable to Delete',
-        'Unable to delete hashtag group. Please try again.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      if (e.toString().contains('CANNOT_DELETE_HASHTAG_IN_USE')) {
+        _showSnackbar(
+          'Cannot Delete',
+          'This hashtag group is currently in use by one or more transactions. Please remove it from transactions before deleting.',
+        );
+      } else {
+        _showSnackbar(
+          'Unable to Delete',
+          'Unable to delete hashtag group. Please try again.',
+        );
+      }
     }
-  }
-
-  /// Show dialog when hashtag group cannot be deleted due to existing memories
-  void _showCannotDeleteDialog(String groupName, int memoryCount) {
-    Get.dialog(
-      CannotDeleteHashtagGroupDialog(
-        groupName: groupName,
-        memoryCount: memoryCount,
-      ),
-    );
   }
 
   /// Show edit hashtag group dialog using AddEditGroupPopup
@@ -313,14 +310,13 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           initialName: hashtagGroup.name,
           editItemId: hashtagGroup.id,
           parentId: hashtagGroup.parentId,
-          onSave: (newName, parentId) async {
+          onSave: (newName, parentId, {newCategoryName}) async {
             // Validate that name is provided
             if (newName.isEmpty) {
-              Get.snackbar(
+              _showSnackbar(
                 'Validation Error',
                 'Please enter a hashtag group name',
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
+                isError: true,
               );
               return;
             }
@@ -338,32 +334,27 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
               );
 
               if (success) {
-                Navigator.of(context).pop(); // Close dialog
+                // Dialog closed by callback in AddEditGroupPopup
                 await _refreshHashtagGroupsFromDatabase();
 
-                Get.snackbar(
+                _showSnackbar(
                   'Success',
                   'Hashtag group "$newName" updated successfully!',
-                  backgroundColor: Colors.green,
-                  colorText: Colors.white,
+                  isError: false,
                 );
               } else {
-                Get.snackbar(
+                _showSnackbar(
                   'Unable to Update',
                   'Unable to update hashtag group. Please try again.',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
                 );
               }
             } catch (e) {
               debugPrint(
                 '[HashtagGroupsView][EditDialog] Exception occurred: $e',
               );
-              Get.snackbar(
+              _showSnackbar(
                 'Unable to Update',
                 'Unable to update hashtag group. Please try again.',
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
               );
             }
           },
@@ -397,35 +388,31 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         );
         await _refreshHashtagGroupsFromDatabase();
 
-        Get.snackbar(
+        _showSnackbar(
           'Success',
           'Hashtag deleted successfully!',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          isError: false,
         );
-      } else if (result == null) {
-        // Cannot delete due to memories
-        final memoryCount = await _hashtagGroupService.getMemoryCountForGroup(
-          subgroup.name,
-        );
-        _showCannotDeleteDialog(subgroup.name, memoryCount);
       } else {
         // Failed to delete
-        Get.snackbar(
+        _showSnackbar(
           'Unable to Delete',
           'Unable to delete hashtag. Please try again.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
         );
       }
     } catch (e) {
       debugPrint('[HashtagGroupsView][_deleteSubgroup] Error: $e');
-      Get.snackbar(
-        'Unable to Delete',
-        'Unable to delete hashtag. Please try again.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      if (e.toString().contains('CANNOT_DELETE_HASHTAG_IN_USE')) {
+        _showSnackbar(
+          'Cannot Delete',
+          'This hashtag is currently in use by one or more transactions. Please remove it from transactions before deleting.',
+        );
+      } else {
+        _showSnackbar(
+          'Unable to Delete',
+          'Unable to delete hashtag. Please try again.',
+        );
+      }
     }
   }
 
@@ -481,7 +468,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         widget.onHashtagGroupSelected!(hashtagGroup);
       }
 
-      Get.back(result: hashtagGroup);
+      Navigator.of(context).pop(hashtagGroup);
     }
   }
 
@@ -575,7 +562,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       );
     }
 
-    Get.back(result: _controller.selectedGroups.toList());
+    Navigator.of(context).pop(_controller.selectedGroups.toList());
   }
 
   /// Show popup for adding subgroup to a hashtag group
@@ -589,14 +576,13 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           isMainGroup: false,
           parentId: hashtagGroupId,
           groupList: _controller.allGroups,
-          onSave: (name, parentId) async {
+          onSave: (name, parentId, {newCategoryName}) async {
             // Use the existing save logic
             if (name.isEmpty) {
-              Get.snackbar(
+              _showSnackbar(
                 'Invalid Name',
                 'Hashtag name cannot be empty',
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
+                isError: true,
               );
               return;
             }
@@ -608,48 +594,39 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
               );
 
               if (newSubgroup == null) {
-                Get.snackbar(
+                _showSnackbar(
                   'Unable to Add',
                   'Unable to add hashtag. Please try again.',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
                 );
                 return;
               } else if (newSubgroup.id == -1) {
                 // Duplicate subgroup hashtag name
-                Get.snackbar(
+                _showSnackbar(
                   'Duplicate Hashtag',
                   'Hashtag with this name already exists.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
                 );
                 return;
               } else if (newSubgroup.id == -4) {
                 // Subgroup name conflicts with parent group
-                Get.snackbar(
+                _showSnackbar(
                   'Name Conflict',
                   'This name is already used by the parent group.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
                 );
                 return;
               }
 
               await _refreshHashtagGroupsFromDatabase();
 
-              Get.snackbar(
+              _showSnackbar(
                 'Success',
                 'Hashtag added successfully',
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
+                isError: false,
               );
             } catch (e) {
               debugPrint('[HashtagGroupsView] Error adding subgroup: $e');
-              Get.snackbar(
+              _showSnackbar(
                 'Unable to Add',
                 'Unable to add hashtag. Please try again.',
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
               );
             }
           },
@@ -809,7 +786,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                   () => IconButton(
                     onPressed: _controller.selectedGroups.isNotEmpty
                         ? _onDonePressed
-                        : () => Get.back(),
+                        : () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.arrow_back),
                     tooltip: _controller.selectedGroups.isNotEmpty
                         ? 'Done'
@@ -1413,14 +1390,13 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
           editItemId: hashtagGroup.id,
           parentId: hashtagGroup.parentId,
           groupList: _controller.allGroups,
-          onSave: (newName, parentId) async {
+          onSave: (newName, parentId, {newCategoryName}) async {
             // Use the existing save logic
             if (newName.isEmpty) {
-              Get.snackbar(
+              _showSnackbar(
                 'Invalid Name',
                 'Hashtag group name cannot be empty',
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
+                isError: true,
               );
               return;
             }
@@ -1440,11 +1416,10 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
               await _refreshHashtagGroupsFromDatabase();
 
-              Get.snackbar(
+              _showSnackbar(
                 'Success',
                 'Hashtag updated successfully',
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
+                isError: false,
               );
             } catch (e) {
               debugPrint(
@@ -1454,36 +1429,25 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                 final message = hashtagGroup.parentId == null
                     ? 'Hashtag Group with this name already exists.'
                     : 'Hashtag with this name already exists.';
-                Get.snackbar(
-                  'Duplicate Hashtag',
-                  message,
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
-                );
+                _showSnackbar('Duplicate Hashtag', message);
               } else if (e.toString().contains(
                 'MAIN_GROUP_CONFLICTS_WITH_SUBGROUP',
               )) {
-                Get.snackbar(
+                _showSnackbar(
                   'Name Conflict',
                   'This name is already used by a hashtag in another group.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
                 );
               } else if (e.toString().contains(
                 'SUBGROUP_CONFLICTS_WITH_PARENT',
               )) {
-                Get.snackbar(
+                _showSnackbar(
                   'Name Conflict',
                   'This name is already used by the parent group.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
                 );
               } else {
-                Get.snackbar(
+                _showSnackbar(
                   'Unable to Update',
                   'Unable to update hashtag group. Please try again.',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
                 );
               }
             }
@@ -1499,11 +1463,10 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     final newName = nameController.text.trim();
 
     if (newName.isEmpty) {
-      Get.snackbar(
+      _showSnackbar(
         'Invalid Name',
         'Hashtag group name cannot be empty',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+        isError: true,
       );
       return;
     }
@@ -1520,44 +1483,28 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       _cancelInlineEdit(hashtagGroup.id!);
       await _refreshHashtagGroupsFromDatabase();
 
-      Get.snackbar(
-        'Success',
-        'Hashtag updated successfully',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      _showSnackbar('Success', 'Hashtag updated successfully', isError: false);
     } catch (e) {
       debugPrint('[HashtagGroupsView] Error updating hashtag group: $e');
       if (e.toString().contains('DUPLICATE_HASHTAG_NAME')) {
         final message = hashtagGroup.parentId == null
             ? 'Hashtag Group with this name already exists.'
             : 'Hashtag with this name already exists.';
-        Get.snackbar(
-          'Duplicate Hashtag',
-          message,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-        );
+        _showSnackbar('Duplicate Hashtag', message);
       } else if (e.toString().contains('MAIN_GROUP_CONFLICTS_WITH_SUBGROUP')) {
-        Get.snackbar(
+        _showSnackbar(
           'Name Conflict',
           'This name is already used by a hashtag in another group.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
         );
       } else if (e.toString().contains('SUBGROUP_CONFLICTS_WITH_PARENT')) {
-        Get.snackbar(
+        _showSnackbar(
           'Name Conflict',
           'This name is already used by the parent group.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
         );
       } else {
-        Get.snackbar(
+        _showSnackbar(
           'Unable to Update',
           'Unable to update hashtag group. Please try again.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
         );
       }
     }
@@ -1579,14 +1526,13 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
         return AddEditGroupPopup(
           isHashtagMode: true,
           isMainGroup: true,
-          onSave: (name, parentId) async {
+          onSave: (name, parentId, {newCategoryName}) async {
             // Use the existing save logic
             if (name.isEmpty) {
-              Get.snackbar(
+              _showSnackbar(
                 'Invalid Name',
                 'Hashtag group name cannot be empty',
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
+                isError: true,
               );
               return;
             }
@@ -1595,51 +1541,39 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
               final newGroup = await _hashtagGroupService.addCustomGroup(name);
 
               if (newGroup == null) {
-                Get.snackbar(
+                _showSnackbar(
                   'Unable to Add',
                   'Unable to add hashtag group. Please try again.',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
                 );
                 return;
               } else if (newGroup.id == -1) {
                 // Duplicate main hashtag group name
-                Get.snackbar(
+                _showSnackbar(
                   'Duplicate Hashtag',
                   'Hashtag Group with this name already exists.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
                 );
                 return;
               } else if (newGroup.id == -3) {
                 // Main group name conflicts with existing subgroup
-                Get.snackbar(
+                _showSnackbar(
                   'Name Conflict',
                   'This name is already used by a hashtag in another group.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
                 );
                 return;
               }
 
               await _refreshHashtagGroupsFromDatabase();
 
-              Get.snackbar(
+              _showSnackbar(
                 'Success',
                 'Hashtag group "$name" added successfully!',
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
+                isError: false,
               );
             } catch (e) {
               debugPrint(
                 '[HashtagGroupsView] Error adding main hashtag group: $e',
               );
-              Get.snackbar(
-                'Error',
-                'Failed to add hashtag group',
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
-              );
+              _showSnackbar('Error', 'Failed to add hashtag group');
             }
           },
         );
@@ -1658,11 +1592,10 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     final name = _mainHashtagGroupNameController.text.trim();
 
     if (name.isEmpty) {
-      Get.snackbar(
+      _showSnackbar(
         'Invalid Name',
         'Hashtag group name cannot be empty',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+        isError: true,
       );
       return;
     }
@@ -1671,29 +1604,23 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       final newGroup = await _hashtagGroupService.addCustomGroup(name);
 
       if (newGroup == null) {
-        Get.snackbar(
+        _showSnackbar(
           'Unable to Add',
           'Unable to add hashtag group. Please try again.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
         );
         return;
       } else if (newGroup.id == -1) {
         // Duplicate main hashtag group name
-        Get.snackbar(
+        _showSnackbar(
           'Duplicate Hashtag',
           'Hashtag Group with this name already exists.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
         );
         return;
       } else if (newGroup.id == -3) {
         // Main group name conflicts with existing subgroup
-        Get.snackbar(
+        _showSnackbar(
           'Name Conflict',
           'This name is already used by a hashtag in another group.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
         );
         return;
       }
@@ -1701,19 +1628,16 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       _cancelInlineAddingMainHashtagGroup();
       await _refreshHashtagGroupsFromDatabase();
 
-      Get.snackbar(
+      _showSnackbar(
         'Success',
         'Hashtag group "$name" added successfully!',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        isError: false,
       );
     } catch (e) {
       debugPrint('[HashtagGroupsView] Error adding main hashtag group: $e');
-      Get.snackbar(
+      _showSnackbar(
         'Unable to Add',
         'Unable to add hashtag group. Please try again.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
       );
     }
   }
@@ -1725,11 +1649,10 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
     final name = nameController.text.trim();
 
     if (name.isEmpty) {
-      Get.snackbar(
+      _showSnackbar(
         'Invalid Name',
         'Hashtag name cannot be empty',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+        isError: true,
       );
       return;
     }
@@ -1741,29 +1664,23 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       );
 
       if (newSubgroup == null) {
-        Get.snackbar(
+        _showSnackbar(
           'Unable to Add',
           'Unable to add hashtag. Please try again.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
         );
         return;
       } else if (newSubgroup.id == -1) {
         // Duplicate subgroup hashtag name
-        Get.snackbar(
+        _showSnackbar(
           'Duplicate Hashtag',
           'Hashtag with this name already exists.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
         );
         return;
       } else if (newSubgroup.id == -4) {
         // Subgroup name conflicts with parent group
-        Get.snackbar(
+        _showSnackbar(
           'Name Conflict',
           'This name is already used by the parent group.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
         );
         return;
       }
@@ -1771,19 +1688,12 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
       _cancelInlineAdding(parentHashtagGroupId);
       await _refreshHashtagGroupsFromDatabase();
 
-      Get.snackbar(
-        'Success',
-        'Hashtag added successfully',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      _showSnackbar('Success', 'Hashtag added successfully', isError: false);
     } catch (e) {
       debugPrint('[HashtagGroupsView] Error adding subgroup: $e');
-      Get.snackbar(
+      _showSnackbar(
         'Unable to Add',
         'Unable to add hashtag. Please try again.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
       );
     }
   }

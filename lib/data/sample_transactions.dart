@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 
@@ -49,46 +47,6 @@ class SampleTransactions {
     ),
   ];
 
-  /// Sample MCCs (Merchant Category Codes)
-  static final List<MCC> _sampleMCCs = [
-    MCC.fromAsset(
-      assetPath: AppIcons.cart,
-      text: 'Shopping',
-      shortText: '🛒',
-      color: const Color(0xffFFD4A3),
-    ),
-    MCC.fromAsset(
-      assetPath: AppIcons.car,
-      text: 'Transport',
-      shortText: '🚗',
-      color: const Color(0xffA3FFD4),
-    ),
-    MCC.fromAsset(
-      assetPath: AppIcons.investment,
-      text: 'Investment',
-      shortText: '💰',
-      color: const Color(0xffB7DDFF),
-    ),
-    MCC.fromAsset(
-      assetPath: AppIcons.atm,
-      text: 'Cash Withdrawal',
-      shortText: '💵',
-      color: const Color(0xffFFD4A3),
-    ),
-    MCC.fromAsset(
-      assetPath: AppIcons.digitalCurrency,
-      text: 'Crypto',
-      shortText: '₿',
-      color: const Color(0xffFFF1B8),
-    ),
-    MCC.fromAsset(
-      assetPath: AppIcons.transaction,
-      text: 'General',
-      shortText: '📝',
-      color: const Color(0xffDFDFDF),
-    ),
-  ];
-
   /// Sample transactions
   static final List<Transaction> transactions = [
     // Expense: Shopping at supermarket
@@ -97,7 +55,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 1)),
       amount: 125.50,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'Lidl Supermarket',
       note: 'Weekly grocery shopping',
       hashtags: [_sampleHashtags[0], _sampleHashtags[4]], // Shopping, Food
@@ -111,7 +69,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 2)),
       amount: 65.00,
-      mcc: _sampleMCCs[1], // Transport
+      mccId: 1, // Default MCC ID
       recipient: 'Shell Gas Station',
       note: 'Fuel at Shell station',
       hashtags: [_sampleHashtags[4]], // Transport
@@ -125,7 +83,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime.now().subtract(const Duration(days: 3)),
       amount: 3500.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'Company Payroll',
       note: 'Monthly salary payment',
       hashtags: [],
@@ -139,7 +97,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 4)),
       amount: 500.00,
-      mcc: _sampleMCCs[4], // Crypto
+      mccId: 1, // Default MCC ID
       recipient: 'Coinbase Exchange',
       note: 'Bought Bitcoin',
       hashtags: [],
@@ -153,7 +111,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 5)),
       amount: 200.00,
-      mcc: _sampleMCCs[3], // Cash Withdrawal
+      mccId: 1, // Default MCC ID
       recipient: 'ATM Deutsche Bank',
       note: 'Cash for weekly expenses',
       hashtags: [],
@@ -167,7 +125,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 6)),
       amount: 85.30,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'Bella Italia Restaurant',
       note: 'Dinner with family',
       hashtags: [_sampleHashtags[3], _sampleHashtags[5]], // Food, Entertainment
@@ -181,7 +139,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 7)),
       amount: 450.00,
-      mcc: _sampleMCCs[1], // Transport
+      mccId: 1, // Default MCC ID
       recipient: 'Ryanair Airlines',
       note: 'Flight tickets to Barcelona',
       hashtags: [_sampleHashtags[1]], // Travel
@@ -195,7 +153,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime.now().subtract(const Duration(days: 8)),
       amount: 750.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'Tech Startup GmbH',
       note: 'Freelance web development project',
       hashtags: [],
@@ -209,7 +167,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 9)),
       amount: 320.00,
-      mcc: _sampleMCCs[1], // Transport
+      mccId: 1, // Default MCC ID
       recipient: 'AutoWerkstatt Müller',
       note: 'Oil change and brake inspection',
       hashtags: [_sampleHashtags[2], _sampleHashtags[4]], // Repair, Transport
@@ -223,7 +181,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 10)),
       amount: 89.99,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'Amazon.de',
       note: 'Books and USB cables',
       hashtags: [_sampleHashtags[0]], // Shopping
@@ -237,7 +195,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime.now().subtract(const Duration(days: 12)),
       amount: 150.00,
-      mcc: _sampleMCCs[2], // Investment
+      mccId: 1, // Default MCC ID
       recipient: 'Trade Republic',
       note: 'Quarterly dividend payment',
       hashtags: [],
@@ -251,7 +209,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime.now().subtract(const Duration(days: 15)),
       amount: 45.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'FitX Fitness Studio',
       note: 'Monthly gym membership fee',
       hashtags: [_sampleHashtags[5]], // Entertainment
@@ -267,7 +225,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2024, 12, 25),
       amount: 450.00,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'Christmas Shopping Mall',
       note: 'Christmas gifts',
       hashtags: [_sampleHashtags[0]], // Shopping
@@ -279,7 +237,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime(2024, 12, 20),
       amount: 500.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'Year-end Bonus',
       note: 'Company bonus',
       hashtags: [],
@@ -291,7 +249,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2024, 12, 15),
       amount: 85.50,
-      mcc: _sampleMCCs[1], // Transport
+      mccId: 1, // Default MCC ID
       recipient: 'DB Deutsche Bahn',
       note: 'Train ticket to Munich',
       hashtags: [_sampleHashtags[1]], // Travel
@@ -305,7 +263,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2024, 6, 20),
       amount: 1200.00,
-      mcc: _sampleMCCs[1], // Transport
+      mccId: 1, // Default MCC ID
       recipient: 'Lufthansa Airlines',
       note: 'Summer vacation to Greece',
       hashtags: [_sampleHashtags[1]], // Travel
@@ -317,7 +275,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2024, 6, 15),
       amount: 320.00,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'IKEA',
       note: 'New furniture',
       hashtags: [_sampleHashtags[0]], // Shopping
@@ -329,7 +287,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime(2024, 6, 1),
       amount: 3500.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'Company Payroll',
       note: 'Monthly salary',
       hashtags: [],
@@ -343,7 +301,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2024, 1, 28),
       amount: 150.00,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'MediaMarkt',
       note: 'New headphones',
       hashtags: [_sampleHashtags[0]], // Shopping
@@ -355,7 +313,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2024, 1, 15),
       amount: 95.00,
-      mcc: _sampleMCCs[1], // Transport
+      mccId: 1, // Default MCC ID
       recipient: 'Shell Gas Station',
       note: 'Fuel',
       hashtags: [_sampleHashtags[4]], // Transport
@@ -367,7 +325,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime(2024, 1, 5),
       amount: 3500.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'Company Payroll',
       note: 'Monthly salary',
       hashtags: [],
@@ -383,7 +341,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2023, 9, 25),
       amount: 75.00,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'Rewe Supermarket',
       note: 'Grocery shopping',
       hashtags: [_sampleHashtags[0], _sampleHashtags[3]], // Shopping, Food
@@ -395,7 +353,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2023, 9, 10),
       amount: 250.00,
-      mcc: _sampleMCCs[4], // Crypto
+      mccId: 1, // Default MCC ID
       recipient: 'Binance Exchange',
       note: 'Crypto investment',
       hashtags: [],
@@ -407,7 +365,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime(2023, 9, 1),
       amount: 3200.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'Company Payroll',
       note: 'Monthly salary',
       hashtags: [],
@@ -421,7 +379,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2023, 3, 20),
       amount: 185.00,
-      mcc: _sampleMCCs[0], // Shopping
+      mccId: 1, // Default MCC ID
       recipient: 'H&M',
       note: 'Spring clothes',
       hashtags: [_sampleHashtags[0]], // Shopping
@@ -433,7 +391,7 @@ class SampleTransactions {
       isExpense: true,
       date: DateTime(2023, 3, 15),
       amount: 420.00,
-      mcc: _sampleMCCs[1], // Transport
+      mccId: 1, // Default MCC ID
       recipient: 'Car Service Center',
       note: 'Annual car service',
       hashtags: [_sampleHashtags[2], _sampleHashtags[4]], // Repair, Transport
@@ -445,7 +403,7 @@ class SampleTransactions {
       isExpense: false,
       date: DateTime(2023, 3, 1),
       amount: 3200.00,
-      mcc: _sampleMCCs[5], // General
+      mccId: 1, // Default MCC ID
       recipient: 'Company Payroll',
       note: 'Monthly salary',
       hashtags: [],
@@ -462,11 +420,6 @@ class SampleTransactions {
   /// Get sample hashtags
   static List<HashtagGroup> getSampleHashtags() {
     return _sampleHashtags;
-  }
-
-  /// Get sample MCCs
-  static List<MCC> getSampleMCCs() {
-    return _sampleMCCs;
   }
 
   /// Get expenses only

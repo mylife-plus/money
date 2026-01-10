@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
+
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_theme.dart';
@@ -41,6 +41,31 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
     super.dispose();
   }
 
+  void _showSnackbar(String title, String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(message, style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -73,24 +98,16 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
 
   void _save() {
     if (selectedDate == null) {
-      Get.snackbar(
-        'Error',
-        'Please select a date',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Error', 'Please select a date');
       return;
     }
 
     if (priceController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Please enter a price',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Error', 'Please enter a price');
       return;
     }
 
-    Get.back();
+    Navigator.of(context).pop();
     widget.onSave(selectedDate!, priceController.text.trim());
   }
 
@@ -135,7 +152,7 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
 
     if (confirmed == true && widget.onDelete != null) {
       widget.onDelete!();
-      Get.back();
+      Navigator.of(context).pop();
     }
   }
 
@@ -163,7 +180,7 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
                   color: Colors.black,
                 ),
                 InkWell(
-                  onTap: () => Get.back(),
+                  onTap: () => Navigator.of(context).pop(),
                   child: Icon(Icons.close, size: 24.sp),
                 ),
               ],

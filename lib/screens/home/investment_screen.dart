@@ -91,7 +91,10 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                         leadingIconPath: AppIcons.investment,
                         actionIconPath: AppIcons.transaction,
                         onActionIconTap: () {
-                          Get.offNamed(AppRoutes.home.path);
+                          Navigator.pushReplacementNamed(
+                            context,
+                            AppRoutes.home.path,
+                          );
                         },
                       ),
                       4.verticalSpace,

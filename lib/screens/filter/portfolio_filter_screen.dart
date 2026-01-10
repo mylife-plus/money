@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
+
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/models/investment_recommendation.dart';
 import 'package:moneyapp/routes/app_routes.dart';
-import 'package:moneyapp/utils/date_picker_helper.dart';
+import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class PortfolioFilterScreen extends StatefulWidget {
@@ -69,7 +69,10 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
   }
 
   Future<void> _navigateToInvestmentScreen() async {
-    final result = await Get.toNamed(AppRoutes.investmentList.path);
+    final result = await Navigator.pushNamed(
+      context,
+      AppRoutes.investmentList.path,
+    );
 
     if (result != null && result is InvestmentRecommendation) {
       setState(() {
@@ -82,8 +85,31 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
 
   void _applyFilter() {
     // TODO: Implement filter logic
-    Get.back();
-    Get.snackbar('Success', 'Filter applied successfully');
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Success',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              'Filter applied successfully',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   void _resetFilter() {
@@ -108,7 +134,7 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,

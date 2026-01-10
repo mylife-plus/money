@@ -19,24 +19,36 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
   final TextEditingController newCategoryController = TextEditingController();
 
   int? selectedCategoryId;
-  String? selectedIcon;
+  String? selectedEmoji;
   bool isCreatingNewCategory = false;
   MCCItem? existingMCC;
 
-  // Predefined icons for selection
-  final List<String> predefinedIcons = [
-    AppIcons.digitalCurrency,
-    AppIcons.bitcoinConvert,
-    AppIcons.investment,
-    AppIcons.car,
-    AppIcons.atm,
-    AppIcons.cart,
-    AppIcons.transaction,
-    AppIcons.file,
-    AppIcons.security,
-    AppIcons.hashtag,
-    AppIcons.home,
-    AppIcons.plus,
+  // Predefined emojis for selection
+  final List<String> predefinedEmojis = [
+    '🛒',
+    '🚗',
+    '🏠',
+    '✈️',
+    '🍽️',
+    '💳',
+    '🏥',
+    '🎓',
+    '💡',
+    '📱',
+    '🎮',
+    '👕',
+    '⚡',
+    '🔧',
+    '🎨',
+    '📚',
+    '🏨',
+    '🚖',
+    '🍔',
+    '☕',
+    '🎬',
+    '🏋️',
+    '🎵',
+    '💼',
   ];
 
   @override
@@ -46,7 +58,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
     existingMCC = Get.arguments as MCCItem?;
     if (existingMCC != null) {
       nameController.text = existingMCC!.name;
-      selectedIcon = existingMCC!.iconPath;
+      selectedEmoji = existingMCC!.emoji;
       selectedCategoryId = existingMCC!.categoryId;
     }
   }
@@ -58,7 +70,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
     super.dispose();
   }
 
-  Future<void> _showIconSelectionDialog() async {
+  Future<void> _showEmojiSelectionDialog() async {
     await showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -69,7 +81,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               CustomText(
-                'Select Icon',
+                'Select Emoji',
                 size: 18.sp,
                 fontWeight: FontWeight.w600,
               ),
@@ -77,23 +89,23 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
               GridView.builder(
                 shrinkWrap: true,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
+                  crossAxisCount: 6,
                   crossAxisSpacing: 10.w,
                   mainAxisSpacing: 10.h,
                 ),
-                itemCount: predefinedIcons.length,
+                itemCount: predefinedEmojis.length,
                 itemBuilder: (context, index) {
                   return InkWell(
                     onTap: () {
                       setState(() {
-                        selectedIcon = predefinedIcons[index];
+                        selectedEmoji = predefinedEmojis[index];
                       });
                       Navigator.pop(context);
                     },
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: selectedIcon == predefinedIcons[index]
+                          color: selectedEmoji == predefinedEmojis[index]
                               ? const Color(0xff0088FF)
                               : const Color(0xffDFDFDF),
                           width: 2,
@@ -101,10 +113,11 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                         borderRadius: BorderRadius.circular(6.r),
                       ),
                       padding: EdgeInsets.all(8.w),
-                      child: Image.asset(
-                        predefinedIcons[index],
-                        width: 24.w,
-                        height: 24.h,
+                      child: Center(
+                        child: Text(
+                          predefinedEmojis[index],
+                          style: TextStyle(fontSize: 24.sp),
+                        ),
                       ),
                     ),
                   );
@@ -117,13 +130,30 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
     );
   }
 
+  void _showSnackbar(String title, String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(message),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _saveMCC() {
+    // Dimiss keyboard
+    FocusScope.of(context).unfocus();
+
     if (nameController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Please enter MCC name',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Error', 'Please enter MCC name');
       return;
     }
 
@@ -132,29 +162,21 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
 
     if (isCreatingNewCategory) {
       if (newCategoryController.text.trim().isEmpty) {
-        Get.snackbar(
-          'Error',
-          'Please enter category name',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        _showSnackbar('Error', 'Please enter category name');
         return;
       }
 
       // Create new category
       final newCategory = MCCCategory(
         name: newCategoryController.text.trim(),
-        iconPath: selectedIcon ?? AppIcons.categoryIcon,
+        emoji: selectedEmoji,
       );
       mccController.addCategory(newCategory);
       categoryId = newCategory.id;
       categoryName = newCategory.name;
     } else {
       if (selectedCategoryId == null) {
-        Get.snackbar(
-          'Error',
-          'Please select a category',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        _showSnackbar('Error', 'Please select a category');
         return;
       }
 
@@ -168,37 +190,30 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
       // Update existing MCC
       final updatedMCC = existingMCC!.copyWith(
         name: nameController.text.trim(),
-        iconPath: selectedIcon ?? AppIcons.categoryIcon,
+        emoji: selectedEmoji,
         categoryId: categoryId!,
         categoryName: categoryName,
       );
 
       mccController.updateMCCItem(updatedMCC);
 
-      Get.snackbar(
-        'Success',
-        'MCC updated successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Success', 'MCC updated successfully', isError: false);
     } else {
       // Create new MCC item
       final newMCC = MCCItem(
         name: nameController.text.trim(),
-        iconPath: selectedIcon ?? AppIcons.categoryIcon,
+        emoji: selectedEmoji,
         categoryId: categoryId!,
         categoryName: categoryName,
       );
 
       mccController.addMCCItem(newMCC);
 
-      Get.snackbar(
-        'Success',
-        'MCC added successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Success', 'MCC added successfully', isError: false);
     }
 
-    Get.back();
+    // Slight delay to show success message or just pop
+    Navigator.of(context).pop();
   }
 
   @override
@@ -214,7 +229,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,
@@ -282,15 +297,15 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
 
                       20.verticalSpace,
 
-                      // Icon Selection
+                      // Emoji Selection
                       CustomText(
-                        'Icon',
+                        'Emoji',
                         size: 14.sp,
                         fontWeight: FontWeight.w500,
                       ),
                       8.verticalSpace,
                       InkWell(
-                        onTap: _showIconSelectionDialog,
+                        onTap: _showEmojiSelectionDialog,
                         child: Container(
                           height: 60.h,
                           padding: EdgeInsets.all(12.w),
@@ -309,23 +324,25 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                                   borderRadius: BorderRadius.circular(6.r),
                                 ),
                                 child: Center(
-                                  child: Image.asset(
-                                    selectedIcon ?? AppIcons.plus,
-                                    width: 20.w,
-                                    height: 20.h,
-                                    color: selectedIcon == null
-                                        ? const Color(0xffB4B4B4)
-                                        : null,
-                                  ),
+                                  child: selectedEmoji != null
+                                      ? Text(
+                                          selectedEmoji!,
+                                          style: TextStyle(fontSize: 24.sp),
+                                        )
+                                      : Icon(
+                                          Icons.add,
+                                          size: 20.sp,
+                                          color: const Color(0xffB4B4B4),
+                                        ),
                                 ),
                               ),
                               12.horizontalSpace,
                               CustomText(
-                                selectedIcon == null
-                                    ? 'Select an icon'
-                                    : 'Icon selected',
+                                selectedEmoji == null
+                                    ? 'Select an emoji'
+                                    : 'Emoji selected',
                                 size: 14.sp,
-                                color: selectedIcon == null
+                                color: selectedEmoji == null
                                     ? const Color(0xffB4B4B4)
                                     : Colors.black87,
                               ),

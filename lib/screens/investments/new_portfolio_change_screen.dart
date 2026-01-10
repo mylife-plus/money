@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
+
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
@@ -139,7 +139,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,
@@ -543,7 +543,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                         InkWell(
                           onTap: () {
                             // TODO: Save logic
-                            Get.back();
+                            Navigator.of(context).pop();
                           },
                           child: Container(
                             width: 120.w,

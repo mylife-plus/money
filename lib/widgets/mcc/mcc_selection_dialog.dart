@@ -77,7 +77,7 @@ class _MCCSelectionDialogState extends State<MCCSelectionDialog> {
                   fontWeight: FontWeight.w600,
                 ),
                 InkWell(
-                  onTap: () => Get.back(),
+                  onTap: () => Navigator.of(context).pop(),
                   child: Icon(Icons.close, size: 24.sp),
                 ),
               ],
@@ -140,27 +140,33 @@ class _MCCSelectionDialogState extends State<MCCSelectionDialog> {
                         return InkWell(
                           onTap: () {
                             widget.onSelected(mcc);
-                            Get.back();
+                            Navigator.of(context).pop();
                           },
                           child: Padding(
                             padding: EdgeInsets.symmetric(
                               vertical: 12.h,
                               horizontal: 8.w,
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                // MCC Icon
-                                Center(child: mcc.getIcon(size: 20.sp)),
-                                12.horizontalSpace,
-                                // MCC Info
-                                Expanded(
-                                  child: CustomText(
-                                    mcc.name,
-                                    size: 15.sp,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Row(
+                                  children: [
+                                    // MCC Icon
+                                    Center(child: mcc.getIcon(size: 20.sp)),
+                                    12.horizontalSpace,
+                                    // MCC Info
+                                    Expanded(
+                                      child: CustomText(
+                                        mcc.name,
+                                        size: 15.sp,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+
+                                    // Category name
+                                  ],
                                 ),
-                                // Category name
                                 CustomText(
                                   mcc.categoryName,
                                   size: 12.sp,

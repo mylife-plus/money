@@ -183,31 +183,44 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
     );
   }
 
+  void _showSnackbar(String title, String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(message, style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _saveInvestment() {
     if (nameController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Please enter investment name',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Error', 'Please enter investment name');
       return;
     }
 
     if (shortTextController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Please enter short text',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Error', 'Please enter short text');
       return;
     }
 
     if (selectedAssetPath == null) {
-      Get.snackbar(
-        'Error',
-        'Please select an icon',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Error', 'Please select an icon');
       return;
     }
 
@@ -231,19 +244,15 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
       if (index != -1) {
         investmentController.updateRecommendation(index, newInvestment);
       }
-      Get.snackbar(
+      _showSnackbar(
         'Success',
         'Investment updated successfully',
-        snackPosition: SnackPosition.BOTTOM,
+        isError: false,
       );
     } else {
       // Add new investment
       investmentController.addRecommendation(newInvestment);
-      Get.snackbar(
-        'Success',
-        'Investment added successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Success', 'Investment added successfully', isError: false);
     }
 
     Navigator.pop(context, newInvestment);
@@ -297,10 +306,10 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
       if (index != -1) {
         investmentController.removeRecommendation(index);
         Navigator.pop(context);
-        Get.snackbar(
+        _showSnackbar(
           'Success',
           'Investment deleted successfully',
-          snackPosition: SnackPosition.BOTTOM,
+          isError: false,
         );
       }
     }

@@ -4,11 +4,12 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
+import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
-import 'package:moneyapp/utils/date_picker_helper.dart';
+import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/mcc/mcc_filter_dialog.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_filter_dialog.dart';
@@ -28,21 +29,46 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
   HashtagGroupsController hashtagController = Get.put(
     HashtagGroupsController(),
   );
+  late final HomeController homeController;
 
   DateTime? fromDate;
   DateTime? toDate;
   List<MCCItem> selectedMCCs = [];
   List<HashtagGroup> selectedHashtags = [];
+  late final TextEditingController minAmountController;
+  late final TextEditingController maxAmountController;
 
   @override
   void initState() {
     super.initState();
     mccController = Get.find<MCCController>();
     hashtagController = Get.find<HashtagGroupsController>();
+    homeController = Get.find<HomeController>();
+
+    // Initialize state from existing controller values
+    fromDate = homeController.transactionDateStart;
+    toDate = homeController.transactionDateEnd;
+
+    selectedMCCs = List.from(homeController.selectedMCCFilters);
+    selectedHashtags = List.from(homeController.selectedHashtagFilters);
+
+    // We compare with infinity for max to leave blank if not set
+    minAmountController = TextEditingController(
+      text: homeController.minAmount.value > 0
+          ? homeController.minAmount.value.toStringAsFixed(0)
+          : '',
+    );
+    maxAmountController = TextEditingController(
+      text: homeController.maxAmount.value < double.infinity
+          ? homeController.maxAmount.value.toStringAsFixed(0)
+          : '',
+    );
   }
 
   @override
   void dispose() {
+    minAmountController.dispose();
+    maxAmountController.dispose();
     super.dispose();
   }
 
@@ -103,19 +129,48 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
     );
   }
 
-  void _applyFilter() {
-    // TODO: Implement filter logic
-    Get.back();
-    Get.snackbar('Success', 'Filter applied successfully');
+  void _applyFilter({bool closeScreen = true}) {
+    double min =
+        double.tryParse(minAmountController.text.replaceAll(',', '.')) ?? 0;
+    double max =
+        double.tryParse(maxAmountController.text.replaceAll(',', '.')) ??
+        double.infinity;
+
+    // Validation
+    if (min > max && max != double.infinity) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Min amount cannot be greater than max amount',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Update Home Controller
+    homeController.updateDateRange(fromDate, toDate);
+    homeController.updateAmountRange(min, max);
+    homeController.updateMCCFilters(selectedMCCs);
+    homeController.updateHashtagFilters(selectedHashtags);
+
+    if (closeScreen) {
+      Navigator.of(context).pop();
+    }
   }
 
   void _resetFilter() {
     setState(() {
       fromDate = null;
       toDate = null;
+      minAmountController.clear();
+      maxAmountController.clear();
       selectedMCCs.clear();
       selectedHashtags.clear();
     });
+    _applyFilter(closeScreen: false);
   }
 
   @override
@@ -131,7 +186,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,
@@ -150,6 +205,87 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      12.verticalSpace,
+                      // Amount Range Filters
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: TextField(
+                                controller: minAmountController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  labelText: 'min amount',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+
+                                  labelStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 12.sp,
+                                  ),
+                                  hintStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                          10.horizontalSpace,
+                          Expanded(
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: TextField(
+                                controller: maxAmountController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  labelText: 'max amount',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  labelStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 12.sp,
+                                  ),
+                                  hintStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       12.verticalSpace,
                       // Date range filters
                       Row(
@@ -338,7 +474,9 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
                                 children: [
                                   mcc.getIcon(size: 16.sp),
                                   6.horizontalSpace,
-                                  CustomText(mcc.name, size: 14.sp),
+                                  Flexible(
+                                    child: CustomText(mcc.name, size: 14.sp),
+                                  ),
                                   6.horizontalSpace,
                                   InkWell(
                                     onTap: () {
@@ -499,7 +637,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
                           22.horizontalSpace,
                           Expanded(
                             child: InkWell(
-                              onTap: _applyFilter,
+                              onTap: () => _applyFilter(),
                               child: Container(
                                 height: 41.h,
                                 width: 144.w,

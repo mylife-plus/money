@@ -12,7 +12,8 @@ class AddEditGroupPopup extends StatefulWidget {
   final int? editItemId; // If editing, the ID of the item
   final int? parentId; // For subgroups, the parent group ID
   final bool isMainGroup; // true for main groups, false for subgroups
-  final Function(String name, int? parentId)? onSave; // Callback when saved
+  final Function(String name, int? parentId, {String? newCategoryName})?
+  onSave; // Callback when saved
   final VoidCallback? onCancel; // Callback when cancelled
   final List<HashtagGroup>? groupList;
 
@@ -39,6 +40,7 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
   final FocusNode _newCategoryFocusNode = FocusNode();
   int? selectedParentGroup;
   bool isAddingNewCategory = false;
+  String? _errorMessage;
 
   // Special values for dropdown
   static const int _selectCategoryValue = -1;
@@ -50,6 +52,10 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
     _nameController.text = widget.initialName ?? '';
     if (widget.groupList != null && widget.groupList!.isNotEmpty) {
       selectedParentGroup = widget.parentId ?? _selectCategoryValue;
+    } else if (!widget.isMainGroup) {
+      // If no groups exist and we are adding a sub-item, default to adding new category
+      selectedParentGroup = _addCategoryValue;
+      isAddingNewCategory = true;
     }
 
     // Auto-focus name field
@@ -78,12 +84,9 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
     final name = _nameController.text.trim();
 
     if (name.isEmpty) {
-      Get.snackbar(
-        'Validation Error',
-        'Please enter a name',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      setState(() {
+        _errorMessage = 'Please enter a name';
+      });
       return;
     }
 
@@ -91,24 +94,18 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
     if (isAddingNewCategory) {
       final newCategoryName = _newCategoryController.text.trim();
       if (newCategoryName.isEmpty) {
-        Get.snackbar(
-          'Validation Error',
-          'Please enter a category name',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        setState(() {
+          _errorMessage = 'Please enter a category name';
+        });
         return;
       }
       // For new category, we'll pass null as parentId
       // and the caller should handle creating the new category
-      widget.onSave?.call(name, null);
+      widget.onSave?.call(name, null, newCategoryName: newCategoryName);
     } else if (selectedParentGroup == _selectCategoryValue) {
-      Get.snackbar(
-        'Validation Error',
-        'Please select a category',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      setState(() {
+        _errorMessage = 'Please select a category';
+      });
       return;
     } else {
       widget.onSave?.call(name, selectedParentGroup);
@@ -183,7 +180,20 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
 
             const SizedBox(height: 16),
 
-            if (widget.groupList != null && widget.groupList!.isNotEmpty) ...[
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  _errorMessage!,
+                  style: GoogleFonts.kumbhSans(
+                    color: Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+            if (!widget.isMainGroup) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(

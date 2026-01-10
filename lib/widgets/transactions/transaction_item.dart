@@ -3,6 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_theme.dart';
+import 'package:moneyapp/controllers/mcc_controller.dart';
+import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
+import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
@@ -110,15 +113,19 @@ class _TransactionItemState extends State<TransactionItem> {
   }
 
   void _handleSplit() {
+    final mccController = Get.find<MCCController>();
+    final mcc = mccController.getMCCById(widget.transaction.mccId);
+
     final dateFormat = 'dd.';
     final label = '${widget.transaction.date.day}.$dateFormat';
-    final title = widget.transaction.mcc.text;
+    final title = mcc?.name ?? 'Unknown';
     final hashtags = widget.transaction.hashtags.isNotEmpty
         ? widget.transaction.hashtags.first.name
         : '';
     final amount = widget.transaction.amount.toString();
 
-    Get.toNamed(
+    Navigator.pushNamed(
+      context,
       AppRoutes.splitSpending.path,
       arguments: {
         'label': label,
@@ -126,12 +133,14 @@ class _TransactionItemState extends State<TransactionItem> {
         'category': hashtags,
         'amount': amount,
         'isExpense': widget.transaction.isExpense,
+        'transaction': widget.transaction,
       },
     );
   }
 
   void _handleEdit() {
-    Get.toNamed(
+    Navigator.pushNamed(
+      context,
       AppRoutes.editTransaction.path,
       arguments: {'transaction': widget.transaction},
     );
@@ -144,10 +153,16 @@ class _TransactionItemState extends State<TransactionItem> {
   }
 
   void _handleDelete() {
-    // TODO: Implement delete logic
+    if (widget.transaction.id != null) {
+      Get.find<HomeController>().deleteTransactionById(widget.transaction.id!);
+    }
   }
 
   void _showDetailDialog(BuildContext context) {
+    final mccController = Get.find<MCCController>();
+    final mcc = mccController.getMCCById(widget.transaction.mccId);
+    final hashtagController = Get.find<HashtagGroupsController>();
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -165,7 +180,7 @@ class _TransactionItemState extends State<TransactionItem> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CustomText(
-                    'Transaction Details',
+                    'Cashflow Detailss',
                     size: 18.sp,
                     fontWeight: FontWeight.w600,
                   ),
@@ -221,17 +236,15 @@ class _TransactionItemState extends State<TransactionItem> {
                       color: const Color(0xff707070),
                     ),
                     12.horizontalSpace,
-                    if (widget.transaction.mcc.assetPath != null)
-                      Image.asset(
-                        widget.transaction.mcc.assetPath!,
-                        width: 20.r,
-                        height: 20.r,
-                      ),
+                    if (mcc?.emoji != null)
+                      Text(mcc!.emoji!, style: TextStyle(fontSize: 20.sp)),
                     8.horizontalSpace,
-                    CustomText(
-                      widget.transaction.mcc.text,
-                      size: 16.sp,
-                      fontWeight: FontWeight.w500,
+                    Expanded(
+                      child: CustomText(
+                        mcc?.name ?? 'Unknown',
+                        size: 16.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -362,19 +375,41 @@ class _TransactionItemState extends State<TransactionItem> {
                         color: const Color(0xff707070),
                       ),
                       8.verticalSpace,
-                      Wrap(
-                        alignment: WrapAlignment.start,
-                        spacing: 8.w,
-                        runSpacing: 8.h,
-                        children: widget.transaction.hashtags.map((hashtag) {
-                          return CategoryChip(
-                            category: hashtag.name,
-                            categoryGroup: hashtag.isMainGroup
-                                ? 'Main Group'
-                                : hashtag.name,
-                          );
-                        }).toList(),
-                      ),
+                      Obx(() {
+                        // Register dependency to ensure rebuilds
+                        hashtagController.allGroups.length;
+
+                        return Wrap(
+                          alignment: WrapAlignment.start,
+                          spacing: 8.w,
+                          runSpacing: 8.h,
+                          children: widget.transaction.hashtags.map((hashtag) {
+                            // Fetch fresh hashtag data
+                            final freshHashtag =
+                                hashtagController.findGroupById(
+                                  hashtag.id ?? -1,
+                                ) ??
+                                hashtag;
+
+                            String groupName = 'Main Group';
+                            if (freshHashtag.isSubgroup) {
+                              final parent = hashtagController.findGroupById(
+                                freshHashtag.parentId ?? -1,
+                              );
+                              groupName = parent?.name ?? 'Unknown';
+                            } else {
+                              // If it's a main group, check if we need to show its own name as group?
+                              // Logic says: if main group, categoryGroup is 'Main Group' usually.
+                              // But existing logic was: hashtag.isMainGroup ? 'Main Group'
+                            }
+
+                            return CategoryChip(
+                              category: freshHashtag.name,
+                              categoryGroup: groupName,
+                            );
+                          }).toList(),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -396,6 +431,7 @@ class _TransactionItemState extends State<TransactionItem> {
       onCardTap: widget.isSelectionMode
           ? _handleSelect
           : () => _showDetailDialog(context),
+      onNoteTap: () => _showDetailDialog(context),
       onCardLongPress: () {
         final RenderBox box = context.findRenderObject() as RenderBox;
         final Offset position = box.localToGlobal(Offset.zero);

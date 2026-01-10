@@ -1,102 +1,15 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
+import 'dart:convert';
+
 import 'package:moneyapp/models/hashtag_group_model.dart';
 
-/// Merchant Category Code (MCC) model
-/// Contains text, icon, and optional color for transaction categories
-class MCC {
-  final String? assetPath;
-  final File? imageFile;
-  final String text;
-  final String shortText;
-  final Color? color;
-
-  MCC({
-    this.assetPath,
-    this.imageFile,
-    required this.text,
-    required this.shortText,
-    this.color,
-  }) : assert(
-         assetPath != null || imageFile != null,
-         'Either assetPath or imageFile must be provided',
-       );
-
-  /// Creates an MCC with an asset image
-  factory MCC.fromAsset({
-    required String assetPath,
-    required String text,
-    required String shortText,
-    Color? color,
-  }) {
-    return MCC(
-      assetPath: assetPath,
-      text: text,
-      shortText: shortText,
-      color: color,
-    );
-  }
-
-  /// Creates an MCC with a device image
-  factory MCC.fromFile({
-    required File imageFile,
-    required String text,
-    required String shortText,
-    Color? color,
-  }) {
-    return MCC(
-      imageFile: imageFile,
-      text: text,
-      shortText: shortText,
-      color: color,
-    );
-  }
-
-  /// Whether this MCC uses an asset image
-  bool get isAssetImage => assetPath != null;
-
-  /// Whether this MCC uses a device image
-  bool get isFileImage => imageFile != null;
-
-  /// Convert to Map for serialization
-  Map<String, dynamic> toJson() {
-    return {
-      'assetPath': assetPath,
-      'imagePath': imageFile?.path,
-      'text': text,
-      'shortText': shortText,
-      'color': color?.toARGB32(),
-    };
-  }
-
-  /// Create from Map for deserialization
-  factory MCC.fromJson(Map<String, dynamic> json) {
-    return MCC(
-      assetPath: json['assetPath'] as String?,
-      imageFile: json['imagePath'] != null
-          ? File(json['imagePath'] as String)
-          : null,
-      text: json['text'] as String,
-      shortText: json['shortText'] as String,
-      color: json['color'] != null ? Color(json['color'] as int) : null,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'MCC(text: $text, shortText: $shortText, '
-        'assetPath: $assetPath, imageFile: ${imageFile?.path}, color: $color)';
-  }
-}
-
 /// Transaction Model
-/// Contains all transaction details including expense/income, date, amount, MCC, notes, and hashtags
+/// Contains all transaction details including expense/income, date, amount, MCC ID, notes, and hashtags
 class Transaction {
   final int? id;
   final bool isExpense;
   final DateTime date;
   final double amount;
-  final MCC mcc;
+  final int mccId; // Reference to MCCItem by ID
   final String recipient;
   final String note;
   final List<HashtagGroup> hashtags;
@@ -108,7 +21,7 @@ class Transaction {
     required this.isExpense,
     required this.date,
     required this.amount,
-    required this.mcc,
+    required this.mccId,
     this.recipient = '',
     this.note = '',
     this.hashtags = const [],
@@ -122,7 +35,7 @@ class Transaction {
 
   /// Get formatted amount with currency symbol
   String getFormattedAmount({String currency = '€'}) {
-    return '$currency ${amount.toStringAsFixed(2)}';
+    return '$currency ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
   /// Convert to database map
@@ -132,10 +45,12 @@ class Transaction {
       'transaction_is_expense': isExpense ? 1 : 0,
       'transaction_date': date.toIso8601String(),
       'transaction_amount': amount,
-      'transaction_mcc': mcc.toJson(),
+      'transaction_mcc_id': mccId,
       'transaction_recipient': recipient,
       'transaction_note': note,
-      'transaction_hashtags': hashtags.map((h) => h.toJson()).toList(),
+      'transaction_hashtags': jsonEncode(
+        hashtags.map((h) => h.toJson()).toList(),
+      ),
       'transaction_created_at': createdAt.toIso8601String(),
       'transaction_updated_at': updatedAt.toIso8601String(),
     };
@@ -148,14 +63,14 @@ class Transaction {
       isExpense: (map['transaction_is_expense'] as int) == 1,
       date: DateTime.parse(map['transaction_date'] as String),
       amount: (map['transaction_amount'] as num).toDouble(),
-      mcc: MCC.fromJson(map['transaction_mcc'] as Map<String, dynamic>),
+      mccId: map['transaction_mcc_id'] as int,
       recipient: map['transaction_recipient'] as String? ?? '',
       note: map['transaction_note'] as String? ?? '',
-      hashtags:
-          (map['transaction_hashtags'] as List?)
-              ?.map((h) => HashtagGroup.fromJson(h as Map<String, dynamic>))
-              .toList() ??
-          [],
+      hashtags: map['transaction_hashtags'] != null
+          ? (jsonDecode(map['transaction_hashtags'] as String) as List)
+                .map((h) => HashtagGroup.fromJson(h as Map<String, dynamic>))
+                .toList()
+          : [],
       createdAt: DateTime.parse(map['transaction_created_at'] as String),
       updatedAt: DateTime.parse(map['transaction_updated_at'] as String),
     );
@@ -168,7 +83,7 @@ class Transaction {
       'isExpense': isExpense,
       'date': date.toIso8601String(),
       'amount': amount,
-      'mcc': mcc.toJson(),
+      'mccId': mccId,
       'recipient': recipient,
       'note': note,
       'hashtags': hashtags.map((h) => h.toJson()).toList(),
@@ -184,7 +99,7 @@ class Transaction {
       isExpense: json['isExpense'] as bool,
       date: DateTime.parse(json['date'] as String),
       amount: (json['amount'] as num).toDouble(),
-      mcc: MCC.fromJson(json['mcc'] as Map<String, dynamic>),
+      mccId: json['mccId'] as int,
       recipient: json['recipient'] as String? ?? '',
       note: json['note'] as String? ?? '',
       hashtags:
@@ -203,7 +118,7 @@ class Transaction {
     bool? isExpense,
     DateTime? date,
     double? amount,
-    MCC? mcc,
+    int? mccId,
     String? recipient,
     String? note,
     List<HashtagGroup>? hashtags,
@@ -215,7 +130,7 @@ class Transaction {
       isExpense: isExpense ?? this.isExpense,
       date: date ?? this.date,
       amount: amount ?? this.amount,
-      mcc: mcc ?? this.mcc,
+      mccId: mccId ?? this.mccId,
       recipient: recipient ?? this.recipient,
       note: note ?? this.note,
       hashtags: hashtags ?? this.hashtags,
@@ -232,7 +147,7 @@ class Transaction {
   @override
   String toString() {
     return 'Transaction{id: $id, isExpense: $isExpense, date: $date, '
-        'amount: $amount, mcc: $mcc, recipient: $recipient, note: $note, hashtags: ${hashtags.length}}';
+        'amount: $amount, mccId: $mccId, recipient: $recipient, note: $note, hashtags: ${hashtags.length}}';
   }
 
   @override

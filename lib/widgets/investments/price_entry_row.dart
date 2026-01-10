@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_icons.dart';
-import 'package:moneyapp/utils/date_picker_helper.dart';
+import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class PriceEntryRow extends StatefulWidget {

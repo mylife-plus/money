@@ -23,20 +23,50 @@ class HashtagFilterDialog extends StatefulWidget {
 class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
   late final HashtagGroupsController hashtagController;
   final TextEditingController searchController = TextEditingController();
+  List<HashtagGroup> allHashtags = [];
   List<HashtagGroup> filteredHashtags = [];
   List<HashtagGroup> selectedHashtags = [];
+  Worker? _groupsWorker;
 
   @override
   void initState() {
     super.initState();
     hashtagController = Get.find<HashtagGroupsController>();
     selectedHashtags = List.from(widget.selectedHashtags);
-    filteredHashtags = hashtagController.allGroups;
+
+    _initializeHashtags();
+
+    // Listen for updates from controller
+    _groupsWorker = ever(hashtagController.allGroups as RxList, (_) {
+      if (mounted) {
+        setState(() {
+          _initializeHashtags();
+          if (searchController.text.isNotEmpty) {
+            _onSearchChanged();
+          }
+        });
+      }
+    });
+
     searchController.addListener(_onSearchChanged);
+  }
+
+  void _initializeHashtags() {
+    allHashtags = [];
+    for (final group in hashtagController.allGroups) {
+      if (group.subgroups != null) {
+        allHashtags.addAll(group.subgroups!);
+      }
+    }
+
+    if (searchController.text.isEmpty) {
+      filteredHashtags = allHashtags;
+    }
   }
 
   @override
   void dispose() {
+    _groupsWorker?.dispose();
     searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.dispose();
@@ -45,10 +75,10 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
   void _onSearchChanged() {
     setState(() {
       if (searchController.text.isEmpty) {
-        filteredHashtags = hashtagController.allGroups;
+        filteredHashtags = allHashtags;
       } else {
         final query = searchController.text.toLowerCase();
-        filteredHashtags = hashtagController.allGroups
+        filteredHashtags = allHashtags
             .where((hashtag) => hashtag.name.toLowerCase().contains(query))
             .toList();
       }
@@ -93,7 +123,7 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
                   fontWeight: FontWeight.w600,
                 ),
                 InkWell(
-                  onTap: () => Get.back(),
+                  onTap: () => Navigator.pop(context),
                   child: Icon(Icons.close, size: 24.sp),
                 ),
               ],
@@ -236,7 +266,7 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
             InkWell(
               onTap: () {
                 widget.onSelectionChanged(selectedHashtags);
-                Get.back();
+                Navigator.pop(context);
               },
               child: Container(
                 width: double.infinity,

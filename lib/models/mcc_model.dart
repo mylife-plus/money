@@ -1,69 +1,32 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// MCC Category Model
 /// Represents a category that contains multiple MCCs
 class MCCCategory {
   final int? id;
   final String name;
-  final String? iconPath;
-  final File? iconFile;
-  final Color? color;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String? emoji;
 
-  MCCCategory({
-    this.id,
-    required this.name,
-    this.iconPath,
-    this.iconFile,
-    this.color,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  MCCCategory({this.id, required this.name, this.emoji});
 
-  MCCCategory copyWith({
-    int? id,
-    String? name,
-    String? iconPath,
-    File? iconFile,
-    Color? color,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
+  MCCCategory copyWith({int? id, String? name, String? emoji}) {
     return MCCCategory(
       id: id ?? this.id,
       name: name ?? this.name,
-      iconPath: iconPath ?? this.iconPath,
-      iconFile: iconFile ?? this.iconFile,
-      color: color ?? this.color,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      emoji: emoji ?? this.emoji,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'iconPath': iconPath,
-      'iconFile': iconFile?.path,
-      'color': color?.value.toRadixString(16),
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-    };
+    return {'id': id, 'name': name, 'emoji': emoji};
   }
 
   factory MCCCategory.fromJson(Map<String, dynamic> json) {
     return MCCCategory(
       id: json['id'],
       name: json['name'],
-      iconPath: json['iconPath'],
-      iconFile: json['iconFile'] != null ? File(json['iconFile']) : null,
-      color: json['color'] != null ? Color(json['color']) : null,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      emoji: json['emoji'],
     );
   }
 }
@@ -73,44 +36,35 @@ class MCCCategory {
 class MCCItem {
   final int? id;
   final String name;
-  final String? iconPath;
-  final File? iconFile;
   final int categoryId;
   final String categoryName;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String? mccCode; // The actual MCC code (e.g., "5812", "742")
+  final String? emoji; // Emoji representation
 
   MCCItem({
     this.id,
     required this.name,
-    this.iconPath,
-    this.iconFile,
     required this.categoryId,
     required this.categoryName,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+    this.mccCode,
+    this.emoji,
+  });
 
   MCCItem copyWith({
     int? id,
     String? name,
-    String? iconPath,
-    File? iconFile,
     int? categoryId,
     String? categoryName,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    String? mccCode,
+    String? emoji,
   }) {
     return MCCItem(
       id: id ?? this.id,
       name: name ?? this.name,
-      iconPath: iconPath ?? this.iconPath,
-      iconFile: iconFile ?? this.iconFile,
       categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      mccCode: mccCode ?? this.mccCode,
+      emoji: emoji ?? this.emoji,
     );
   }
 
@@ -118,12 +72,10 @@ class MCCItem {
     return {
       'id': id,
       'name': name,
-      'iconPath': iconPath,
-      'iconFile': iconFile?.path,
       'categoryId': categoryId,
       'categoryName': categoryName,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'mccCode': mccCode,
+      'emoji': emoji,
     };
   }
 
@@ -131,31 +83,17 @@ class MCCItem {
     return MCCItem(
       id: json['id'],
       name: json['name'],
-      iconPath: json['iconPath'],
-      iconFile: json['iconFile'] != null ? File(json['iconFile']) : null,
       categoryId: json['categoryId'],
       categoryName: json['categoryName'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      mccCode: json['mccCode'],
+      emoji: json['emoji'],
     );
   }
 
-  /// Get icon widget (prioritize iconFile over iconPath)
+  /// Get icon widget (returns emoji as text or default icon)
   Widget getIcon({double? size, Color? color}) {
-    if (iconFile != null) {
-      return Image.file(
-        iconFile!,
-        width: size,
-        height: size,
-        color: color,
-      );
-    } else if (iconPath != null) {
-      return Image.asset(
-        iconPath!,
-        width: size,
-        height: size,
-        color: color,
-      );
+    if (emoji != null && emoji!.isNotEmpty) {
+      return Text(emoji!, style: TextStyle(fontSize: size ?? 17.sp));
     } else {
       return Icon(Icons.category, size: size, color: color);
     }
@@ -165,21 +103,20 @@ class MCCItem {
 /// Helper class for MCC operations
 class MCCHelper {
   /// Filter MCCs by category
-  static List<MCCItem> filterByCategory(
-    List<MCCItem> mccs,
-    int categoryId,
-  ) {
+  static List<MCCItem> filterByCategory(List<MCCItem> mccs, int categoryId) {
     return mccs.where((mcc) => mcc.categoryId == categoryId).toList();
   }
 
   /// Search MCCs by name
-  static List<MCCItem> searchByName(
-    List<MCCItem> mccs,
-    String query,
-  ) {
+  static List<MCCItem> searchByName(List<MCCItem> mccs, String query) {
     if (query.isEmpty) return mccs;
     return mccs
-        .where((mcc) => mcc.name.toLowerCase().contains(query.toLowerCase()))
+        .where(
+          (mcc) =>
+              mcc.name.toLowerCase().contains(query.toLowerCase()) ||
+              (mcc.mccCode != null && mcc.mccCode!.contains(query)) ||
+              mcc.categoryName.toLowerCase().contains(query.toLowerCase()),
+        )
         .toList();
   }
 

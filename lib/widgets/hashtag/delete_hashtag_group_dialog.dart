@@ -101,7 +101,7 @@ class DeleteHashtagGroupDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () => Get.back(),
+                    onPressed: () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -121,7 +121,7 @@ class DeleteHashtagGroupDialog extends StatelessWidget {
                   const SizedBox(width: 12),
                   ElevatedButton(
                     onPressed: () {
-                      Get.back();
+                      Navigator.of(context).pop();
                       onConfirm();
                     },
                     style: ElevatedButton.styleFrom(

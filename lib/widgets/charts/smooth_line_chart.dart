@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:moneyapp/widgets/charts/step_line_chart.dart';
+import 'package:moneyapp/models/chart_data_point.dart';
 
 class SmoothLineChartWidget extends StatelessWidget {
   final List<ChartDataPoint> data;
@@ -175,7 +175,7 @@ class SmoothLineChartWidget extends StatelessWidget {
 
   String _formatValue(double value) {
     if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}m';
+      return '${(value / 1000000).toStringAsFixed(1).replaceAll('.', ',')}m';
     } else if (value >= 1000) {
       return '${(value / 1000).toStringAsFixed(0)}k';
     }

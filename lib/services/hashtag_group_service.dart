@@ -1,110 +1,21 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/hashtag_group_model.dart';
-import '../services/memory_db.dart';
+import 'database/repositories/hashtag_repository.dart';
+
+import 'database/repositories/transaction_repository.dart';
+
+// ... (keep existing imports)
+
+// ...
 
 class HashtagGroupService {
   static final HashtagGroupService _instance = HashtagGroupService._internal();
   factory HashtagGroupService() => _instance;
   HashtagGroupService._internal();
 
-  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
-
-  /// Add a new custom hashtag group
-  Future<HashtagGroup?> addCustomGroup(String name, {int? parentId}) async {
-    try {
-      debugPrint(
-        '[HashtagGroupService][addCustomGroup] Adding custom group: $name, parentId: $parentId',
-      );
-
-      // Check for duplicate hashtag name across all groups (case-insensitive)
-      final allGroups = await getAllGroupsFlat();
-      final nameLower = name.trim().toLowerCase();
-
-      for (final group in allGroups) {
-        if (group.name.toLowerCase() == nameLower) {
-          debugPrint(
-            '[HashtagGroupService][addCustomGroup] Duplicate hashtag name found: ${group.name}',
-          );
-          // Return a special marker to indicate duplicate
-          // We'll use a group with id = -1 to signal duplicate
-          return HashtagGroup(
-            id: -1,
-            name: name.trim(),
-            parentId: parentId,
-            isCustom: true,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-        }
-      }
-
-      // Additional check: If adding a main group, check if name conflicts with any subgroup
-      // If adding a subgroup, check if name conflicts with its parent group
-      if (parentId == null) {
-        // Adding a main group - check if this name exists as any subgroup
-        for (final group in allGroups) {
-          if (group.parentId != null && group.name.toLowerCase() == nameLower) {
-            debugPrint(
-              '[HashtagGroupService][addCustomGroup] Main group name conflicts with existing subgroup: ${group.name}',
-            );
-            // Return id = -3 to signal main group conflicts with subgroup
-            return HashtagGroup(
-              id: -3,
-              name: name.trim(),
-              parentId: parentId,
-              isCustom: true,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            );
-          }
-        }
-      } else {
-        // Adding a subgroup - check if name conflicts with parent group
-        final parentGroup = await getGroupById(parentId);
-        if (parentGroup != null &&
-            parentGroup.name.toLowerCase() == nameLower) {
-          debugPrint(
-            '[HashtagGroupService][addCustomGroup] Subgroup name conflicts with parent group: ${parentGroup.name}',
-          );
-          // Return id = -4 to signal subgroup conflicts with parent group
-          return HashtagGroup(
-            id: -4,
-            name: name.trim(),
-            parentId: parentId,
-            isCustom: true,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-        }
-      }
-
-      final now = DateTime.now();
-      final group = HashtagGroup(
-        name: name.trim(),
-        parentId: parentId,
-        isCustom: true,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final groupId = await _databaseHelper.insertHashtagGroup(group.toMap());
-
-      if (groupId > 0) {
-        final createdGroup = group.copyWith(id: groupId);
-        debugPrint(
-          '[HashtagGroupService][addCustomGroup] Successfully added group with ID: $groupId',
-        );
-        return createdGroup;
-      } else {
-        debugPrint('[HashtagGroupService][addCustomGroup] Failed to add group');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('[HashtagGroupService][addCustomGroup] Error: $e');
-      return null;
-    }
-  }
+  final HashtagRepository _repository = HashtagRepository();
+  final TransactionRepository _transactionRepository = TransactionRepository();
 
   /// Update an existing hashtag group
   Future<bool> updateGroup(int groupId, String name, {int? newParentId}) async {
@@ -113,11 +24,8 @@ class HashtagGroupService {
         '[HashtagGroupService][updateGroup] ===== UPDATE GROUP STARTED =====',
       );
       debugPrint('[HashtagGroupService][updateGroup] Input parameters:');
-      debugPrint('  - Group ID: $groupId (type: ${groupId.runtimeType})');
-      debugPrint('  - Name: "$name" (type: ${name.runtimeType})');
-      debugPrint('  - Name length: ${name.length}');
-      debugPrint('  - Name trimmed: "${name.trim()}"');
-      debugPrint('  - Name trimmed length: ${name.trim().length}');
+      debugPrint('  - Group ID: $groupId');
+      debugPrint('  - Name: "$name"');
       debugPrint('  - Parent ID New: $newParentId');
 
       // Get the old name before updating
@@ -236,46 +144,24 @@ class HashtagGroupService {
       // Add parent ID to update if provided
       if (newParentId != null) {
         updateData['hashtag_group_parent_id'] = newParentId.toString();
-        debugPrint(
-          '[HashtagGroupService][updateGroup] Including parent ID in update: $newParentId',
-        );
       }
 
-      debugPrint('[HashtagGroupService][updateGroup] Update data: $updateData');
-      debugPrint(
-        '[HashtagGroupService][updateGroup] 🔄 Calling database helper...',
-      );
+      final updatedRows = await _repository.update(groupId, updateData);
 
-      final updatedRows = await _databaseHelper.updateHashtagGroup(
-        groupId,
-        updateData,
-      );
-
-      debugPrint(
-        '[HashtagGroupService][updateGroup] Database response: $updatedRows rows affected',
-      );
       final success = updatedRows > 0;
-      debugPrint(
-        '[HashtagGroupService][updateGroup] Final result: ${success ? '✅ SUCCESS' : '❌ FAILED'}',
-      );
 
-      // ✅ Update all memories that use this hashtag
-      if (success && oldName != null && oldName != newName) {
-        debugPrint(
-          '[HashtagGroupService][updateGroup] 🔄 Updating memories with hashtag...',
-        );
+      if (success) {
+        // Retroactively update all transactions using this hashtag
+        await _updateTransactionsWithNewHashtagName(groupId, newName);
+
+        if (oldGroup != null && oldGroup.isMainGroup) {
+          await _updateTransactionsForSubgroups(groupId);
+        }
       }
 
       return success;
     } catch (e) {
-      debugPrint('[HashtagGroupService][updateGroup] ❌ EXCEPTION CAUGHT: $e');
-      debugPrint(
-        '[HashtagGroupService][updateGroup] Exception type: ${e.runtimeType}',
-      );
-      debugPrint(
-        '[HashtagGroupService][updateGroup] Stack trace: ${StackTrace.current}',
-      );
-      // Rethrow specific exceptions so UI can handle them
+      debugPrint('[HashtagGroupService][updateGroup] Error: $e');
       if (e.toString().contains('DUPLICATE_HASHTAG_NAME') ||
           e.toString().contains('CANNOT_CHANGE_MAIN_GROUP_PARENT') ||
           e.toString().contains('PARENT_NOT_FOUND') ||
@@ -287,11 +173,145 @@ class HashtagGroupService {
     }
   }
 
-  /// Update all memories that contain the old tag with the new tag
+  Future<void> _updateTransactionsWithNewHashtagName(
+    int groupId,
+    String newName,
+  ) async {
+    try {
+      final allTransactions = await _transactionRepository.getAllTransactions();
+      for (final transaction in allTransactions) {
+        bool needsUpdate = false;
+        final updatedHashtags = transaction.hashtags.map((h) {
+          if (h.id == groupId) {
+            needsUpdate = true;
+            return h.copyWith(name: newName);
+          }
+          return h;
+        }).toList();
+
+        if (needsUpdate) {
+          await _transactionRepository.updateTransaction(
+            transaction.copyWith(hashtags: updatedHashtags),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint(
+        '[HashtagGroupService] Error updating transactions for hashtag rename: $e',
+      );
+    }
+  }
+
+  Future<void> _updateTransactionsForSubgroups(int mainGroupId) async {
+    // No-op: Subgroups cached in transactions only store their own 'name' and 'parentId'.
+    // They do NOT store the parent's name.
+    // The UI handles resolving the parent name dynamically using the parentId.
+    // Therefore, renaming a parent group does not require updating transactions that use its subgroups,
+    // as long as the parentId remains valid (which it does, as we only changed the name).
+    return;
+  }
+
+  /// Add a new custom hashtag group
+  Future<HashtagGroup?> addCustomGroup(String name, {int? parentId}) async {
+    try {
+      debugPrint(
+        '[HashtagGroupService][addCustomGroup] Adding custom group: $name, parentId: $parentId',
+      );
+
+      // Check for duplicate hashtag name across all groups (case-insensitive)
+      final allGroups = await getAllGroupsFlat();
+      final nameLower = name.trim().toLowerCase();
+
+      for (final group in allGroups) {
+        if (group.name.toLowerCase() == nameLower) {
+          debugPrint(
+            '[HashtagGroupService][addCustomGroup] Duplicate hashtag name found: ${group.name}',
+          );
+          // Return a special marker to indicate duplicate
+          // We'll use a group with id = -1 to signal duplicate
+          return HashtagGroup(
+            id: -1,
+            name: name.trim(),
+            parentId: parentId,
+            isCustom: true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+
+      // Additional check: If adding a main group, check if name conflicts with any subgroup
+      // If adding a subgroup, check if name conflicts with its parent group
+      if (parentId == null) {
+        // Adding a main group - check if this name exists as any subgroup
+        for (final group in allGroups) {
+          if (group.parentId != null && group.name.toLowerCase() == nameLower) {
+            debugPrint(
+              '[HashtagGroupService][addCustomGroup] Main group name conflicts with existing subgroup: ${group.name}',
+            );
+            // Return id = -3 to signal main group conflicts with subgroup
+            return HashtagGroup(
+              id: -3,
+              name: name.trim(),
+              parentId: parentId,
+              isCustom: true,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+          }
+        }
+      } else {
+        // Adding a subgroup - check if name conflicts with parent group
+        final parentGroup = await getGroupById(parentId);
+        if (parentGroup != null &&
+            parentGroup.name.toLowerCase() == nameLower) {
+          debugPrint(
+            '[HashtagGroupService][addCustomGroup] Subgroup name conflicts with parent group: ${parentGroup.name}',
+          );
+          // Return id = -4 to signal subgroup conflicts with parent group
+          return HashtagGroup(
+            id: -4,
+            name: name.trim(),
+            parentId: parentId,
+            isCustom: true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+
+      final now = DateTime.now();
+      final group = HashtagGroup(
+        name: name.trim(),
+        parentId: parentId,
+        isCustom: true,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      final groupId = await _repository.insert(group.toMap());
+
+      if (groupId > 0) {
+        final createdGroup = group.copyWith(id: groupId);
+        debugPrint(
+          '[HashtagGroupService][addCustomGroup] Successfully added group with ID: $groupId',
+        );
+        return createdGroup;
+      } else {
+        debugPrint('[HashtagGroupService][addCustomGroup] Failed to add group');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('[HashtagGroupService][addCustomGroup] Error: $e');
+      return null;
+    }
+  }
 
   /// Delete a hashtag group
-  /// Returns: true if deleted, false if failed, null if has memories (cannot delete)
-  Future<bool?> deleteGroup(int groupId) async {
+  /// Returns: true if deleted, false if failed
+  /// Delete a hashtag group
+  /// Returns: true if deleted, false if failed
+  Future<bool> deleteGroup(int groupId) async {
     try {
       debugPrint(
         '[HashtagGroupService][deleteGroup] Deleting group ID: $groupId',
@@ -306,33 +326,16 @@ class HashtagGroupService {
         return false;
       }
 
-      // Check if any memories are using this hashtag group
-      final memoryCount = await _databaseHelper.getMemoryCountForHashtagGroup(
-        group.name,
-      );
-      if (memoryCount > 0) {
+      // Check if any transactions are using this hashtag
+      final isUsed = await _isHashtagInUse(groupId);
+      if (isUsed) {
         debugPrint(
-          '[HashtagGroupService][deleteGroup] Cannot delete group "${group.name}" - $memoryCount memories are using it',
+          '[HashtagGroupService][deleteGroup] Cannot delete group: currently in use by transactions',
         );
-        return null; // null indicates cannot delete due to memories
+        throw Exception('CANNOT_DELETE_HASHTAG_IN_USE');
       }
 
-      // If this is a main group, check if ANY of its subgroups have associated memories
-      if (group.parentId == null) {
-        final subgroups = await getSubgroups(groupId);
-        for (final subgroup in subgroups) {
-          final subgroupMemoryCount = await _databaseHelper
-              .getMemoryCountForHashtagGroup(subgroup.name);
-          if (subgroupMemoryCount > 0) {
-            debugPrint(
-              '[HashtagGroupService][deleteGroup] Cannot delete main group "${group.name}" - subgroup "${subgroup.name}" has $subgroupMemoryCount memories',
-            );
-            return null; // null indicates cannot delete due to memories in subgroups
-          }
-        }
-      }
-
-      final deletedRows = await _databaseHelper.deleteHashtagGroup(groupId);
+      final deletedRows = await _repository.delete(groupId);
       final success = deletedRows > 0;
 
       debugPrint(
@@ -342,6 +345,38 @@ class HashtagGroupService {
       return success;
     } catch (e) {
       debugPrint('[HashtagGroupService][deleteGroup] Error: $e');
+      if (e.toString().contains('CANNOT_DELETE_HASHTAG_IN_USE')) {
+        rethrow;
+      }
+      return false;
+    }
+  }
+
+  Future<bool> _isHashtagInUse(int groupId) async {
+    try {
+      final allTransactions = await _transactionRepository.getAllTransactions();
+      for (final transaction in allTransactions) {
+        for (final hashtag in transaction.hashtags) {
+          if (hashtag.id == groupId) {
+            return true;
+          }
+        }
+      }
+
+      // If it's a main group, ensure no transaction uses it OR its subgroups.
+      final group = await getGroupById(groupId);
+      if (group != null && group.isMainGroup) {
+        final subgroups = await getSubgroups(groupId);
+        for (final subgroup in subgroups) {
+          if (await _isHashtagInUse(subgroup.id!)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint('[HashtagGroupService] Error checking hashtag usage: $e');
       return false;
     }
   }
@@ -354,7 +389,7 @@ class HashtagGroupService {
       );
 
       // Get main groups only (without subgroups)
-      final mainGroupMaps = await _databaseHelper.getMainHashtagGroups();
+      final mainGroupMaps = await _repository.getMainGroups();
       debugPrint(
         '[HashtagGroupService][getAllGroupsHierarchical] Got ${mainGroupMaps.length} main group maps',
       );
@@ -368,9 +403,7 @@ class HashtagGroupService {
         );
 
         // Get subgroups for this main group
-        final subgroupMaps = await _databaseHelper.getSubHashtagGroups(
-          mainGroup.id!,
-        );
+        final subgroupMaps = await _repository.getSubgroups(mainGroup.id!);
         debugPrint(
           '[HashtagGroupService][getAllGroupsHierarchical] Got ${subgroupMaps.length} subgroups for ${mainGroup.name}',
         );
@@ -398,7 +431,7 @@ class HashtagGroupService {
     try {
       debugPrint('[HashtagGroupService][getAllGroupsFlat] Fetching all groups');
 
-      final groupMaps = await _databaseHelper.getAllHashtagGroups();
+      final groupMaps = await _repository.getAll();
       final groups = HashtagGroupHelper.fromMapList(groupMaps);
 
       debugPrint(
@@ -417,7 +450,7 @@ class HashtagGroupService {
     try {
       debugPrint('[HashtagGroupService][getMainGroups] Fetching main groups');
 
-      final groupMaps = await _databaseHelper.getMainHashtagGroups();
+      final groupMaps = await _repository.getMainGroups();
       final groups = HashtagGroupHelper.fromMapList(groupMaps);
 
       debugPrint(
@@ -438,9 +471,7 @@ class HashtagGroupService {
         '[HashtagGroupService][getSubgroups] Fetching subgroups for main group ID: $mainGroupId',
       );
 
-      final subgroupMaps = await _databaseHelper.getSubHashtagGroups(
-        mainGroupId,
-      );
+      final subgroupMaps = await _repository.getSubgroups(mainGroupId);
       final subgroups = HashtagGroupHelper.fromMapList(subgroupMaps);
 
       debugPrint(
@@ -461,7 +492,7 @@ class HashtagGroupService {
         '[HashtagGroupService][getGroupById] Fetching group ID: $groupId',
       );
 
-      final groupMap = await _databaseHelper.getHashtagGroupById(groupId);
+      final groupMap = await _repository.getById(groupId);
       if (groupMap == null) {
         debugPrint('[HashtagGroupService][getGroupById] Group not found');
         return null;
@@ -479,23 +510,16 @@ class HashtagGroupService {
     }
   }
 
-  /// Get memory count for a specific hashtag group
-  Future<int> getMemoryCountForGroup(String groupName) async {
-    try {
-      return await _databaseHelper.getMemoryCountForHashtagGroup(groupName);
-    } catch (e) {
-      debugPrint('[HashtagGroupService][getMemoryCountForGroup] Error: $e');
-      return 0;
-    }
-  }
-
   /// Initialize hashtag groups if needed
   Future<void> initializeGroupsIfNeeded() async {
     try {
       debugPrint(
         '[HashtagGroupService][initializeGroupsIfNeeded] Checking initialization status',
       );
-      await _databaseHelper.initializeHashtagGroupsIfNeeded();
+      // Note: No predefined hashtag groups - users create their own as needed
+      debugPrint(
+        '[HashtagGroupService][initializeGroupsIfNeeded] No initialization needed - users create custom groups',
+      );
     } catch (e) {
       debugPrint('[HashtagGroupService][initializeGroupsIfNeeded] Error: $e');
     }

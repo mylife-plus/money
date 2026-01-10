@@ -176,11 +176,6 @@ class HashtagGroupsController extends GetxController {
           '[HashtagGroupsController][deleteGroup] Successfully deleted group',
         );
         return true;
-      } else if (result == null) {
-        debugPrint(
-          '[HashtagGroupsController][deleteGroup] Cannot delete group - has associated memories',
-        );
-        return null; // Cannot delete due to memories
       } else {
         debugPrint(
           '[HashtagGroupsController][deleteGroup] Failed to delete group',

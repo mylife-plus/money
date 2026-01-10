@@ -6,7 +6,7 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/screens/filter/portfolio_filter_screen.dart';
-import 'package:moneyapp/screens/filter/transaction_filter_screen.dart';
+
 import 'package:moneyapp/screens/investments/trade_search_screen.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/selection_app_bar.dart';
@@ -16,10 +16,7 @@ import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 class TradesSection extends StatefulWidget {
   final Function(bool)? onSelectionModeChanged;
 
-  const TradesSection({
-    super.key,
-    this.onSelectionModeChanged,
-  });
+  const TradesSection({super.key, this.onSelectionModeChanged});
 
   @override
   State<TradesSection> createState() => _TradesSectionState();
@@ -85,27 +82,43 @@ class _TradesSectionState extends State<TradesSection> {
                 40.horizontalSpace,
                 InkWell(
                   onTap: () {
-                    Get.to(
-                      () => PortfolioFilterScreen(),
-                      transition: Transition.upToDown,
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PortfolioFilterScreen(),
+                        fullscreenDialog: true,
+                      ),
                     );
                   },
-                  child: Image.asset(AppIcons.filter, height: 24.r, width: 24.r),
+                  child: Image.asset(
+                    AppIcons.filter,
+                    height: 24.r,
+                    width: 24.r,
+                  ),
                 ),
                 40.horizontalSpace,
                 InkWell(
                   onTap: () {
-                    Get.to(
-                      () => const TradeSearchScreen(),
-                      transition: Transition.rightToLeft,
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TradeSearchScreen(),
+                      ),
                     );
                   },
-                  child: Image.asset(AppIcons.search, height: 24.r, width: 24.r),
+                  child: Image.asset(
+                    AppIcons.search,
+                    height: 24.r,
+                    width: 24.r,
+                  ),
                 ),
                 Spacer(),
                 InkWell(
                   onTap: () {
-                    Get.toNamed(AppRoutes.newPortfolioChange.path);
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.newPortfolioChange.path,
+                    );
                   },
                   child: Image.asset(AppIcons.plus, height: 21.r, width: 21.r),
                 ),
@@ -270,7 +283,9 @@ class _TradesSectionState extends State<TradesSection> {
                                         } else {
                                           selectedIds.add(id);
                                         }
-                                        _updateSelectionMode(selectedIds.isNotEmpty);
+                                        _updateSelectionMode(
+                                          selectedIds.isNotEmpty,
+                                        );
                                       });
                                     },
                                     onDelete: (id) {

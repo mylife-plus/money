@@ -10,7 +10,7 @@ import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/transaction_model.dart';
-import 'package:moneyapp/utils/date_picker_helper.dart';
+
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
@@ -51,15 +51,17 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       // Populate fields with existing data
       isAddingIncome = !existingTransaction!.isExpense;
       selectedDate = existingTransaction!.date;
-      amountController.text = existingTransaction!.amount.toStringAsFixed(2);
+      amountController.text = existingTransaction!.amount
+          .toStringAsFixed(2)
+          .replaceAll('.', ',');
       recipientController.text = existingTransaction!.recipient;
       noteController.text = existingTransaction!.note;
-      selectedHashtags = List.from(existingTransaction!.hashtags);
+      selectedHashtags = existingTransaction!.hashtags.map((h) {
+        return hashtagController.findGroupById(h.id ?? -1) ?? h;
+      }).toList();
 
-      // Find matching MCC from controller
-      selectedMCC = mccController.mccItems.firstWhereOrNull(
-        (item) => item.name == existingTransaction!.mcc.text,
-      );
+      // Find matching MCC from controller by ID
+      selectedMCC = mccController.getMCCById(existingTransaction!.mccId);
     } else {
       final bool isExpenseSelected =
           Get.arguments?['isExpenseSelected'] ?? true;
@@ -102,17 +104,69 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         },
       ),
     );
+
+    // Refresh selected hashtags to ensure latest data (names, etc.)
+    setState(() {
+      selectedHashtags = selectedHashtags.map((h) {
+        return hashtagController.findGroupById(h.id ?? -1) ?? h;
+      }).toList();
+    });
   }
 
-  void _saveTransaction() {
+  void _showSnackbar(String title, String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    message,
+                    style: TextStyle(fontSize: 12.sp, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(10.w),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+      ),
+    );
+  }
+
+  Future<void> _saveTransaction() async {
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
     // Validate inputs
     if (selectedDate == null) {
-      Get.snackbar('Error', 'Please select a date');
+      _showSnackbar('Error', 'Please select a date');
       return;
     }
 
     if (amountController.text.isEmpty) {
-      Get.snackbar('Error', 'Please enter an amount');
+      _showSnackbar('Error', 'Please enter an amount');
       return;
     }
 
@@ -120,21 +174,14 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       amountController.text.replaceAll(',', '.'),
     );
     if (amount == null || amount <= 0) {
-      Get.snackbar('Error', 'Please enter a valid amount');
+      _showSnackbar('Error', 'Please enter a valid amount');
       return;
     }
 
     if (selectedMCC == null) {
-      Get.snackbar('Error', 'Please select an MCC category');
+      _showSnackbar('Error', 'Please select an MCC category');
       return;
     }
-
-    // Create MCC object from selectedMCC
-    final mcc = MCC.fromAsset(
-      assetPath: selectedMCC!.iconPath ?? AppIcons.transaction,
-      text: selectedMCC!.name,
-      shortText: selectedMCC!.categoryName,
-    );
 
     // Get HomeController
     final homeController = Get.find<HomeController>();
@@ -145,23 +192,22 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         isExpense: !isAddingIncome,
         date: selectedDate!,
         amount: amount,
-        mcc: mcc,
+        mccId: selectedMCC!.id!,
         recipient: recipientController.text.trim(),
         note: noteController.text.trim(),
         hashtags: selectedHashtags,
         updatedAt: DateTime.now(),
       );
 
-      // Find and update the transaction in the list
-      final index = homeController.transactions.indexWhere(
-        (t) => t.id == existingTransaction!.id,
-      );
-      if (index != -1) {
-        homeController.updateTransaction(index, updatedTransaction);
-      }
+      await homeController.updateTransaction(updatedTransaction);
 
-      Get.back();
-      Get.snackbar('Success', 'Transaction updated successfully');
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showSnackbar(
+        'Success',
+        'Transaction updated successfully',
+        isError: false,
+      );
     } else {
       // Create new transaction
       final newTransaction = Transaction(
@@ -169,15 +215,20 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         isExpense: !isAddingIncome,
         date: selectedDate!,
         amount: amount,
-        mcc: mcc,
+        mccId: selectedMCC!.id!,
         recipient: recipientController.text.trim(),
         note: noteController.text.trim(),
         hashtags: selectedHashtags,
       );
 
-      homeController.addTransaction(newTransaction);
-      Get.back();
-      Get.snackbar('Success', 'Transaction added successfully');
+      await homeController.addTransaction(newTransaction);
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showSnackbar(
+        'Success',
+        'Transaction added successfully',
+        isError: false,
+      );
     }
   }
 
@@ -194,7 +245,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.pop(context),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,
@@ -202,7 +253,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                     ),
                   ),
                   CustomText(
-                    isEditMode ? 'Edit Transaction' : 'New Transaction',
+                    isEditMode ? 'Edit Cashflow' : 'New Cashflow',
                     size: 16.sp,
                     color: Colors.black,
                   ),
@@ -412,10 +463,10 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                     size: 12.sp,
                                     color: AppColors.greyColor,
                                   ),
-                                  3.verticalSpace,
+                                  // 3.verticalSpace,
                                   Center(
                                     child: selectedMCC != null
-                                        ? selectedMCC!.getIcon(size: 17.r)
+                                        ? selectedMCC!.getIcon(size: 15.r)
                                         : Image.asset(
                                             AppIcons.shopIcon,
                                             height: 17.r,
@@ -502,80 +553,95 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
 
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Wrap(
-                          alignment: WrapAlignment.start,
-                          spacing: 8.w,
-                          runSpacing: 8.h,
-                          children: [
-                            InkWell(
-                              onTap: _showHashtagSelectionDialog,
-                              child: Container(
-                                height: 42.h,
-                                width: 37.w,
-                                padding: EdgeInsets.fromLTRB(
-                                  5.r,
-                                  0.r,
-                                  5.r,
-                                  0.r,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(4.r),
-                                  border: Border.all(
-                                    color: AppColors.greyBorder,
+                        child: Obx(() {
+                          // Register dependency to avoid "improper use of GetX" when list is empty
+                          // This ensures the widget rebuilds when groups are loaded/updated
+                          // Accessing .length is required to register the listener on the RxList
+                          hashtagController.allGroups.length;
+
+                          return Wrap(
+                            alignment: WrapAlignment.start,
+                            spacing: 8.w,
+                            runSpacing: 8.h,
+                            children: [
+                              InkWell(
+                                onTap: _showHashtagSelectionDialog,
+                                child: Container(
+                                  height: 42.h,
+                                  width: 37.w,
+                                  padding: EdgeInsets.fromLTRB(
+                                    5.r,
+                                    0.r,
+                                    5.r,
+                                    0.r,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.25,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(4.r),
+                                    border: Border.all(
+                                      color: AppColors.greyBorder,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.25,
+                                        ),
+                                        blurRadius: 4.r,
+                                        offset: Offset(0, 0),
                                       ),
-                                      blurRadius: 4.r,
-                                      offset: Offset(0, 0),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    CustomText(
-                                      'Add',
-                                      size: 12.sp,
-                                      color: AppColors.greyColor,
-                                    ),
-                                    CustomText(
-                                      '#',
-                                      size: 16.sp,
-                                      color: Color(0xff0088FF),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CustomText(
+                                        'Add',
+                                        size: 12.sp,
+                                        color: AppColors.greyColor,
+                                      ),
+                                      CustomText(
+                                        '#',
+                                        size: 16.sp,
+                                        color: Color(0xff0088FF),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            ...selectedHashtags.map((hashtag) {
-                              // Find parent group name
-                              String categoryGroup = 'Main Group';
-                              if (hashtag.isSubgroup) {
-                                final mainGroup = hashtagController.allGroups
-                                    .firstWhereOrNull(
-                                      (g) => g.id == hashtag.parentId,
-                                    );
-                                categoryGroup = mainGroup?.name ?? 'Unknown';
-                              }
+                              ...selectedHashtags.map((hashtag) {
+                                // Find latest hashtag data from controller to ensure updates are reflected
+                                // and parent references are correct
+                                final currentHashtag =
+                                    hashtagController.findGroupById(
+                                      hashtag.id ?? -1,
+                                    ) ??
+                                    hashtag;
 
-                              return CategoryChip(
-                                category: hashtag.name,
-                                categoryGroup: categoryGroup,
-                                onRemove: () {
-                                  setState(() {
-                                    selectedHashtags.removeWhere(
-                                      (h) => h.id == hashtag.id,
-                                    );
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ],
-                        ),
+                                // Find parent group name
+                                String categoryGroup = 'Main Group';
+                                if (currentHashtag.isSubgroup) {
+                                  final mainGroup = hashtagController.allGroups
+                                      .firstWhereOrNull(
+                                        (g) => g.id == currentHashtag.parentId,
+                                      );
+                                  categoryGroup = mainGroup?.name ?? 'Unknown';
+                                }
+
+                                return CategoryChip(
+                                  category: currentHashtag.name,
+                                  categoryGroup: categoryGroup,
+                                  onRemove: () {
+                                    setState(() {
+                                      selectedHashtags.removeWhere(
+                                        (h) => h.id == hashtag.id,
+                                      );
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ],
+                          );
+                        }),
                       ),
                       23.verticalSpace,
                       InkWell(

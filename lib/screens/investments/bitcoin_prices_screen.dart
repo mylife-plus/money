@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
+
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
@@ -22,6 +22,31 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
     PriceEntry(date: DateTime(2025, 10, 12), price: '100.000'),
   ];
 
+  void _showSnackbar(String title, String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(message, style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _showAddPriceDialog() {
     showDialog(
       context: context,
@@ -30,11 +55,7 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
           setState(() {
             priceEntries.insert(0, PriceEntry(date: date, price: price));
           });
-          Get.snackbar(
-            'Success',
-            'Price added successfully',
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          _showSnackbar('Success', 'Price added successfully', isError: false);
         },
       ),
     );
@@ -55,10 +76,10 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
           setState(() {
             priceEntries[index] = PriceEntry(date: date, price: price);
           });
-          Get.snackbar(
+          _showSnackbar(
             'Success',
             'Price updated successfully',
-            snackPosition: SnackPosition.BOTTOM,
+            isError: false,
           );
         },
       ),
@@ -106,11 +127,7 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
       setState(() {
         priceEntries.removeAt(index);
       });
-      Get.snackbar(
-        'Success',
-        'Price deleted successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _showSnackbar('Success', 'Price deleted successfully', isError: false);
     }
   }
 
@@ -128,7 +145,7 @@ class _BitcoinPricesScreenState extends State<BitcoinPricesScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,

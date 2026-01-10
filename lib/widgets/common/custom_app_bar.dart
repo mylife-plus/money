@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
+
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/routes/app_routes.dart';
@@ -89,7 +89,7 @@ class CustomAppBar extends StatelessWidget {
               GestureDetector(
                 onTap: () {
                   // Navigate to settings screen
-                  Get.toNamed(AppRoutes.settings.path);
+                  Navigator.pushNamed(context, AppRoutes.settings.path);
                 },
                 child: Image.asset(AppIcons.setting, height: 24.r, width: 24.r),
               ),

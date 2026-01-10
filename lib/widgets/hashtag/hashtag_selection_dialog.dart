@@ -7,6 +7,7 @@ import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/services/hashtag_group_service.dart';
+import 'package:moneyapp/services/hashtag_recent_service.dart';
 import 'package:moneyapp/widgets/common/add_edit_group_popup.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
@@ -20,17 +21,38 @@ class HashtagSelectionDialog extends StatefulWidget {
 }
 
 class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
-  final HashtagGroupsController hashtagController =
-      Get.find<HashtagGroupsController>();
+  final HashtagGroupsController hashtagController = Get.put(
+    HashtagGroupsController(),
+  );
   final HashtagGroupService _hashtagGroupService = HashtagGroupService();
   final TextEditingController searchController = TextEditingController();
+  final HashtagRecentService _recentService = HashtagRecentService();
   List<HashtagGroup> filteredHashtags = [];
   List<HashtagGroup> allHashtags = [];
+  List<HashtagGroup> recentHashtags = [];
+  bool isSearching = false;
+
+  Worker? _groupsWorker;
 
   @override
   void initState() {
     super.initState();
     _initializeHashtags();
+
+    // Listen for updates from controller (in case data loads after dialog opens)
+    _groupsWorker = ever(hashtagController.allGroups as RxList, (_) {
+      if (mounted) {
+        setState(() {
+          // Refresh list of all hashtags
+          _initializeHashtags();
+          // If searching, re-run search with new data
+          if (isSearching) {
+            _onSearchChanged();
+          }
+        });
+      }
+    });
+
     searchController.addListener(_onSearchChanged);
   }
 
@@ -43,18 +65,51 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
       }
     }
 
-    // Initially show only first 5
-    setState(() {
-      filteredHashtags = allHashtags.take(5).toList();
+    _loadRecentHashtags();
+  }
+
+  Future<void> _loadRecentHashtags() async {
+    final recentData = await _recentService.loadRecentItems();
+    // Filter to get only actual existing hashtag groups (subgroups) that match the names
+    final validRecentHashtags = allHashtags.where((hashtag) {
+      return recentData.recentItems.contains(hashtag.name);
+    }).toList();
+
+    // Sort them based on the order in recentItems
+    validRecentHashtags.sort((a, b) {
+      final indexA = recentData.recentItems.indexOf(a.name);
+      final indexB = recentData.recentItems.indexOf(b.name);
+      return indexA.compareTo(indexB);
     });
+
+    if (mounted) {
+      setState(() {
+        recentHashtags = validRecentHashtags;
+        // Initially show recent hashtags instead of just first 5
+        // But ONLY if we are not currently searching
+        if (!isSearching) {
+          if (recentHashtags.isNotEmpty) {
+            filteredHashtags = recentHashtags;
+          } else {
+            filteredHashtags = [];
+          }
+        }
+      });
+    }
   }
 
   void _onSearchChanged() {
     setState(() {
       if (searchController.text.isEmpty) {
-        // Show only first 5 when no search
-        filteredHashtags = allHashtags.take(5).toList();
+        isSearching = false;
+        // Show recent when no search, or fallback to first 5
+        if (recentHashtags.isNotEmpty) {
+          filteredHashtags = recentHashtags;
+        } else {
+          filteredHashtags = [];
+        }
       } else {
+        isSearching = true;
         // Show all matching results when searching
         final searchText = searchController.text.toLowerCase();
         filteredHashtags = allHashtags.where((hashtag) {
@@ -66,6 +121,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
 
   @override
   void dispose() {
+    _groupsWorker?.dispose();
     searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.dispose();
@@ -96,23 +152,79 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
           isHashtagMode: true,
           isMainGroup: false,
           groupList: hashtagController.allGroups,
-          onSave: (name, parentId) async {
+          onSave: (name, parentId, {newCategoryName}) async {
             if (name.isEmpty) {
-              Get.snackbar(
+              _showLocalSnackbar(
                 'Invalid Name',
                 'Hashtag name cannot be empty',
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
+                isError: true,
               );
               return;
             }
 
+            // Case 1: Creating a new main category AND a subgroup
+            if (newCategoryName != null && newCategoryName.isNotEmpty) {
+              try {
+                // 1. Create the new main category group
+                final newMainGroup = await _hashtagGroupService.addCustomGroup(
+                  newCategoryName,
+                );
+
+                if (newMainGroup == null) {
+                  _showLocalSnackbar(
+                    'Error',
+                    'Could not create new category.',
+                    isError: true,
+                  );
+                  return;
+                } else if (newMainGroup.id == -1) {
+                  _showLocalSnackbar(
+                    'Duplicate Category',
+                    'Category "$newCategoryName" already exists.',
+                    isError: true,
+                  );
+                  return;
+                }
+
+                // 2. Create the subgroup under this new main group
+                final newSubgroup = await _hashtagGroupService.addCustomGroup(
+                  name,
+                  parentId: newMainGroup.id,
+                );
+
+                if (newSubgroup != null && newSubgroup.id != -1) {
+                  // Reload and select
+                  await hashtagController.loadHashtagGroups();
+
+                  // Save to recents
+                  await _recentService.saveRecentHashtag(newSubgroup.name);
+                  await _recentService.saveRecentHashtagGroup(newSubgroup);
+
+                  widget.onSelected(newSubgroup);
+                  if (mounted) Navigator.of(this.context).pop();
+                } else {
+                  _showLocalSnackbar(
+                    'Error',
+                    'Category created, but failed to create hashtag.',
+                    isError: true,
+                  );
+                }
+              } catch (e) {
+                _showLocalSnackbar(
+                  'Error',
+                  'Failed to create new category and hashtag: $e',
+                  isError: true,
+                );
+              }
+              return;
+            }
+
+            // Case 2: Existing logic (Regular add to existing parent or no parent)
             if (parentId == null) {
-              Get.snackbar(
+              _showLocalSnackbar(
                 'Invalid Category',
                 'Please select a category',
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
+                isError: true,
               );
               return;
             }
@@ -124,27 +236,24 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
               );
 
               if (newSubgroup == null) {
-                Get.snackbar(
+                _showLocalSnackbar(
                   'Unable to Add',
                   'Unable to add hashtag. Please try again.',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
+                  isError: true,
                 );
                 return;
               } else if (newSubgroup.id == -1) {
-                Get.snackbar(
+                _showLocalSnackbar(
                   'Duplicate Hashtag',
                   'Hashtag with this name already exists.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
+                  isError: true,
                 );
                 return;
               } else if (newSubgroup.id == -4) {
-                Get.snackbar(
+                _showLocalSnackbar(
                   'Name Conflict',
                   'This name is already used by the parent group.',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
+                  isError: true,
                 );
                 return;
               }
@@ -152,21 +261,42 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
               // Reload hashtag groups
               await hashtagController.loadHashtagGroups();
 
-              // Select the newly created hashtag
+              // Save to recents
+              await _recentService.saveRecentHashtag(newSubgroup.name);
+              await _recentService.saveRecentHashtagGroup(newSubgroup);
+
               widget.onSelected(newSubgroup);
-              Get.back(); // Close the selection dialog
+              if (mounted) Navigator.of(this.context).pop();
             } catch (e) {
               debugPrint('[HashtagSelectionDialog] Error adding hashtag: $e');
-              Get.snackbar(
+              _showLocalSnackbar(
                 'Unable to Add',
                 'Unable to add hashtag. Please try again.',
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
+                isError: true,
               );
             }
           },
         );
       },
+    );
+  }
+
+  void _showLocalSnackbar(String title, String message, {bool isError = true}) {
+    // Since we are inside a dialog context, we might need to find the specific Scaffold or use Overlay
+    // Using simple dialog or toast might be safer if Scaffold is covered, but ScaffoldMessenger usually works on top
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(message),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -191,7 +321,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                   fontWeight: FontWeight.w600,
                 ),
                 InkWell(
-                  onTap: () => Get.back(),
+                  onTap: () => Navigator.of(context).pop(),
                   child: Icon(Icons.close, size: 24.sp),
                 ),
               ],
@@ -238,25 +368,54 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
             16.verticalSpace,
 
             // Hashtag List (shows 5 initially, all when searching)
+            // Recent Label or Search Result Label
+            if (filteredHashtags.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CustomText(
+                    isSearching ? 'Search Results' : 'Recent Hashtags',
+                    size: 13.sp,
+                    color: const Color(0xff707070),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
             Expanded(
               child: filteredHashtags.isEmpty
                   ? Center(
                       child: CustomText(
-                        'No Hashtags found',
+                        isSearching
+                            ? 'No Hashtags found'
+                            : 'No recently used hashtags',
                         size: 14.sp,
                         color: const Color(0xffB4B4B4),
                       ),
                     )
                   : ListView.separated(
+                      padding: EdgeInsets.zero,
                       itemCount: filteredHashtags.length,
                       separatorBuilder: (context, index) =>
                           Divider(height: 1.h, color: const Color(0xffDFDFDF)),
                       itemBuilder: (context, index) {
                         final hashtag = filteredHashtags[index];
                         return InkWell(
-                          onTap: () {
-                            widget.onSelected(hashtag);
-                            Get.back();
+                          onTap: () async {
+                            // Save to recents
+                            await _recentService.saveRecentHashtag(
+                              hashtag.name,
+                            );
+                            // Also save group info if needed, though service mainly tracks by name/id
+                            await _recentService.saveRecentHashtagGroup(
+                              hashtag,
+                            );
+
+                            if (mounted) {
+                              widget.onSelected(hashtag);
+                              Navigator.of(context).pop();
+                            }
                           },
                           child: Padding(
                             padding: EdgeInsets.symmetric(
@@ -302,9 +461,23 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                 // See List button (left)
                 Expanded(
                   child: InkWell(
-                    onTap: () {
-                      Get.back();
-                      Get.toNamed(AppRoutes.hashtagGroups.path);
+                    onTap: () async {
+                      final navigator = Navigator.of(context);
+                      final recentService = HashtagRecentService();
+                      navigator.pop();
+                      final result = await navigator.pushNamed(
+                        AppRoutes.hashtagGroups.path,
+                      );
+
+                      if (result != null && result is HashtagGroup) {
+                        try {
+                          await recentService.saveRecentHashtag(result.name);
+                          await recentService.saveRecentHashtagGroup(result);
+                        } catch (e) {
+                          debugPrint('Error saving recent from list: $e');
+                        }
+                        widget.onSelected(result);
+                      }
                     },
                     child: Container(
                       height: 41.h,

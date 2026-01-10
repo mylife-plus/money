@@ -68,6 +68,31 @@ class _CustomSliderState extends State<CustomSlider> {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure min < max to avoid assertion errors
+    double effectiveMin = widget.min;
+    double effectiveMax = widget.max;
+    if (effectiveMin >= effectiveMax) {
+      effectiveMax = effectiveMin + 1;
+    }
+
+    // Clamp current values to be within bounds
+    double safeStart = _currentRangeValues.start.clamp(
+      effectiveMin,
+      effectiveMax,
+    );
+    double safeEnd = _currentRangeValues.end.clamp(effectiveMin, effectiveMax);
+
+    // Ensure start <= end (clamp should handle this if start<=end originally, but good to be safe)
+    if (safeStart > safeEnd) {
+      if (safeStart == effectiveMax) {
+        safeStart = safeEnd; // pull start back
+      } else {
+        safeEnd = safeStart; // push end forward
+      }
+    }
+
+    final safeRangeValues = RangeValues(safeStart, safeEnd);
+
     return SliderTheme(
       data: SliderThemeData(
         // Track (line) styling
@@ -105,9 +130,9 @@ class _CustomSliderState extends State<CustomSlider> {
         ),
       ),
       child: RangeSlider(
-        values: _currentRangeValues,
-        min: widget.min,
-        max: widget.max,
+        values: safeRangeValues,
+        min: effectiveMin,
+        max: effectiveMax,
         onChanged: (RangeValues values) {
           setState(() {
             _currentRangeValues = values;

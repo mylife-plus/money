@@ -22,7 +22,7 @@ class _UploadTransactionsScreenState extends State<UploadTransactionsScreen> {
       backgroundColor: Color(0xffDEEDFF),
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () => Get.back(),
+          onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Back',
         ),
@@ -250,10 +250,7 @@ class _UploadTransactionsScreenState extends State<UploadTransactionsScreen> {
           Expanded(
             child: Container(
               height: 41.h,
-              padding: EdgeInsets.symmetric(
-                horizontal: 7.w,
-                vertical: 2.h,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(color: const Color(0xffDFDFDF)),
@@ -286,10 +283,7 @@ class _UploadTransactionsScreenState extends State<UploadTransactionsScreen> {
           Expanded(
             child: Container(
               height: 41.h,
-              padding: EdgeInsets.symmetric(
-                horizontal: 7.w,
-                vertical: 2.h,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(color: const Color(0xffDFDFDF)),
@@ -334,10 +328,7 @@ class _UploadTransactionsScreenState extends State<UploadTransactionsScreen> {
         Expanded(
           child: Container(
             height: 41.h,
-            padding: EdgeInsets.symmetric(
-              horizontal: 7.w,
-              vertical: 2.h,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: const Color(0xffDFDFDF)),
@@ -353,10 +344,7 @@ class _UploadTransactionsScreenState extends State<UploadTransactionsScreen> {
                   color: Color(0xffB4B4B4),
                   fontSize: 16.sp,
                 ),
-                hintStyle: TextStyle(
-                  color: Color(0xffB4B4B4),
-                  fontSize: 16.sp,
-                ),
+                hintStyle: TextStyle(color: Color(0xffB4B4B4), fontSize: 16.sp),
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -370,10 +358,7 @@ class _UploadTransactionsScreenState extends State<UploadTransactionsScreen> {
           flex: 2,
           child: Container(
             height: 41.h,
-            padding: EdgeInsets.symmetric(
-              horizontal: 7.w,
-              vertical: 2.h,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: const Color(0xffDFDFDF)),
@@ -389,10 +374,7 @@ class _UploadTransactionsScreenState extends State<UploadTransactionsScreen> {
                   color: Color(0xffB4B4B4),
                   fontSize: 16.sp,
                 ),
-                hintStyle: TextStyle(
-                  color: Color(0xffB4B4B4),
-                  fontSize: 16.sp,
-                ),
+                hintStyle: TextStyle(color: Color(0xffB4B4B4), fontSize: 16.sp),
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),

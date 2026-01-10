@@ -114,10 +114,29 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
       final index = controller.recommendations.indexOf(investment);
       if (index != -1) {
         controller.removeRecommendation(index);
-        Get.snackbar(
-          'Success',
-          'Investment deleted successfully',
-          snackPosition: SnackPosition.BOTTOM,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Success',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Investment deleted successfully',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     }

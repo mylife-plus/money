@@ -10,7 +10,7 @@ import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/transaction_model.dart';
-import 'package:moneyapp/utils/date_picker_helper.dart';
+
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
@@ -60,12 +60,6 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
   Transaction? originalTransaction;
   List<SplitItem> splitItems = [];
 
-  bool isHashtagSearchActive = false;
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocusNode = FocusNode();
-  List<String> _filteredRecommendations = [];
-  final GlobalKey _searchFieldKey = GlobalKey();
-
   // Predefined icons for selection
   final List<String> predefinedIcons = [
     AppIcons.digitalCurrency,
@@ -76,127 +70,107 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
     AppIcons.cart,
   ];
 
-  // Sample recommendations - replace with your actual data
-  final List<String> _allRecommendations = [
-    'Food & Dining',
-    'Transportation',
-    'Shopping',
-    'Entertainment',
-    'Healthcare',
-    'Bills & Utilities',
-    'Travel',
-    'Education',
-  ];
-
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
-    _searchFocusNode.addListener(_onFocusChanged);
 
     // Get original transaction data from arguments
     final args = Get.arguments;
     if (args != null) {
-      final String title = args['title'] ?? '';
-      final String amount = args['amount'] ?? '';
-      final bool isExpense = args['isExpense'] ?? true;
+      if (args['transaction'] != null && args['transaction'] is Transaction) {
+        // Use the passed transaction object directly
+        originalTransaction = args['transaction'] as Transaction;
 
-      // Create original transaction for display
-      originalTransaction = Transaction(
-        id: 0,
-        isExpense: isExpense,
-        date: DateTime.now(),
-        amount: double.tryParse(amount.replaceAll(',', '.')) ?? 0.0,
-        recipient: title,
-        mcc: MCC.fromAsset(
-          assetPath: AppIcons.transaction,
-          text: title,
-          shortText: title.isNotEmpty ? title.substring(0, 1) : 'T',
-        ),
-        note: '',
-      );
+        // Initialize with 2 split items
+        splitItems = [
+          SplitItem(
+            date: originalTransaction!.date,
+            isExpense: originalTransaction!.isExpense,
+            mcc: mccController.getMCCById(originalTransaction!.mccId),
+            hashtags: originalTransaction!.hashtags.map((h) {
+              return hashtagController.findGroupById(h.id ?? -1) ?? h;
+            }).toList(),
+          ),
+          SplitItem(
+            date: originalTransaction!.date,
+            isExpense: originalTransaction!.isExpense,
+          ),
+        ];
 
-      // Initialize with 2 split items by default
-      splitItems = [
-        SplitItem(date: DateTime.now(), isExpense: isExpense),
-        SplitItem(date: DateTime.now(), isExpense: isExpense),
-      ];
+        // Item 1: Pre-fill specific details
+        splitItems[0].amountController.text = originalTransaction!.amount
+            .toStringAsFixed(2)
+            .replaceAll('.', ',');
+        splitItems[0].recipientController.text = originalTransaction!.recipient;
+        splitItems[0].noteController.text = originalTransaction!.note;
+
+        // Item 2: Empty/Default (Amount 0, no MCC, nohashtags)
+        splitItems[1].amountController.text = '0,00';
+      } else {
+        // Fallback to manual args if transaction object missing (legacy/safety)
+        final String title = args['title'] ?? '';
+        final String amount = args['amount'] ?? '';
+        final bool isExpense = args['isExpense'] ?? true;
+
+        originalTransaction = Transaction(
+          id: 0,
+          isExpense: isExpense,
+          date: DateTime.now(),
+          amount: double.tryParse(amount.replaceAll(',', '.')) ?? 0.0,
+          recipient: title,
+          mccId: 1, // Default MCC ID
+          note: '',
+        );
+
+        splitItems = [
+          SplitItem(date: DateTime.now(), isExpense: isExpense),
+          SplitItem(date: DateTime.now(), isExpense: isExpense),
+        ];
+
+        splitItems[0].amountController.text = amount.replaceAll('.', ',');
+        splitItems[1].amountController.text = '0,00';
+      }
+
+      // Add listeners for auto-calculation
+      splitItems[0].amountController.addListener(() => _onAmountChanged(0));
+      splitItems[1].amountController.addListener(() => _onAmountChanged(1));
+    }
+  }
+
+  bool _isUpdating = false;
+
+  void _onAmountChanged(int index) {
+    if (_isUpdating || originalTransaction == null) return;
+
+    final otherIndex = index == 0 ? 1 : 0;
+    final otherController = splitItems[otherIndex].amountController;
+    final currentController = splitItems[index].amountController;
+
+    final currentText = currentController.text.replaceAll(',', '.');
+    final double currentAmount = double.tryParse(currentText) ?? 0.0;
+    final double totalAmount = originalTransaction!.amount;
+
+    // effective remaining
+    double otherAmount = totalAmount - currentAmount;
+    if (otherAmount < 0) otherAmount = 0;
+
+    final formattedOther = otherAmount.toStringAsFixed(2).replaceAll('.', ',');
+
+    // Only update if value is different to avoid cursor jumping/loops
+    // (though _isUpdating handles loops, this is good practice)
+    if (otherController.text != formattedOther) {
+      _isUpdating = true;
+      otherController.text = formattedOther;
+      _isUpdating = false;
     }
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    _searchFocusNode.removeListener(_onFocusChanged);
-    _searchFocusNode.dispose();
     for (var item in splitItems) {
       item.dispose();
     }
     super.dispose();
-  }
-
-  void _onSearchChanged() {
-    setState(() {
-      if (_searchController.text.isEmpty) {
-        _filteredRecommendations = [];
-      } else {
-        _filteredRecommendations = _allRecommendations
-            .where(
-              (item) => item.toLowerCase().contains(
-                _searchController.text.toLowerCase(),
-              ),
-            )
-            .toList();
-      }
-    });
-  }
-
-  void _onFocusChanged() {
-    // Show all recommendations when focused and field is empty
-    if (_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
-      setState(() {
-        _filteredRecommendations = _allRecommendations;
-      });
-    } else if (!_searchFocusNode.hasFocus) {
-      // Delay to allow tap on recommendations
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) {
-          setState(() {
-            _filteredRecommendations = [];
-          });
-        }
-      });
-    }
-  }
-
-  void _selectRecommendation(String value) {
-    _searchController.text = value;
-    _filteredRecommendations = [];
-    _searchFocusNode.unfocus();
-  }
-
-  void _addNewItem() {
-    // TODO: Implement add new item logic
-    print('Add new item: ${_searchController.text}');
-    _searchController.clear();
-    _searchFocusNode.unfocus();
-  }
-
-  void _seeAll() {
-    // TODO: Implement see all logic
-    print('See all recommendations');
-  }
-
-  void _addSplitItem() {
-    setState(() {
-      splitItems.add(
-        SplitItem(
-          date: DateTime.now(),
-          isExpense: originalTransaction?.isExpense ?? true,
-        ),
-      );
-    });
   }
 
   Future<void> _showHashtagSelectionDialog(int index) async {
@@ -213,6 +187,13 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
         },
       ),
     );
+
+    // Refresh selected hashtags to ensure latest data (names, etc.)
+    setState(() {
+      splitItems[index].hashtags = splitItems[index].hashtags
+          .map((h) => hashtagController.findGroupById(h.id ?? -1) ?? h)
+          .toList();
+    });
   }
 
   Future<void> _showMCCSelectionDialog(int index) async {
@@ -228,18 +209,39 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
     );
   }
 
-  void _saveTransaction() {
+  void _showSnackbar(String title, String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(message),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _saveTransaction() async {
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
     // Validate all split items
     for (int i = 0; i < splitItems.length; i++) {
       final item = splitItems[i];
 
       if (item.date == null) {
-        Get.snackbar('Error', 'Please select a date for item ${i + 1}');
+        _showSnackbar('Error', 'Please select a date for item ${i + 1}');
         return;
       }
 
       if (item.amountController.text.isEmpty) {
-        Get.snackbar('Error', 'Please enter an amount for item ${i + 1}');
+        _showSnackbar('Error', 'Please enter an amount for item ${i + 1}');
         return;
       }
 
@@ -247,12 +249,12 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
         item.amountController.text.replaceAll(',', '.'),
       );
       if (amount == null || amount <= 0) {
-        Get.snackbar('Error', 'Please enter a valid amount for item ${i + 1}');
+        _showSnackbar('Error', 'Please enter a valid amount for item ${i + 1}');
         return;
       }
 
       if (item.mcc == null) {
-        Get.snackbar(
+        _showSnackbar(
           'Error',
           'Please select an MCC category for item ${i + 1}',
         );
@@ -260,42 +262,68 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
       }
     }
 
+    // Validate total sum matches original transaction
+    double totalSplitAmount = 0;
+    for (var item in splitItems) {
+      totalSplitAmount +=
+          double.tryParse(item.amountController.text.replaceAll(',', '.')) ??
+          0.0;
+    }
+
+    // Allow a small epsilon for floating point errors
+    if ((totalSplitAmount - originalTransaction!.amount).abs() > 0.01) {
+      _showSnackbar('Error', 'Amount not match');
+      return;
+    }
+
     // Get HomeController
     final homeController = Get.find<HomeController>();
 
-    // Create transactions for each split item
-    for (var item in splitItems) {
-      final amount = double.parse(
-        item.amountController.text.replaceAll(',', '.'),
-      );
+    try {
+      // Create/Update transactions
+      for (int i = 0; i < splitItems.length; i++) {
+        final item = splitItems[i];
+        final amount = double.parse(
+          item.amountController.text.replaceAll(',', '.'),
+        );
 
-      final mcc = MCC.fromAsset(
-        assetPath: item.mcc!.iconPath ?? AppIcons.transaction,
-        text: item.mcc!.name,
-        shortText: item.mcc!.categoryName,
-      );
+        // If this is the first item and we have a valid original transaction ID, update it
+        if (i == 0 &&
+            originalTransaction!.id != null &&
+            originalTransaction!.id != 0) {
+          final updatedTx = originalTransaction!.copyWith(
+            amount: amount,
+            date: item.date,
+            isExpense: item.isExpense,
+            mccId: item.mcc!.id!,
+            recipient: item.recipientController.text.trim(),
+            note: item.noteController.text.trim(),
+            hashtags: item.hashtags,
+            updatedAt: DateTime.now(),
+          );
+          await homeController.updateTransaction(updatedTx);
+        } else {
+          // Otherwise create a new transaction
+          final newTx = Transaction(
+            id: DateTime.now().millisecondsSinceEpoch + i, // Unique ID
+            isExpense: item.isExpense,
+            date: item.date!,
+            amount: amount,
+            mccId: item.mcc!.id!,
+            recipient: item.recipientController.text.trim(),
+            note: item.noteController.text.trim(),
+            hashtags: item.hashtags,
+          );
+          await homeController.addTransaction(newTx);
+        }
+      }
 
-      final newTransaction = Transaction(
-        id:
-            DateTime.now().millisecondsSinceEpoch +
-            splitItems.indexOf(item), // Unique ID
-        isExpense: item.isExpense,
-        date: item.date!,
-        amount: amount,
-        mcc: mcc,
-        recipient: item.recipientController.text.trim(),
-        note: item.noteController.text.trim(),
-        hashtags: item.hashtags,
-      );
-
-      homeController.addTransaction(newTransaction);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _showSnackbar('Success', 'Item split successfully', isError: false);
+    } catch (e) {
+      _showSnackbar('Error', 'Failed to save splits: $e');
     }
-
-    Get.back();
-    Get.snackbar(
-      'Success',
-      '${splitItems.length} transactions added successfully',
-    );
   }
 
   Widget _buildSplitItemWidget(int index) {
@@ -477,10 +505,10 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                                 size: 12.sp,
                                 color: AppColors.greyColor,
                               ),
-                              3.verticalSpace,
+                              // 3.verticalSpace,
                               Center(
                                 child: item.mcc != null
-                                    ? item.mcc!.getIcon(size: 17.r)
+                                    ? item.mcc!.getIcon(size: 15.r)
                                     : Image.asset(
                                         AppIcons.shopIcon,
                                         height: 17.r,
@@ -564,69 +592,81 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
 
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Wrap(
-                      alignment: WrapAlignment.start,
-                      spacing: 8.w,
-                      runSpacing: 8.h,
-                      children: [
-                        InkWell(
-                          onTap: () => _showHashtagSelectionDialog(index),
-                          child: Container(
-                            height: 42.h,
-                            width: 37.w,
-                            padding: EdgeInsets.fromLTRB(5.r, 0.r, 5.r, 0.r),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4.r),
-                              border: Border.all(color: AppColors.greyBorder),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.25),
-                                  blurRadius: 4.r,
-                                  offset: Offset(0, 0),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CustomText(
-                                  'Add',
-                                  size: 12.sp,
-                                  color: AppColors.greyColor,
-                                ),
-                                CustomText(
-                                  '#',
-                                  size: 16.sp,
-                                  color: Color(0xff0088FF),
-                                ),
-                              ],
+                    child: Obx(() {
+                      // Register dependency to avoid "improper use of GetX" when list is empty
+                      hashtagController.allGroups.length;
+
+                      return Wrap(
+                        alignment: WrapAlignment.start,
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: [
+                          InkWell(
+                            onTap: () => _showHashtagSelectionDialog(index),
+                            child: Container(
+                              height: 42.h,
+                              width: 37.w,
+                              padding: EdgeInsets.fromLTRB(5.r, 0.r, 5.r, 0.r),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4.r),
+                                border: Border.all(color: AppColors.greyBorder),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.25),
+                                    blurRadius: 4.r,
+                                    offset: Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CustomText(
+                                    'Add',
+                                    size: 12.sp,
+                                    color: AppColors.greyColor,
+                                  ),
+                                  CustomText(
+                                    '#',
+                                    size: 16.sp,
+                                    color: Color(0xff0088FF),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        ...item.hashtags.map((hashtag) {
-                          String categoryGroup = 'Main Group';
-                          if (hashtag.isSubgroup) {
-                            final mainGroup = hashtagController.allGroups
-                                .firstWhereOrNull(
-                                  (g) => g.id == hashtag.parentId,
-                                );
-                            categoryGroup = mainGroup?.name ?? 'Unknown';
-                          }
-                          return CategoryChip(
-                            category: hashtag.name,
-                            categoryGroup: categoryGroup,
-                            onRemove: () {
-                              setState(() {
-                                item.hashtags.removeWhere(
-                                  (h) => h.id == hashtag.id,
-                                );
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ],
-                    ),
+                          ...item.hashtags.map((hashtag) {
+                            // Find latest hashtag data
+                            final currentHashtag =
+                                hashtagController.findGroupById(
+                                  hashtag.id ?? -1,
+                                ) ??
+                                hashtag;
+
+                            String categoryGroup = 'Main Group';
+                            if (currentHashtag.isSubgroup) {
+                              final mainGroup = hashtagController.allGroups
+                                  .firstWhereOrNull(
+                                    (g) => g.id == currentHashtag.parentId,
+                                  );
+                              categoryGroup = mainGroup?.name ?? 'Unknown';
+                            }
+                            return CategoryChip(
+                              category: currentHashtag.name,
+                              categoryGroup: categoryGroup,
+                              onRemove: () {
+                                setState(() {
+                                  item.hashtags.removeWhere(
+                                    (h) => h.id == hashtag.id,
+                                  );
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ],
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -654,7 +694,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Get.back(),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Image.asset(
                       AppIcons.backArrow,
                       width: 21.h,
@@ -697,14 +737,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                               color: Colors.black,
                             ),
                           ),
-                          InkWell(
-                            onTap: _addSplitItem,
-                            child: Image.asset(
-                              AppIcons.plus,
-                              width: 21.w,
-                              height: 21.h,
-                            ),
-                          ),
+                          // Plus button removed as per requirement (limit to 2 options)
                           13.horizontalSpace,
                         ],
                       ),
