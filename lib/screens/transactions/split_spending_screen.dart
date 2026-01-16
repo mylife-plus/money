@@ -86,7 +86,9 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
           SplitItem(
             date: originalTransaction!.date,
             isExpense: originalTransaction!.isExpense,
-            mcc: mccController.getMCCById(originalTransaction!.mccId),
+            mcc: originalTransaction!.mccId != null
+                ? mccController.getMCCById(originalTransaction!.mccId!)
+                : null,
             hashtags: originalTransaction!.hashtags.map((h) {
               return hashtagController.findGroupById(h.id ?? -1) ?? h;
             }).toList(),
@@ -118,7 +120,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
           date: DateTime.now(),
           amount: double.tryParse(amount.replaceAll(',', '.')) ?? 0.0,
           recipient: title,
-          mccId: 1, // Default MCC ID
+          mccId: null,
           note: '',
         );
 
@@ -253,13 +255,13 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
         return;
       }
 
-      if (item.mcc == null) {
-        _showSnackbar(
-          'Error',
-          'Please select an MCC category for item ${i + 1}',
-        );
+      // New: Recipient is mandatory
+      if (item.recipientController.text.trim().isEmpty) {
+        _showSnackbar('Error', 'Please enter a recipient for item ${i + 1}');
         return;
       }
+
+      // New: MCC is optional (removed check)
     }
 
     // Validate total sum matches original transaction
@@ -295,7 +297,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
             amount: amount,
             date: item.date,
             isExpense: item.isExpense,
-            mccId: item.mcc!.id!,
+            mccId: item.mcc?.id, // Can be null
             recipient: item.recipientController.text.trim(),
             note: item.noteController.text.trim(),
             hashtags: item.hashtags,
@@ -309,7 +311,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
             isExpense: item.isExpense,
             date: item.date!,
             amount: amount,
-            mccId: item.mcc!.id!,
+            mccId: item.mcc?.id, // Can be null
             recipient: item.recipientController.text.trim(),
             note: item.noteController.text.trim(),
             hashtags: item.hashtags,
@@ -558,7 +560,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                   ),
                   7.verticalSpace,
                   Container(
-                    height: 41.h,
+                    constraints: BoxConstraints(minHeight: 41.h),
                     padding: EdgeInsets.symmetric(
                       horizontal: 7.w,
                       vertical: 2.h,
@@ -570,6 +572,9 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                     ),
                     child: TextField(
                       controller: item.noteController,
+                      minLines: 1,
+                      maxLines: 4,
+                      maxLength: 150,
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: '',
@@ -584,6 +589,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                         ),
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
+                        counterText: "", // Hide the counter
                       ),
                       style: TextStyle(fontSize: 16.sp),
                     ),

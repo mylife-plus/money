@@ -149,12 +149,13 @@ class SmoothLineChartWidget extends StatelessWidget {
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 return LineTooltipItem(
-                  '${data[spot.x.toInt()].label}\n${_formatValue(spot.y)}',
+                  data[spot.x.toInt()].tooltipLabel,
                   TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 12.sp,
                   ),
+                  textAlign: TextAlign.center,
                 );
               }).toList();
             },
@@ -167,15 +168,6 @@ class SmoothLineChartWidget extends StatelessWidget {
   String _formatYAxisLabel(double value) {
     if (value >= 1000000) {
       return '${(value / 1000000).toStringAsFixed(0)}m';
-    } else if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(0)}k';
-    }
-    return value.toStringAsFixed(0);
-  }
-
-  String _formatValue(double value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1).replaceAll('.', ',')}m';
     } else if (value >= 1000) {
       return '${(value / 1000).toStringAsFixed(0)}k';
     }

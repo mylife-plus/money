@@ -9,7 +9,7 @@ class Transaction {
   final bool isExpense;
   final DateTime date;
   final double amount;
-  final int mccId; // Reference to MCCItem by ID
+  final int? mccId; // Reference to MCCItem by ID (Optional now)
   final String recipient;
   final String note;
   final List<HashtagGroup> hashtags;
@@ -21,7 +21,7 @@ class Transaction {
     required this.isExpense,
     required this.date,
     required this.amount,
-    required this.mccId,
+    this.mccId,
     this.recipient = '',
     this.note = '',
     this.hashtags = const [],
@@ -63,7 +63,7 @@ class Transaction {
       isExpense: (map['transaction_is_expense'] as int) == 1,
       date: DateTime.parse(map['transaction_date'] as String),
       amount: (map['transaction_amount'] as num).toDouble(),
-      mccId: map['transaction_mcc_id'] as int,
+      mccId: map['transaction_mcc_id'] as int?,
       recipient: map['transaction_recipient'] as String? ?? '',
       note: map['transaction_note'] as String? ?? '',
       hashtags: map['transaction_hashtags'] != null
@@ -99,7 +99,7 @@ class Transaction {
       isExpense: json['isExpense'] as bool,
       date: DateTime.parse(json['date'] as String),
       amount: (json['amount'] as num).toDouble(),
-      mccId: json['mccId'] as int,
+      mccId: json['mccId'] as int?,
       recipient: json['recipient'] as String? ?? '',
       note: json['note'] as String? ?? '',
       hashtags:
@@ -118,7 +118,18 @@ class Transaction {
     bool? isExpense,
     DateTime? date,
     double? amount,
-    int? mccId,
+    int? mccId, // Can be nullable, but here it's an optional argument
+    // To allow setting to null, we might need a Value wrapper or sentinel,
+    // but for now let's assume if we pass null we keep existing.
+    // Wait, typical copyWith doesn't support setting to null easily unless we use a wrapper.
+    // However, usually we update to a specific value.
+    // If the user wants to set mccId to null, they might need a specific method or we can use a sentinel.
+    // For simplicity given the usage, we'll keep standard copyWith logic where null means "keep existing".
+    // If we need to clear it, we might need `int? mccId` and check if it was passed.
+    // Actually, in Dart copyWith pattern:
+    // mccId: mccId ?? this.mccId
+    // means if I pass null, I keep the old value. I can't clear it.
+    // We will revisit if clearing is needed.
     String? recipient,
     String? note,
     List<HashtagGroup>? hashtags,

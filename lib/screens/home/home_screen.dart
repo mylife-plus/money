@@ -21,6 +21,8 @@ import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
+import 'package:moneyapp/widgets/common/slide_from_top_route.dart';
+import 'package:moneyapp/screens/transactions/new_transaction_screen.dart';
 
 /// Home Screen
 /// Main landing screen of the app
@@ -220,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen>
                             15.verticalSpace,
                             Container(
                               margin: EdgeInsets.symmetric(horizontal: 7.w),
-                              padding: EdgeInsets.fromLTRB(5.w, 8.h, 13.w, 0),
+                              padding: EdgeInsets.fromLTRB(5.w, 8.h, 30.w, 0),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 border: Border.all(
@@ -250,18 +252,12 @@ class _HomeScreenState extends State<HomeScreen>
                                     padding: EdgeInsets.symmetric(
                                       horizontal: 7.w,
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                    child: Wrap(
+                                      spacing: 8.w,
+                                      runSpacing: 4.h,
                                       children: [
-                                        for (var duration in [
-                                          '1d',
-                                          '2d',
-                                          '3m',
-                                          '1y',
-                                          '5y',
-                                          'All',
-                                        ])
+                                        for (var duration
+                                            in controller.availableDurationTabs)
                                           InkWell(
                                             onTap: () => controller
                                                 .updateDurationTab(duration),
@@ -316,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   20.verticalSpace,
                                   Padding(
                                     padding: EdgeInsets.symmetric(
-                                      horizontal: 20.w,
+                                      horizontal: 4.w,
                                     ),
                                     child: Column(
                                       children: [
@@ -387,15 +383,15 @@ class _HomeScreenState extends State<HomeScreen>
                                 children: [
                                   InkWell(
                                     onTap: () async {
-                                      final result = await TopSortSheet.show(
+                                      await TopSortSheet.show(
                                         context: context,
                                         title: 'Sorting',
                                         selectedOption:
                                             controller.selectedSortOption.value,
+                                        onOptionSelected: (result) {
+                                          controller.updateSortOption(result);
+                                        },
                                       );
-                                      if (result != null) {
-                                        controller.updateSortOption(result);
-                                      }
                                     },
                                     child: Image.asset(
                                       AppIcons.sort,
@@ -408,10 +404,8 @@ class _HomeScreenState extends State<HomeScreen>
                                     onTap: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const TransactionFilterScreen(),
-                                          fullscreenDialog: true,
+                                        SlideFromTopRoute(
+                                          page: const TransactionFilterScreen(),
                                         ),
                                       );
                                     },
@@ -436,9 +430,8 @@ class _HomeScreenState extends State<HomeScreen>
                                     onTap: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const TransactionSearchScreen(),
+                                        SlideFromTopRoute(
+                                          page: const TransactionSearchScreen(),
                                         ),
                                       );
                                     },
@@ -451,13 +444,17 @@ class _HomeScreenState extends State<HomeScreen>
                                   const Spacer(),
                                   InkWell(
                                     onTap: () {
-                                      Navigator.pushNamed(
+                                      Navigator.push(
                                         context,
-                                        AppRoutes.newTransaction.path,
-                                        arguments: {
-                                          'isExpenseSelected':
-                                              controller.isExpenseSelected,
-                                        },
+                                        SlideFromTopRoute(
+                                          page: const NewTransactionScreen(),
+                                          settings: RouteSettings(
+                                            arguments: {
+                                              'isExpenseSelected':
+                                                  controller.isExpenseSelected,
+                                            },
+                                          ),
+                                        ),
                                       );
                                     },
                                     child: Image.asset(
@@ -622,8 +619,14 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildAverageContainer(HomeController controller) {
     final isExpense = controller.isExpenseSelected;
-    String format(double val) =>
-        val.abs().toStringAsFixed(2).replaceAll('.', ',');
+
+    final noDecimalsFormat = NumberFormat.currency(
+      locale: 'de_DE',
+      symbol: '',
+      decimalDigits: 0,
+    );
+    String formatNoDecimals(double val) =>
+        noDecimalsFormat.format(val.abs()).trim();
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 10.w),
@@ -658,7 +661,7 @@ class _HomeScreenState extends State<HomeScreen>
                   CustomText.richText(
                     children: [
                       CustomText.span(
-                        format(controller.averageYearly.value),
+                        formatNoDecimals(controller.averageYearly.value),
                         color: Colors.black,
                         size: 16.sp,
                       ),
@@ -691,7 +694,7 @@ class _HomeScreenState extends State<HomeScreen>
                   CustomText.richText(
                     children: [
                       CustomText.span(
-                        format(controller.averageMonthly.value),
+                        formatNoDecimals(controller.averageMonthly.value),
                         color: Colors.black,
                         size: 16.sp,
                       ),
@@ -726,7 +729,7 @@ class _HomeScreenState extends State<HomeScreen>
                   CustomText.richText(
                     children: [
                       CustomText.span(
-                        format(controller.averageDaily.value),
+                        formatNoDecimals(controller.averageDaily.value),
                         color: Colors.black,
                         size: 16.sp,
                       ),

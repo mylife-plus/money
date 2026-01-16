@@ -114,7 +114,9 @@ class _TransactionItemState extends State<TransactionItem> {
 
   void _handleSplit() {
     final mccController = Get.find<MCCController>();
-    final mcc = mccController.getMCCById(widget.transaction.mccId);
+    final mcc = widget.transaction.mccId != null
+        ? mccController.getMCCById(widget.transaction.mccId!)
+        : null;
 
     final dateFormat = 'dd.';
     final label = '${widget.transaction.date.day}.$dateFormat';
@@ -159,9 +161,11 @@ class _TransactionItemState extends State<TransactionItem> {
   }
 
   void _showDetailDialog(BuildContext context) {
-    final mccController = Get.find<MCCController>();
-    final mcc = mccController.getMCCById(widget.transaction.mccId);
-    final hashtagController = Get.find<HashtagGroupsController>();
+    final mccController = Get.put(MCCController());
+    final mcc = widget.transaction.mccId != null
+        ? mccController.getMCCById(widget.transaction.mccId!)
+        : null;
+    final hashtagController = Get.put(HashtagGroupsController());
 
     showDialog(
       context: context,

@@ -18,25 +18,24 @@ class TopSortSheet extends StatefulWidget {
     required this.onOptionSelected,
   });
 
-  static Future<SortOption?> show({
+  static Future<void> show({
     required BuildContext context,
     required String title,
     required SortOption selectedOption,
+    required Function(SortOption) onOptionSelected,
   }) {
-    return showGeneralDialog<SortOption>(
+    return showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
-        SortOption? result;
         return TopSortSheet(
           title: title,
           selectedOption: selectedOption,
           onOptionSelected: (option) {
-            result = option;
-            Navigator.of(context).pop(result);
+            onOptionSelected(option);
           },
         );
       },

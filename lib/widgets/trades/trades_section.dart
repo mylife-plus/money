@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
-import 'package:moneyapp/routes/app_routes.dart';
+
 import 'package:moneyapp/screens/filter/portfolio_filter_screen.dart';
 
 import 'package:moneyapp/screens/investments/trade_search_screen.dart';
@@ -12,6 +12,8 @@ import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/selection_app_bar.dart';
 import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
+import 'package:moneyapp/widgets/common/slide_from_top_route.dart';
+import 'package:moneyapp/screens/investments/new_portfolio_change_screen.dart';
 
 class TradesSection extends StatefulWidget {
   final Function(bool)? onSelectionModeChanged;
@@ -65,17 +67,17 @@ class _TradesSectionState extends State<TradesSection> {
               children: [
                 InkWell(
                   onTap: () async {
-                    final result = await TopSortSheet.show(
+                    await TopSortSheet.show(
                       context: context,
                       title: 'Sorting',
                       selectedOption: _selectedSortOption,
+                      onOptionSelected: (result) {
+                        setState(() {
+                          _selectedSortOption = result;
+                        });
+                        // TODO: Apply sorting logic
+                      },
                     );
-                    if (result != null) {
-                      setState(() {
-                        _selectedSortOption = result;
-                      });
-                      // TODO: Apply sorting logic
-                    }
                   },
                   child: Image.asset(AppIcons.sort, height: 24.r, width: 24.r),
                 ),
@@ -84,10 +86,7 @@ class _TradesSectionState extends State<TradesSection> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => PortfolioFilterScreen(),
-                        fullscreenDialog: true,
-                      ),
+                      SlideFromTopRoute(page: PortfolioFilterScreen()),
                     );
                   },
                   child: Image.asset(
@@ -101,9 +100,7 @@ class _TradesSectionState extends State<TradesSection> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const TradeSearchScreen(),
-                      ),
+                      SlideFromTopRoute(page: const TradeSearchScreen()),
                     );
                   },
                   child: Image.asset(
@@ -115,9 +112,9 @@ class _TradesSectionState extends State<TradesSection> {
                 Spacer(),
                 InkWell(
                   onTap: () {
-                    Navigator.pushNamed(
+                    Navigator.push(
                       context,
-                      AppRoutes.newPortfolioChange.path,
+                      SlideFromTopRoute(page: const NewPortfolioChangeScreen()),
                     );
                   },
                   child: Image.asset(AppIcons.plus, height: 21.r, width: 21.r),

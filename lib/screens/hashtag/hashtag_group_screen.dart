@@ -21,6 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class HashtagGroupScreen extends StatefulWidget {
   final Function(HashtagGroup)? onHashtagGroupSelected;
   final HashtagGroup? selectedHashtagGroup;
+  final bool fromSettings;
 
   // Multiple selection mode parameters
   final bool allowMultipleSelection;
@@ -34,6 +35,7 @@ class HashtagGroupScreen extends StatefulWidget {
     this.allowMultipleSelection = false,
     this.selectedHashtagGroups,
     this.onMultipleHashtagGroupsSelected,
+    this.fromSettings = false,
   });
 
   @override
@@ -450,6 +452,10 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
   /// Select a hashtag group and return to parent
   void _selectHashtagGroup(HashtagGroup hashtagGroup) {
+    if (widget.fromSettings) {
+      return;
+    }
+
     debugPrint(
       '[HashtagGroupsView][_selectHashtagGroup] Selected: ${hashtagGroup.name}',
     );
@@ -942,7 +948,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
 
     // Create a new expansion controller for this group to avoid state conflicts
     final groupId = mainHashtagGroup.id!;
-    _controller.expansionControllers[groupId] = ExpansionTileController();
+    if (!_controller.expansionControllers.containsKey(groupId)) {
+      _controller.expansionControllers[groupId] = ExpansionTileController();
+    }
     final controller = _controller.expansionControllers[groupId]!;
 
     return Obx(() {

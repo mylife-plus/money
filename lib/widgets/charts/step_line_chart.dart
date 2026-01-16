@@ -35,6 +35,18 @@ class StepLineChartWidget extends StatelessWidget {
             touchTooltipData: LineTouchTooltipData(
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
+                  final index = barSpot.x.toInt();
+                  if (index >= 0 && index < data.length) {
+                    return LineTooltipItem(
+                      data[index].tooltipLabel,
+                      const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    );
+                  }
+                  // Fallback (should not happen)
                   return LineTooltipItem(
                     barSpot.y.toStringAsFixed(2).replaceAll('.', ','),
                     const TextStyle(
@@ -73,8 +85,9 @@ class StepLineChartWidget extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 24.h,
                 // Dynamic interval: Show roughly 5 labels max to prevent overlap
-                interval: data.length > 5
-                    ? (data.length / 5).ceilToDouble()
+                interval: data.length > 4
+                    ? (data.length / 3)
+                          .ceilToDouble() // Divide by 3 to get 4 ticks (0, 0.33, 0.66, 1.0)
                     : 1,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();

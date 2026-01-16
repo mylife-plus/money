@@ -75,16 +75,56 @@ class PortfolioSection extends StatelessWidget {
               Expanded(
                 child: SmoothLineChartWidget(
                   data: [
-                    ChartDataPoint(label: '2004', value: 100000),
-                    ChartDataPoint(label: '2007', value: 400000),
-                    ChartDataPoint(label: '2010', value: 150000),
-                    ChartDataPoint(label: '2013', value: 450000),
-                    ChartDataPoint(label: '2016', value: 700000),
-                    ChartDataPoint(label: '2019', value: 200000),
-                    ChartDataPoint(label: '2022', value: 450000),
-                    ChartDataPoint(label: '2025', value: 1000000),
-                    ChartDataPoint(label: '2028', value: 400000),
-                    ChartDataPoint(label: '2031', value: 700000),
+                    ChartDataPoint(
+                      label: '2004',
+                      value: 100000,
+                      tooltipLabel: '100000\n2004',
+                    ),
+                    ChartDataPoint(
+                      label: '2007',
+                      value: 400000,
+                      tooltipLabel: '400000\n2007',
+                    ),
+                    ChartDataPoint(
+                      label: '2010',
+                      value: 150000,
+                      tooltipLabel: '150000\n2010',
+                    ),
+                    ChartDataPoint(
+                      label: '2013',
+                      value: 450000,
+                      tooltipLabel: '450000\n2013',
+                    ),
+                    ChartDataPoint(
+                      label: '2016',
+                      value: 700000,
+                      tooltipLabel: '700000\n2016',
+                    ),
+                    ChartDataPoint(
+                      label: '2019',
+                      value: 200000,
+                      tooltipLabel: '200000\n2019',
+                    ),
+                    ChartDataPoint(
+                      label: '2022',
+                      value: 450000,
+                      tooltipLabel: '450000\n2022',
+                    ),
+                    ChartDataPoint(
+                      label: '2025',
+                      value: 1000000,
+                      tooltipLabel: '1000000\n2025',
+                    ),
+                    ChartDataPoint(
+                      label: '2028',
+                      value: 400000,
+                      tooltipLabel: '400000\n2028',
+                    ),
+                    ChartDataPoint(
+                      label: '2031',
+                      value: 700000,
+                      tooltipLabel: '700000\n2031',
+                    ),
                   ],
                   lineColor: const Color(0xff0088FF),
                 ),

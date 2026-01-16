@@ -25,8 +25,9 @@ class NewTransactionScreen extends StatefulWidget {
 
 class _NewTransactionScreenState extends State<NewTransactionScreen> {
   final MCCController mccController = Get.find<MCCController>();
-  final HashtagGroupsController hashtagController =
-      Get.find<HashtagGroupsController>();
+  final HashtagGroupsController hashtagController = Get.put(
+    HashtagGroupsController(),
+  );
 
   final TextEditingController amountController = TextEditingController();
   final TextEditingController recipientController = TextEditingController();
@@ -60,8 +61,12 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         return hashtagController.findGroupById(h.id ?? -1) ?? h;
       }).toList();
 
-      // Find matching MCC from controller by ID
-      selectedMCC = mccController.getMCCById(existingTransaction!.mccId);
+      // Get existing transaction mccId which is now nullable
+      if (existingTransaction!.mccId != null) {
+        selectedMCC = mccController.getMCCById(existingTransaction!.mccId!);
+      } else {
+        selectedMCC = null;
+      }
     } else {
       final bool isExpenseSelected =
           Get.arguments?['isExpenseSelected'] ?? true;
@@ -178,10 +183,13 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       return;
     }
 
-    if (selectedMCC == null) {
-      _showSnackbar('Error', 'Please select an MCC category');
+    // New Requirement: Recipient is Mandatory
+    if (recipientController.text.trim().isEmpty) {
+      _showSnackbar('Error', 'Please enter a recipient');
       return;
     }
+
+    // New Requirement: MCC is Optional (Removed check)
 
     // Get HomeController
     final homeController = Get.find<HomeController>();
@@ -192,7 +200,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         isExpense: !isAddingIncome,
         date: selectedDate!,
         amount: amount,
-        mccId: selectedMCC!.id!,
+        mccId: selectedMCC?.id, // Can be null now
         recipient: recipientController.text.trim(),
         note: noteController.text.trim(),
         hashtags: selectedHashtags,
@@ -215,7 +223,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         isExpense: !isAddingIncome,
         date: selectedDate!,
         amount: amount,
-        mccId: selectedMCC!.id!,
+        mccId: selectedMCC?.id, // Can be null now
         recipient: recipientController.text.trim(),
         note: noteController.text.trim(),
         hashtags: selectedHashtags,
@@ -518,8 +526,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                       ),
                       7.verticalSpace,
                       Container(
-                        height: 41.h,
-
+                        constraints: BoxConstraints(minHeight: 41.h),
                         padding: EdgeInsets.symmetric(
                           horizontal: 7.w,
                           vertical: 2.h,
@@ -531,6 +538,9 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                         ),
                         child: TextField(
                           controller: noteController,
+                          minLines: 1,
+                          maxLines: 4,
+                          maxLength: 150,
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '',
@@ -545,6 +555,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                             ),
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
+                            counterText: "", // Hide the counter
                           ),
                           style: TextStyle(fontSize: 16.sp),
                         ),

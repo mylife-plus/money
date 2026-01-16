@@ -63,7 +63,9 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
     final lowerQuery = query.toLowerCase();
     _filteredTransactions = allTransactions.where((transaction) {
       final recipient = transaction.recipient.toLowerCase();
-      final mcc = mccController.getMCCById(transaction.mccId);
+      final mcc = transaction.mccId != null
+          ? mccController.getMCCById(transaction.mccId!)
+          : null;
       final mccText = mcc?.name.toLowerCase() ?? '';
       final mccCode = mcc?.mccCode?.toLowerCase() ?? '';
       final hashtags = transaction.hashtags
@@ -104,11 +106,9 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                       height: 21.h,
                     ),
                   ),
-                  CustomText(
-                    'Search Transactions',
-                    size: 16.sp,
-                    color: Colors.black,
-                  ),
+
+                  Image.asset(AppIcons.search, height: 28.r, width: 28.r),
+
                   SizedBox(width: 21.w),
                 ],
               ),
@@ -147,7 +147,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: '',
-                              labelText: 'Search',
+                              // labelText: 'Search',
                               labelStyle: TextStyle(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,

@@ -205,6 +205,51 @@ class HomeController extends GetxController {
     return startMatches && endMatches;
   }
 
+  // Available Duration filtering
+  List<String> get availableDurationTabs {
+    // Determine the extent of the data
+    // If no transactions, fallback to basic options
+    if (transactions.isEmpty) {
+      return ['1d', '7d', '2w', '1m', '3m', '6m', 'All'];
+    }
+
+    // Min date vs Now
+    // We base "availability" on whether there is any data extending back that far?
+    // OR just use minDate vs Now duration?
+    // "if you have dates from up to 6 years you show all"
+    // So we calculate the difference between Now and MinDate.
+
+    final now = DateTime.now();
+    final dataMin = minDate; // This is computed from transactions
+    final duration = now.difference(dataMin);
+    final days = duration.inDays;
+
+    final tabs = <String>['1d', '7d', '2w', '1m', '3m', '6m'];
+
+    // Add 1y if we have >= 365 days of data (approx)
+    // Or actually, the request says: "if only transaction from 1 year are there [show up to 6m, all]"
+    // This implies 1y button only appears if there's > 1 year of data? Or maybe >= 6 months?
+    // "if only transaction from 1 year are there you should only show(1d, 7d, 2w, 1m, 3m, 6m, all)"
+    // This phrasing is slightly ambiguous. "From 1 year" could mean data IS 1 year old.
+    // Let's assume:
+    // If data duration >= 1 year -> Show 1y
+    // If data duration >= 2 years -> Show 2y
+    // If data duration >= 5 years -> Show 5y
+
+    if (days >= 365) {
+      tabs.add('1y');
+    }
+    if (days >= 365 * 2) {
+      tabs.add('2y');
+    }
+    if (days >= 365 * 5) {
+      tabs.add('5y');
+    }
+
+    tabs.add('All');
+    return tabs;
+  }
+
   void updateDurationTab(String tab) {
     selectedDurationTab.value = tab;
 
@@ -219,21 +264,41 @@ class HomeController extends GetxController {
         // Today (from 00:00:00)
         start = DateTime(now.year, now.month, now.day);
         break;
-      case '2d':
-        // Today + Yesterday (from 00:00:00 yesterday)
+      case '7d':
+        // Last 7 days
         start = DateTime(
           now.year,
           now.month,
           now.day,
-        ).subtract(const Duration(days: 1));
+        ).subtract(const Duration(days: 6));
+        break;
+      case '2w':
+        // Last 2 weeks (14 days)
+        start = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(days: 13));
+        break;
+      case '1m':
+        // Last 1 month
+        start = DateTime(now.year, now.month - 1, now.day);
         break;
       case '3m':
         // Last 3 months (from start of day)
         start = DateTime(now.year, now.month - 3, now.day);
         break;
+      case '6m':
+        // Last 6 months
+        start = DateTime(now.year, now.month - 6, now.day);
+        break;
       case '1y':
         // Last 1 year (from start of day)
         start = DateTime(now.year - 1, now.month, now.day);
+        break;
+      case '2y':
+        // Last 2 years
+        start = DateTime(now.year - 2, now.month, now.day);
         break;
       case '5y':
         // Last 5 years (from start of day)
@@ -353,74 +418,189 @@ class HomeController extends GetxController {
     // Yearly is Total / (Days / 365) => Total * 365 / Days
     averageYearly.value = (totalAmount / durationInDays) * 365;
 
-    // 6. Generate Chart Data
-    // Grouping depends on the duration
-
-    DateFormat dateFormat;
-
-    if (durationInDays <= 2) {
-      // 1-2 Days: Plot *sequential* transactions instead of hourly buckets
-      dateFormat = DateFormat('HH:mm');
-    } else if (durationInDays <= 90) {
-      // <= 3 Months: Group by Day
-      dateFormat = DateFormat('MMM d');
-    } else if (durationInDays <= 365 * 2) {
-      // <= 2 Years: Group by Month
-      dateFormat = DateFormat('MMM yy');
-    } else {
-      // > 2 Years: Group by Year
-      dateFormat = DateFormat('yyyy');
-    }
-
-    // Sort transactions by date for charting
-    relevantTransactions.sort((a, b) => a.date.compareTo(b.date));
-
+    // 6. Generate Chart Data with Gaps Filled
     List<ChartDataPoint> points = [];
 
+    // Define Granularity based on duration
+    // 1-2 Days -> Hourly
+    // <= 1 Month (approx 31 days) -> Daily
+    // <= 3 Months (approx 93 days) -> Weekly
+    // <= 2 Years (approx 730 days) -> Monthly
+    // > 2 Years -> Yearly
+
     if (durationInDays <= 2) {
-      // SEQUENTIAL PLOTTING (No gaps, no buckets)
-      // Plot every transaction as a point.
-      // If multiple transactions at exact same time, we could aggregate,
-      // but usually they are distinct enough or it doesn't hurt.
-      // Better UX: Show every transaction time.
-      for (var t in relevantTransactions) {
-        points.add(
-          ChartDataPoint(
-            label: dateFormat.format(t.date),
-            value: t.amount, // Show amount of this specific transaction
-          ),
-        );
-      }
-    } else {
-      // TIME BUCKET GROUPING (Days/Months/Years)
-      Map<DateTime, double> timeGrouped = {};
+      // --- HOURLY ---
+      // Align start to the start of the hour
+      var current = DateTime(
+        transactionDateStart.year,
+        transactionDateStart.month,
+        transactionDateStart.day,
+        transactionDateStart.hour,
+      );
+      // Ensure specific end time cover
+      var end = transactionDateEnd; // Use exact end
 
+      Map<DateTime, double> hourlyData = {};
       for (var t in relevantTransactions) {
-        DateTime key;
-        if (durationInDays <= 90) {
-          key = DateTime(t.date.year, t.date.month, t.date.day);
-        } else if (durationInDays <= 365 * 2) {
-          key = DateTime(t.date.year, t.date.month);
-        } else {
-          key = DateTime(t.date.year);
-        }
-
-        timeGrouped.update(
+        // Quantize transaction time to hour bucket
+        var key = DateTime(t.date.year, t.date.month, t.date.day, t.date.hour);
+        hourlyData.update(
           key,
-          (value) => value + t.amount,
+          (Val) => Val + t.amount,
           ifAbsent: () => t.amount,
         );
       }
 
-      var sortedKeys = timeGrouped.keys.toList()..sort();
-
-      for (var key in sortedKeys) {
+      // Fill gaps
+      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
+        double val = hourlyData[current] ?? 0.0;
         points.add(
           ChartDataPoint(
-            label: dateFormat.format(key),
-            value: timeGrouped[key]!,
+            label: DateFormat('HH:mm').format(current),
+            value: val,
+            tooltipLabel:
+                '${val.toStringAsFixed(2)}\n${DateFormat('HH:mm').format(current)}',
           ),
         );
+        current = current.add(const Duration(hours: 1));
+      }
+    } else if (durationInDays <= 35) {
+      // --- DAILY ---
+      // Normalize start to beginning of day
+      var current = DateTime(
+        transactionDateStart.year,
+        transactionDateStart.month,
+        transactionDateStart.day,
+      );
+      var end = DateTime(
+        transactionDateEnd.year,
+        transactionDateEnd.month,
+        transactionDateEnd.day,
+      );
+
+      Map<DateTime, double> dailyData = {};
+      for (var t in relevantTransactions) {
+        var key = DateTime(t.date.year, t.date.month, t.date.day);
+        dailyData.update(
+          key,
+          (val) => val + t.amount,
+          ifAbsent: () => t.amount,
+        );
+      }
+
+      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
+        double val = dailyData[current] ?? 0.0;
+        points.add(
+          ChartDataPoint(
+            label: DateFormat('dd.MM.yyyy').format(current),
+            value: val,
+            tooltipLabel:
+                '${val.toStringAsFixed(2)}\n${DateFormat('dd.MM.yyyy').format(current)}',
+          ),
+        );
+        current = current.add(const Duration(days: 1));
+      }
+    } else if (durationInDays <= 100) {
+      // --- WEEKLY ---
+      // Align to Monday
+      // weekday: Mon=1 ... Sun=7.
+      // previous Monday = date - (weekday - 1)
+      var start = DateTime(
+        transactionDateStart.year,
+        transactionDateStart.month,
+        transactionDateStart.day,
+      );
+      var current = start.subtract(Duration(days: start.weekday - 1));
+
+      var end = DateTime(
+        transactionDateEnd.year,
+        transactionDateEnd.month,
+        transactionDateEnd.day,
+      );
+
+      Map<DateTime, double> weeklyData = {};
+      for (var t in relevantTransactions) {
+        var tDate = DateTime(t.date.year, t.date.month, t.date.day);
+        var weekStart = tDate.subtract(Duration(days: tDate.weekday - 1));
+        weeklyData.update(
+          weekStart,
+          (val) => val + t.amount,
+          ifAbsent: () => t.amount,
+        );
+      }
+
+      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
+        // Only include if the week overlaps significantly or just iterating through
+        // We iterate through full weeks covering the range
+        double val = weeklyData[current] ?? 0.0;
+        points.add(
+          ChartDataPoint(
+            label: DateFormat('dd.MM.yyyy').format(current),
+            value: val,
+            tooltipLabel:
+                '${val.toStringAsFixed(2)}\n${DateFormat('dd.MM.yyyy').format(current)}',
+          ),
+        );
+        current = current.add(const Duration(days: 7));
+      }
+    } else if (durationInDays <= 365 * 2 + 10) {
+      // --- MONTHLY ---
+      var current = DateTime(
+        transactionDateStart.year,
+        transactionDateStart.month,
+        1,
+      );
+      var end = DateTime(transactionDateEnd.year, transactionDateEnd.month, 1);
+
+      Map<DateTime, double> monthlyData = {};
+      for (var t in relevantTransactions) {
+        var key = DateTime(t.date.year, t.date.month, 1);
+        monthlyData.update(
+          key,
+          (val) => val + t.amount,
+          ifAbsent: () => t.amount,
+        );
+      }
+
+      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
+        double val = monthlyData[current] ?? 0.0;
+        points.add(
+          ChartDataPoint(
+            label: DateFormat('MMM yyyy').format(current),
+            value: val,
+            tooltipLabel:
+                '${val.toStringAsFixed(2)}\n${DateFormat('MMM yyyy').format(current)}',
+          ),
+        );
+        // Add one month
+        current = DateTime(current.year, current.month + 1, 1);
+      }
+    } else {
+      // --- YEARLY ---
+      var current = DateTime(transactionDateStart.year, 1, 1);
+      var end = DateTime(transactionDateEnd.year, 1, 1);
+
+      Map<DateTime, double> yearlyData = {};
+      for (var t in relevantTransactions) {
+        var key = DateTime(t.date.year, 1, 1);
+        yearlyData.update(
+          key,
+          (val) => val + t.amount,
+          ifAbsent: () => t.amount,
+        );
+      }
+
+      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
+        double val = yearlyData[current] ?? 0.0;
+        points.add(
+          ChartDataPoint(
+            label: DateFormat('yyyy').format(current),
+            value: val,
+            tooltipLabel:
+                '${val.toStringAsFixed(2)}\n${DateFormat('yyyy').format(current)}',
+          ),
+        );
+        current = DateTime(current.year + 1, 1, 1);
       }
     }
 
@@ -706,8 +886,8 @@ class HomeController extends GetxController {
   void toggleYearExpansion(int year) {
     if (expandedYears.contains(year)) {
       expandedYears.remove(year);
-      // Collapse associated months
-      expandedMonths.removeWhere((key) => key.startsWith('$year-'));
+      // Don't collapse associated months to preserve state
+      // expandedMonths.removeWhere((key) => key.startsWith('$year-'));
     } else {
       expandedYears.add(year);
     }

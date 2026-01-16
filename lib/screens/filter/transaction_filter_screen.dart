@@ -11,7 +11,7 @@ import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
-import 'package:moneyapp/widgets/mcc/mcc_filter_dialog.dart';
+import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_filter_dialog.dart';
 
 class TransactionFilterScreen extends StatefulWidget {
@@ -104,11 +104,13 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
   Future<void> _showMCCFilterDialog() async {
     await showDialog(
       context: context,
-      builder: (context) => MCCFilterDialog(
-        selectedMCCs: selectedMCCs,
-        onSelectionChanged: (selected) {
+      builder: (context) => MCCSelectionDialog(
+        onSelected: (mcc) {
           setState(() {
-            selectedMCCs = selected;
+            // Check if already selected to avoid duplicates
+            if (!selectedMCCs.any((item) => item.id == mcc.id)) {
+              selectedMCCs.add(mcc);
+            }
           });
         },
       ),

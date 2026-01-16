@@ -368,6 +368,7 @@ class _SearchableHashtagWidgetState extends State<SearchableHashtagWidget> {
       context,
       MaterialPageRoute(
         builder: (_) => HashtagGroupScreen(
+          fromSettings: false,
           allowMultipleSelection: true,
           selectedHashtagGroups: previouslySelected,
           onMultipleHashtagGroupsSelected: (selectedGroups) {

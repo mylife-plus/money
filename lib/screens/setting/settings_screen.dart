@@ -68,6 +68,7 @@ class SettingsScreen extends StatelessWidget {
                       Navigator.pushNamed(
                         context,
                         AppRoutes.hashtagGroups.path,
+                        arguments: {'fromSettings': true},
                       );
                     },
                   ),

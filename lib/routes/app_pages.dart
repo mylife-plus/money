@@ -48,7 +48,12 @@ class AppPages {
     GetPage(name: AppRoutes.settings.path, page: () => SettingsScreen()),
     GetPage(
       name: AppRoutes.hashtagGroups.path,
-      page: () => const HashtagGroupScreen(),
+      page: () {
+        final args = Get.arguments;
+        return HashtagGroupScreen(
+          fromSettings: args is Map ? (args['fromSettings'] ?? false) : false,
+        );
+      },
       binding: HashtagGroupsBinding(),
     ),
 

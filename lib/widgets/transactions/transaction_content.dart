@@ -30,7 +30,9 @@ class TransactionContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mccController = Get.put(MCCController());
-    final mcc = mccController.getMCCById(transaction.mccId);
+    final mcc = transaction.mccId != null
+        ? mccController.getMCCById(transaction.mccId!)
+        : null;
 
     final dateFormat = DateFormat('dd.');
     final labelColor = const Color(0xff707070);
@@ -78,17 +80,18 @@ class TransactionContent extends StatelessWidget {
               ),
             ),
             8.horizontalSpace,
-            InkWell(
-              onTap: onNoteTap,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-                child: Image.asset(
-                  AppIcons.notesIcon,
-                  width: 21.r,
-                  height: 21.r,
+            if (transaction.note.isNotEmpty || transaction.hashtags.isNotEmpty)
+              InkWell(
+                onTap: onNoteTap,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                  child: Image.asset(
+                    AppIcons.notesIcon,
+                    width: 21.r,
+                    height: 21.r,
+                  ),
                 ),
               ),
-            ),
             8.horizontalSpace,
 
             Expanded(

@@ -151,6 +151,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
         return AddEditGroupPopup(
           isHashtagMode: true,
           isMainGroup: false,
+          showDropdown: true,
           groupList: hashtagController.allGroups,
           onSave: (name, parentId, {newCategoryName}) async {
             if (name.isEmpty) {
@@ -467,6 +468,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                       navigator.pop();
                       final result = await navigator.pushNamed(
                         AppRoutes.hashtagGroups.path,
+                        arguments: {'fromSettings': false},
                       );
 
                       if (result != null && result is HashtagGroup) {
