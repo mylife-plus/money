@@ -14,9 +14,14 @@ import 'package:moneyapp/widgets/common/add_edit_group_popup.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class HashtagSelectionDialog extends StatefulWidget {
-  final Function(HashtagGroup) onSelected;
+  final Function(HashtagGroup)? onSelected;
+  final bool isFilterMode;
 
-  const HashtagSelectionDialog({super.key, required this.onSelected});
+  const HashtagSelectionDialog({
+    super.key,
+    this.onSelected,
+    this.isFilterMode = false,
+  });
 
   @override
   State<HashtagSelectionDialog> createState() => _HashtagSelectionDialogState();
@@ -39,6 +44,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
   @override
   void initState() {
     super.initState();
+
     _initializeHashtags();
 
     // Listen for updates from controller (in case data loads after dialog opens)
@@ -90,10 +96,20 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
         // Initially show recent hashtags instead of just first 5
         // But ONLY if we are not currently searching
         if (!isSearching) {
-          if (recentHashtags.isNotEmpty) {
-            filteredHashtags = recentHashtags;
+          if (widget.isFilterMode) {
+            // In filter mode, show recent hashtags if available, otherwise show all
+            if (recentHashtags.isNotEmpty) {
+              filteredHashtags = recentHashtags;
+            } else {
+              filteredHashtags = allHashtags;
+            }
           } else {
-            filteredHashtags = [];
+            // In normal mode, show recent hashtags
+            if (recentHashtags.isNotEmpty) {
+              filteredHashtags = recentHashtags;
+            } else {
+              filteredHashtags = [];
+            }
           }
         }
       });
@@ -104,11 +120,16 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
     setState(() {
       if (searchController.text.isEmpty) {
         isSearching = false;
-        // Show recent when no search, or fallback to first 5
+        // Show recent when no search
         if (recentHashtags.isNotEmpty) {
           filteredHashtags = recentHashtags;
         } else {
-          filteredHashtags = [];
+          // If no recents, show all in filter mode, empty in normal mode
+          if (widget.isFilterMode) {
+            filteredHashtags = allHashtags;
+          } else {
+            filteredHashtags = [];
+          }
         }
       } else {
         isSearching = true;
@@ -203,7 +224,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                   await _recentService.saveRecentHashtag(newSubgroup.name);
                   await _recentService.saveRecentHashtagGroup(newSubgroup);
 
-                  widget.onSelected(newSubgroup);
+                  widget.onSelected?.call(newSubgroup);
                   if (mounted) Navigator.of(this.context).pop();
                 } else {
                   _showLocalSnackbar(
@@ -268,7 +289,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
               await _recentService.saveRecentHashtag(newSubgroup.name);
               await _recentService.saveRecentHashtagGroup(newSubgroup);
 
-              widget.onSelected(newSubgroup);
+              widget.onSelected?.call(newSubgroup);
               if (mounted) Navigator.of(this.context).pop();
             } catch (e) {
               debugPrint('[HashtagSelectionDialog] Error adding hashtag: $e');
@@ -360,7 +381,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                 await _recentService.saveRecentHashtagGroup(updatedHashtag);
 
                 // Select the updated hashtag
-                widget.onSelected(updatedHashtag);
+                widget.onSelected?.call(updatedHashtag);
                 if (mounted) Navigator.of(this.context).pop();
               }
             } catch (e) {
@@ -420,7 +441,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CustomText(
-                  'Select Hashtag',
+                  widget.isFilterMode ? 'Select Hashtags' : 'Select Hashtag',
                   size: 18.sp,
                   fontWeight: FontWeight.w600,
                 ),
@@ -473,7 +494,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
 
             // Hashtag List (shows 5 initially, all when searching)
             // Recent Label or Search Result Label
-            if (filteredHashtags.isNotEmpty)
+            if (filteredHashtags.isNotEmpty && !widget.isFilterMode)
               Padding(
                 padding: EdgeInsets.only(bottom: 8.h),
                 child: Align(
@@ -505,6 +526,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                           Divider(height: 1.h, color: const Color(0xffDFDFDF)),
                       itemBuilder: (context, index) {
                         final hashtag = filteredHashtags[index];
+
                         return Padding(
                           padding: EdgeInsets.symmetric(
                             vertical: 12.h,
@@ -534,7 +556,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                                     );
 
                                     if (mounted) {
-                                      widget.onSelected(hashtag);
+                                      widget.onSelected!(hashtag);
                                       navigator.pop();
                                     }
                                   },
@@ -552,19 +574,21 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                                 size: 12.sp,
                                 color: const Color(0xff707070),
                               ),
-                              8.horizontalSpace,
-                              // Edit icon
-                              InkWell(
-                                onTap: () => _showEditHashtagDialog(hashtag),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 8.0, right: 0, top: 2, bottom: 2),
-                                  child: Image.asset(
-                                    AppIcons.editV2,
-                                    width: 22.r,
-                                    height: 22.r,
+                              if (!widget.isFilterMode) ...[
+                                8.horizontalSpace,
+                                // Edit icon (only in normal mode)
+                                InkWell(
+                                  onTap: () => _showEditHashtagDialog(hashtag),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 8.0, right: 0, top: 2, bottom: 2),
+                                    child: Image.asset(
+                                      AppIcons.editV2,
+                                      width: 22.r,
+                                      height: 22.r,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         );
@@ -575,85 +599,133 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
             12.verticalSpace,
 
             // Bottom buttons row
-            Row(
-              children: [
-                // See List button (left)
-                Expanded(
-                  child: InkWell(
-                    onTap: () async {
-                      final navigator = Navigator.of(context);
-                      final recentService = HashtagRecentService();
-                      navigator.pop();
-                      final result = await navigator.pushNamed(
-                        AppRoutes.hashtagGroups.path,
-                        arguments: {'fromSettings': false},
-                      );
+            if (widget.isFilterMode)
+              // See List button only for filter mode
+              InkWell(
+                onTap: () async {
+                  final navigator = Navigator.of(context);
+                  final recentService = HashtagRecentService();
+                  navigator.pop();
+                  final result = await navigator.pushNamed(
+                    AppRoutes.hashtagGroups.path,
+                    arguments: {'fromSettings': false},
+                  );
 
-                      if (result != null && result is HashtagGroup) {
-                        try {
-                          await recentService.saveRecentHashtag(result.name);
-                          await recentService.saveRecentHashtagGroup(result);
-                        } catch (e) {
-                          debugPrint('Error saving recent from list: $e');
+                  if (result != null && result is HashtagGroup) {
+                    try {
+                      await recentService.saveRecentHashtag(result.name);
+                      await recentService.saveRecentHashtagGroup(result);
+                    } catch (e) {
+                      debugPrint('Error saving recent from list: $e');
+                    }
+                    widget.onSelected!(result);
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 41.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffFFFFFF),
+                    borderRadius: BorderRadius.circular(13.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 4,
+                        offset: const Offset(0, 0),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: CustomText(
+                      'See List',
+                      size: 16.sp,
+                      color: const Color(0xff0071FF),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              )
+            else
+              // See List and Add New buttons for normal mode
+              Row(
+                children: [
+                  // See List button (left)
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        final navigator = Navigator.of(context);
+                        final recentService = HashtagRecentService();
+                        navigator.pop();
+                        final result = await navigator.pushNamed(
+                          AppRoutes.hashtagGroups.path,
+                          arguments: {'fromSettings': false},
+                        );
+
+                        if (result != null && result is HashtagGroup) {
+                          try {
+                            await recentService.saveRecentHashtag(result.name);
+                            await recentService.saveRecentHashtagGroup(result);
+                          } catch (e) {
+                            debugPrint('Error saving recent from list: $e');
+                          }
+                          widget.onSelected!(result);
                         }
-                        widget.onSelected(result);
-                      }
-                    },
-                    child: Container(
-                      height: 41.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffFFFFFF),
-                        borderRadius: BorderRadius.circular(13.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 4,
-                            offset: const Offset(0, 0),
+                      },
+                      child: Container(
+                        height: 41.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffFFFFFF),
+                          borderRadius: BorderRadius.circular(13.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 4,
+                              offset: const Offset(0, 0),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: CustomText(
+                            'See List',
+                            size: 16.sp,
+                            color: const Color(0xff0071FF),
+                            fontWeight: FontWeight.w400,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: CustomText(
-                          'See List',
-                          size: 16.sp,
-                          color: const Color(0xff0071FF),
-                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
                   ),
-                ),
-                16.horizontalSpace,
-                // Add New Hashtag button (right)
-                Expanded(
-                  child: InkWell(
-                    onTap: _showAddHashtagDialog,
-                    child: Container(
-                      height: 41.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffFFFFFF),
-                        borderRadius: BorderRadius.circular(13.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 4,
-                            offset: const Offset(0, 0),
+                  16.horizontalSpace,
+                  // Add New Hashtag button (right)
+                  Expanded(
+                    child: InkWell(
+                      onTap: _showAddHashtagDialog,
+                      child: Container(
+                        height: 41.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffFFFFFF),
+                          borderRadius: BorderRadius.circular(13.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 4,
+                              offset: const Offset(0, 0),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: CustomText(
+                            'Add New',
+                            size: 16.sp,
+                            color: const Color(0xff0071FF),
+                            fontWeight: FontWeight.w400,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: CustomText(
-                          'Add New',
-                          size: 16.sp,
-                          color: const Color(0xff0071FF),
-                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),

@@ -7,16 +7,12 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
-import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
-import 'package:moneyapp/services/hashtag_group_service.dart';
-import 'package:moneyapp/services/hashtag_recent_service.dart';
-import 'package:moneyapp/widgets/common/add_edit_group_popup.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
-import 'package:moneyapp/widgets/hashtag/hashtag_filter_dialog.dart';
+import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
 
 class TransactionFilterScreen extends StatefulWidget {
   const TransactionFilterScreen({super.key});
@@ -35,8 +31,6 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
     HashtagGroupsController(),
   );
   late final HomeController homeController;
-  final HashtagGroupService _hashtagGroupService = HashtagGroupService();
-  final HashtagRecentService _recentService = HashtagRecentService();
 
   DateTime? fromDate;
   DateTime? toDate;
@@ -193,11 +187,14 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
   Future<void> _showHashtagFilterDialog() async {
     await showDialog(
       context: context,
-      builder: (context) => HashtagFilterDialog(
-        selectedHashtags: selectedHashtags,
-        onSelectionChanged: (selected) {
+      builder: (context) => HashtagSelectionDialog(
+        isFilterMode: true,
+        onSelected: (hashtag) {
           setState(() {
-            selectedHashtags = selected;
+            // Add to selected hashtags if not already present
+            if (!selectedHashtags.any((item) => item.id == hashtag.id)) {
+              selectedHashtags.add(hashtag);
+            }
           });
         },
       ),
@@ -249,84 +246,6 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
       selectedHashtags.clear();
     });
     _applyFilter(closeScreen: false);
-  }
-
-  Future<void> _showEditHashtagDialog(HashtagGroup hashtag) async {
-    // Ensure UiController is available
-    if (!Get.isRegistered<UiController>()) {
-      Get.put(UiController());
-    }
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AddEditGroupPopup(
-          isHashtagMode: true,
-          isMainGroup: false,
-          showDropdown: true,
-          groupList: hashtagController.allGroups,
-          initialName: hashtag.name,
-          editItemId: hashtag.id,
-          parentId: hashtag.parentId,
-          onSave: (name, parentId, {newCategoryName}) async {
-            if (name.isEmpty) {
-              return;
-            }
-
-            try {
-              // Update the hashtag
-              final success = await _hashtagGroupService.updateGroup(
-                hashtag.id!,
-                name,
-                newParentId: parentId,
-              );
-
-              if (!success) {
-                return;
-              }
-
-              // Reload hashtag groups
-              await hashtagController.loadHashtagGroups();
-
-              // Reload home screen data
-              await homeController.loadTransactions();
-
-              // Update in recents
-              await _recentService.updateHashtagGroupInRecents(
-                hashtag.id!,
-                name,
-              );
-
-              // Find the updated hashtag from the reloaded data
-              HashtagGroup? updatedHashtag;
-              for (final mainGroup in hashtagController.allGroups) {
-                if (mainGroup.subgroups != null) {
-                  updatedHashtag = mainGroup.subgroups!.firstWhereOrNull(
-                    (sg) => sg.id == hashtag.id,
-                  );
-                  if (updatedHashtag != null) break;
-                }
-              }
-
-              if (updatedHashtag != null) {
-                // Update the selected hashtags list if this hashtag was selected
-                final selectedIndex = selectedHashtags.indexWhere(
-                  (item) => item.id == hashtag.id,
-                );
-                if (selectedIndex >= 0) {
-                  setState(() {
-                    selectedHashtags[selectedIndex] = updatedHashtag!;
-                  });
-                }
-              }
-            } catch (e) {
-              debugPrint('[TransactionFilterScreen] Error updating hashtag: $e');
-            }
-          },
-        );
-      },
-    );
   }
 
   @override

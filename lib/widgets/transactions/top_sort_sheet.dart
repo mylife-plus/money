@@ -68,9 +68,9 @@ class _TopSortSheetState extends State<TopSortSheet> {
 
   List<SortOption> _getSortedOptions() {
     final options = List<SortOption>.from(SortOption.values);
-    // Move selected option to the top
+    // Move selected option to the bottom
     options.remove(_selectedOption);
-    options.insert(0, _selectedOption);
+    options.add(_selectedOption);
     return options;
   }
 
