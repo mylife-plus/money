@@ -193,20 +193,20 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
                           parentName = parent?.name;
                         }
 
-                        return InkWell(
-                          onTap: () => _toggleHashtag(hashtag),
-                          child: Container(
-                            color: isSelected
-                                ? const Color(0xff0088FF).withValues(alpha: 0.1)
-                                : Colors.transparent,
-                            padding: EdgeInsets.symmetric(
-                              vertical: 12.h,
-                              horizontal: 8.w,
-                            ),
-                            child: Row(
-                              children: [
-                                // Checkbox
-                                Container(
+                        return Container(
+                          color: isSelected
+                              ? const Color(0xff0088FF).withValues(alpha: 0.1)
+                              : Colors.transparent,
+                          padding: EdgeInsets.symmetric(
+                            vertical: 12.h,
+                            horizontal: 8.w,
+                          ),
+                          child: Row(
+                            children: [
+                              // Checkbox
+                              InkWell(
+                                onTap: () => _toggleHashtag(hashtag),
+                                child: Container(
                                   width: 20.w,
                                   height: 20.h,
                                   decoration: BoxDecoration(
@@ -229,9 +229,12 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
                                         )
                                       : null,
                                 ),
-                                12.horizontalSpace,
-                                // Hashtag Info
-                                Expanded(
+                              ),
+                              12.horizontalSpace,
+                              // Hashtag Info - Tappable
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => _toggleHashtag(hashtag),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -252,8 +255,8 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },

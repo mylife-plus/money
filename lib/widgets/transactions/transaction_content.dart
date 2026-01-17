@@ -80,11 +80,16 @@ class TransactionContent extends StatelessWidget {
               ),
             ),
             8.horizontalSpace,
-            if (transaction.note.isNotEmpty || transaction.hashtags.isNotEmpty)
-              InkWell(
-                onTap: onNoteTap,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+            InkWell(
+              onTap: (transaction.note.isNotEmpty || transaction.hashtags.isNotEmpty)
+                  ? onNoteTap
+                  : null,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                child: Opacity(
+                  opacity: (transaction.note.isNotEmpty || transaction.hashtags.isNotEmpty)
+                      ? 1.0
+                      : 0.0,
                   child: Image.asset(
                     AppIcons.notesIcon,
                     width: 21.r,
@@ -92,6 +97,7 @@ class TransactionContent extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             8.horizontalSpace,
 
             Expanded(

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/constants/app_theme.dart';
 import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
+import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/routes/app_routes.dart';
@@ -282,6 +284,107 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
     );
   }
 
+  Future<void> _showEditHashtagDialog(HashtagGroup hashtag) async {
+    // Ensure UiController is available
+    if (!Get.isRegistered<UiController>()) {
+      Get.put(UiController());
+    }
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AddEditGroupPopup(
+          isHashtagMode: true,
+          isMainGroup: false,
+          showDropdown: true,
+          groupList: hashtagController.allGroups,
+          initialName: hashtag.name,
+          editItemId: hashtag.id,
+          parentId: hashtag.parentId,
+          onSave: (name, parentId, {newCategoryName}) async {
+            if (name.isEmpty) {
+              _showLocalSnackbar(
+                'Invalid Name',
+                'Hashtag name cannot be empty',
+                isError: true,
+              );
+              return;
+            }
+
+            try {
+              // Update the hashtag
+              final success = await _hashtagGroupService.updateGroup(
+                hashtag.id!,
+                name,
+                newParentId: parentId,
+              );
+
+              if (!success) {
+                _showLocalSnackbar(
+                  'Unable to Update',
+                  'Unable to update hashtag. Please try again.',
+                  isError: true,
+                );
+                return;
+              }
+
+              // Reload hashtag groups
+              await hashtagController.loadHashtagGroups();
+
+              // Reload home screen data if HomeController is registered
+              if (Get.isRegistered<HomeController>()) {
+                await Get.find<HomeController>().loadTransactions();
+              }
+
+              // Update in recents
+              await _recentService.updateHashtagGroupInRecents(
+                hashtag.id!,
+                name,
+              );
+
+              // Find the updated hashtag from the reloaded data
+              HashtagGroup? updatedHashtag;
+              for (final mainGroup in hashtagController.allGroups) {
+                if (mainGroup.subgroups != null) {
+                  updatedHashtag = mainGroup.subgroups!.firstWhereOrNull(
+                    (sg) => sg.id == hashtag.id,
+                  );
+                  if (updatedHashtag != null) break;
+                }
+              }
+
+              if (updatedHashtag != null) {
+                // Save to recents
+                await _recentService.saveRecentHashtag(updatedHashtag.name);
+                await _recentService.saveRecentHashtagGroup(updatedHashtag);
+
+                // Select the updated hashtag
+                widget.onSelected(updatedHashtag);
+                if (mounted) Navigator.of(this.context).pop();
+              }
+            } catch (e) {
+              debugPrint('[HashtagSelectionDialog] Error updating hashtag: $e');
+              String errorMessage = 'Unable to update hashtag. Please try again.';
+
+              if (e.toString().contains('DUPLICATE_HASHTAG_NAME')) {
+                errorMessage = 'Hashtag with this name already exists.';
+              } else if (e.toString().contains('SUBGROUP_CONFLICTS_WITH_PARENT')) {
+                errorMessage = 'This name is already used by the parent group.';
+              }
+
+              _showLocalSnackbar(
+                'Unable to Update',
+                errorMessage,
+                isError: true,
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
   void _showLocalSnackbar(String title, String message, {bool isError = true}) {
     // Since we are inside a dialog context, we might need to find the specific Scaffold or use Overlay
     // Using simple dialog or toast might be safer if Scaffold is covered, but ScaffoldMessenger usually works on top
@@ -402,52 +505,67 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                           Divider(height: 1.h, color: const Color(0xffDFDFDF)),
                       itemBuilder: (context, index) {
                         final hashtag = filteredHashtags[index];
-                        return InkWell(
-                          onTap: () async {
-                            // Save to recents
-                            await _recentService.saveRecentHashtag(
-                              hashtag.name,
-                            );
-                            // Also save group info if needed, though service mainly tracks by name/id
-                            await _recentService.saveRecentHashtagGroup(
-                              hashtag,
-                            );
+                        return Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 12.h,
+                            horizontal: 8.w,
+                          ),
+                          child: Row(
+                            children: [
+                              // Hashtag symbol
+                              CustomText(
+                                '#',
+                                size: 20.sp,
+                                color: const Color(0xff9D9D9D),
+                              ),
+                              12.horizontalSpace,
+                              // Hashtag name - Expanded and tappable
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () async {
+                                    final navigator = Navigator.of(context);
+                                    // Save to recents
+                                    await _recentService.saveRecentHashtag(
+                                      hashtag.name,
+                                    );
+                                    // Also save group info if needed, though service mainly tracks by name/id
+                                    await _recentService.saveRecentHashtagGroup(
+                                      hashtag,
+                                    );
 
-                            if (mounted) {
-                              widget.onSelected(hashtag);
-                              Navigator.of(context).pop();
-                            }
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              vertical: 12.h,
-                              horizontal: 8.w,
-                            ),
-                            child: Row(
-                              children: [
-                                // Hashtag symbol
-                                CustomText(
-                                  '#',
-                                  size: 20.sp,
-                                  color: const Color(0xff9D9D9D),
-                                ),
-                                12.horizontalSpace,
-                                // Hashtag name
-                                Expanded(
+                                    if (mounted) {
+                                      widget.onSelected(hashtag);
+                                      navigator.pop();
+                                    }
+                                  },
                                   child: CustomText(
                                     hashtag.name,
                                     size: 15.sp,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                // Category name
-                                CustomText(
-                                  _getCategoryName(hashtag),
-                                  size: 12.sp,
-                                  color: const Color(0xff707070),
+                              ),
+                              8.horizontalSpace,
+                              // Category name
+                              CustomText(
+                                _getCategoryName(hashtag),
+                                size: 12.sp,
+                                color: const Color(0xff707070),
+                              ),
+                              8.horizontalSpace,
+                              // Edit icon
+                              InkWell(
+                                onTap: () => _showEditHashtagDialog(hashtag),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 8.0, right: 0, top: 2, bottom: 2),
+                                  child: Image.asset(
+                                    AppIcons.editV2,
+                                    width: 22.r,
+                                    height: 22.r,
+                                  ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },

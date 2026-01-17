@@ -1,5 +1,6 @@
 {
-    "cSpell.words": [
-        "moneyapp"
-    ]
+  "cSpell.words": [
+    "moneyapp"
+  ],
+  "dart.flutterSdkPath": ".fvm/versions/3.35.7"
 }

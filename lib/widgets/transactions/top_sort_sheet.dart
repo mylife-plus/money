@@ -57,11 +57,31 @@ class TopSortSheet extends StatefulWidget {
 
 class _TopSortSheetState extends State<TopSortSheet> {
   late SortOption _selectedOption;
+  late List<SortOption> _sortedOptions;
 
   @override
   void initState() {
     super.initState();
     _selectedOption = widget.selectedOption;
+    _sortedOptions = _getSortedOptions();
+  }
+
+  List<SortOption> _getSortedOptions() {
+    final options = List<SortOption>.from(SortOption.values);
+    // Move selected option to the top
+    options.remove(_selectedOption);
+    options.insert(0, _selectedOption);
+    return options;
+  }
+
+  void _onOptionTapped(SortOption option) {
+    if (_selectedOption != option) {
+      setState(() {
+        _selectedOption = option;
+        _sortedOptions = _getSortedOptions();
+      });
+      widget.onOptionSelected(option);
+    }
   }
 
   String _getOptionLabel(SortOption option) {
@@ -82,6 +102,62 @@ class _TopSortSheetState extends State<TopSortSheet> {
       case SortOption.mostRecent:
         return AppIcons.clock;
     }
+  }
+
+  Widget _buildOptionItem(SortOption option) {
+    final isSelected = _selectedOption == option;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 5.h),
+      child: InkWell(
+        onTap: () => _onOptionTapped(option),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.fromLTRB(
+            17.w,
+            10.h,
+            9.w,
+            10.h,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF0088FF)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: AppColors.greyBorder),
+          ),
+          child: Row(
+            children: [
+              Image.asset(
+                _getOptionIcon(option),
+                height: 24.r,
+                width: 24.r,
+              ),
+              28.horizontalSpace,
+              Expanded(
+                child: CustomText(
+                  _getOptionLabel(option),
+                  size: 20.sp,
+                  fontWeight: FontWeight.w400,
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.black87,
+                ),
+              ),
+              CustomText(
+                'top',
+                size: 20.sp,
+                fontWeight: FontWeight.w400,
+                color: isSelected
+                    ? const Color(0xffFFFB00)
+                    : const Color(0xff0088FF),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -125,62 +201,37 @@ class _TopSortSheetState extends State<TopSortSheet> {
                         horizontal: 7.w,
                         vertical: 14.h,
                       ),
-                      child: Column(
-                        spacing: 5.h,
-                        children: SortOption.values.map((option) {
-                          final isSelected = _selectedOption == option;
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedOption = option;
-                              });
-                              widget.onOptionSelected(option);
-                            },
-                            child: Container(
-                              padding: EdgeInsets.fromLTRB(
-                                17.w,
-                                10.h,
-                                9.w,
-                                10.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(0xFF0088FF)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(8.r),
-                                border: Border.all(color: AppColors.greyBorder),
-                              ),
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    _getOptionIcon(option),
-                                    height: 24.r,
-                                    width: 24.r,
-                                  ),
-                                  28.horizontalSpace,
-                                  Expanded(
-                                    child: CustomText(
-                                      _getOptionLabel(option),
-                                      size: 20.sp,
-                                      fontWeight: FontWeight.w400,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Colors.black87,
-                                    ),
-                                  ),
-                                  CustomText(
-                                    'top',
-                                    size: 20.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: isSelected
-                                        ? Color(0xffFFFB00)
-                                        : Color(0xff0088FF),
-                                  ),
-                                ],
-                              ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeInOut,
+                        switchOutCurve: Curves.easeInOut,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.1),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
                             ),
                           );
-                        }).toList(),
+                        },
+                        layoutBuilder: (currentChild, previousChildren) {
+                          return Stack(
+                            alignment: Alignment.topCenter,
+                            children: <Widget>[
+                              ...previousChildren,
+                              if (currentChild != null) currentChild,
+                            ],
+                          );
+                        },
+                        child: Column(
+                          key: ValueKey(_selectedOption),
+                          children: _sortedOptions.map((option) {
+                            return _buildOptionItem(option);
+                          }).toList(),
+                        ),
                       ),
                     ),
                   ),

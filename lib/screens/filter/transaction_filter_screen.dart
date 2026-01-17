@@ -7,9 +7,13 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
+import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
+import 'package:moneyapp/services/hashtag_group_service.dart';
+import 'package:moneyapp/services/hashtag_recent_service.dart';
+import 'package:moneyapp/widgets/common/add_edit_group_popup.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_filter_dialog.dart';
@@ -22,7 +26,8 @@ class TransactionFilterScreen extends StatefulWidget {
       _TransactionFilterScreenState();
 }
 
-class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
+class _TransactionFilterScreenState extends State<TransactionFilterScreen>
+    with WidgetsBindingObserver {
   // late final MCCController mccController;
   // late final HashtagGroupsController hashtagController;
   MCCController mccController = Get.put(MCCController());
@@ -30,6 +35,8 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
     HashtagGroupsController(),
   );
   late final HomeController homeController;
+  final HashtagGroupService _hashtagGroupService = HashtagGroupService();
+  final HashtagRecentService _recentService = HashtagRecentService();
 
   DateTime? fromDate;
   DateTime? toDate;
@@ -37,10 +44,12 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
   List<HashtagGroup> selectedHashtags = [];
   late final TextEditingController minAmountController;
   late final TextEditingController maxAmountController;
+  Worker? _hashtagGroupsWorker;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     mccController = Get.find<MCCController>();
     hashtagController = Get.find<HashtagGroupsController>();
     homeController = Get.find<HomeController>();
@@ -63,13 +72,77 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
           ? homeController.maxAmount.value.toStringAsFixed(0)
           : '',
     );
+
+    // Listen for hashtag group updates to refresh selected hashtags
+    _hashtagGroupsWorker = ever(hashtagController.allGroups as RxList, (_) {
+      if (mounted) {
+        _updateSelectedHashtags();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Update hashtags when app resumes
+      _updateSelectedHashtags();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Update hashtags when screen becomes visible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSelectedHashtags();
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _hashtagGroupsWorker?.dispose();
     minAmountController.dispose();
     maxAmountController.dispose();
     super.dispose();
+  }
+
+  /// Update selected hashtags with latest data from controller
+  Future<void> _updateSelectedHashtags() async {
+    if (selectedHashtags.isEmpty) return;
+
+    // Force reload hashtag groups to get latest data
+    await hashtagController.loadHashtagGroups();
+
+    if (!mounted) return;
+
+    setState(() {
+      // Create a new list with updated hashtag data
+      final updatedHashtags = <HashtagGroup>[];
+
+      for (final selectedHashtag in selectedHashtags) {
+        // Find the updated hashtag from the controller
+        HashtagGroup? updatedHashtag;
+        for (final mainGroup in hashtagController.allGroups) {
+          if (mainGroup.subgroups != null) {
+            updatedHashtag = mainGroup.subgroups!.firstWhereOrNull(
+              (sg) => sg.id == selectedHashtag.id,
+            );
+            if (updatedHashtag != null) break;
+          }
+        }
+
+        // If found, use updated data; otherwise keep the old one
+        if (updatedHashtag != null) {
+          updatedHashtags.add(updatedHashtag);
+        } else {
+          updatedHashtags.add(selectedHashtag);
+        }
+      }
+
+      selectedHashtags = updatedHashtags;
+    });
   }
 
   Future<void> _pickFromDate(BuildContext context) async {
@@ -129,6 +202,9 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
         },
       ),
     );
+
+    // Update selected hashtags after dialog closes in case any were edited
+    _updateSelectedHashtags();
   }
 
   void _applyFilter({bool closeScreen = true}) {
@@ -173,6 +249,84 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
       selectedHashtags.clear();
     });
     _applyFilter(closeScreen: false);
+  }
+
+  Future<void> _showEditHashtagDialog(HashtagGroup hashtag) async {
+    // Ensure UiController is available
+    if (!Get.isRegistered<UiController>()) {
+      Get.put(UiController());
+    }
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AddEditGroupPopup(
+          isHashtagMode: true,
+          isMainGroup: false,
+          showDropdown: true,
+          groupList: hashtagController.allGroups,
+          initialName: hashtag.name,
+          editItemId: hashtag.id,
+          parentId: hashtag.parentId,
+          onSave: (name, parentId, {newCategoryName}) async {
+            if (name.isEmpty) {
+              return;
+            }
+
+            try {
+              // Update the hashtag
+              final success = await _hashtagGroupService.updateGroup(
+                hashtag.id!,
+                name,
+                newParentId: parentId,
+              );
+
+              if (!success) {
+                return;
+              }
+
+              // Reload hashtag groups
+              await hashtagController.loadHashtagGroups();
+
+              // Reload home screen data
+              await homeController.loadTransactions();
+
+              // Update in recents
+              await _recentService.updateHashtagGroupInRecents(
+                hashtag.id!,
+                name,
+              );
+
+              // Find the updated hashtag from the reloaded data
+              HashtagGroup? updatedHashtag;
+              for (final mainGroup in hashtagController.allGroups) {
+                if (mainGroup.subgroups != null) {
+                  updatedHashtag = mainGroup.subgroups!.firstWhereOrNull(
+                    (sg) => sg.id == hashtag.id,
+                  );
+                  if (updatedHashtag != null) break;
+                }
+              }
+
+              if (updatedHashtag != null) {
+                // Update the selected hashtags list if this hashtag was selected
+                final selectedIndex = selectedHashtags.indexWhere(
+                  (item) => item.id == hashtag.id,
+                );
+                if (selectedIndex >= 0) {
+                  setState(() {
+                    selectedHashtags[selectedIndex] = updatedHashtag!;
+                  });
+                }
+              }
+            } catch (e) {
+              debugPrint('[TransactionFilterScreen] Error updating hashtag: $e');
+            }
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -581,6 +735,8 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen> {
                                     ),
                                   ],
                                   6.horizontalSpace,
+                          
+                                  // Close icon
                                   InkWell(
                                     onTap: () {
                                       setState(() {
