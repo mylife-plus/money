@@ -28,6 +28,9 @@ class HashtagGroupScreen extends StatefulWidget {
   final List<HashtagGroup>? selectedHashtagGroups;
   final Function(List<HashtagGroup>)? onMultipleHashtagGroupsSelected;
 
+  // Read-only mode (when opened from filter)
+  final bool isReadOnlyMode;
+
   const HashtagGroupScreen({
     super.key,
     this.onHashtagGroupSelected,
@@ -36,6 +39,7 @@ class HashtagGroupScreen extends StatefulWidget {
     this.selectedHashtagGroups,
     this.onMultipleHashtagGroupsSelected,
     this.fromSettings = false,
+    this.isReadOnlyMode = false,
   });
 
   @override
@@ -824,8 +828,8 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             color: uiController.darkMode.value ? Colors.white : Colors.white,
           ),
           actions: [
-            // Hide add button in filter mode
-            if (!widget.allowMultipleSelection)
+            // Hide add button in filter mode or read-only mode
+            if (!widget.allowMultipleSelection && !widget.isReadOnlyMode)
               IconButton(
                 onPressed: () => _startInlineAddingMainHashtagGroup(),
                 icon: ColorFiltered(
@@ -1134,8 +1138,8 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Hide edit/delete/add buttons when in filter mode
-                    if (!widget.allowMultipleSelection) ...[
+                    // Hide edit/delete/add buttons when in filter mode or read-only mode
+                    if (!widget.allowMultipleSelection && !widget.isReadOnlyMode) ...[
                       // Edit button for main hashtag group
                       IconButton(
                         icon: ColorFiltered(
@@ -1325,8 +1329,8 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
               ],
             ),
           ),
-          trailing: widget.allowMultipleSelection
-              ? null // Hide edit/delete buttons in filter mode
+          trailing: (widget.allowMultipleSelection || widget.isReadOnlyMode)
+              ? null // Hide edit/delete buttons in filter mode or read-only mode
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

@@ -608,7 +608,10 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                   navigator.pop();
                   final result = await navigator.pushNamed(
                     AppRoutes.hashtagGroups.path,
-                    arguments: {'fromSettings': false},
+                    arguments: {
+                      'fromSettings': false,
+                      'isReadOnlyMode': true,
+                    },
                   );
 
                   if (result != null && result is HashtagGroup) {
