@@ -388,8 +388,10 @@ class _HomeScreenState extends State<HomeScreen>
                                         title: 'Sorting',
                                         selectedOption:
                                             controller.selectedSortOption.value,
-                                        onOptionSelected: (result) {
-                                          controller.updateSortOption(result);
+                                        selectedDirection:
+                                            controller.selectedSortDirection.value,
+                                        onOptionSelected: (option, direction) {
+                                          controller.updateSortOption(option, direction);
                                         },
                                       );
                                     },

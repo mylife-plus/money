@@ -25,7 +25,8 @@ class TradesSection extends StatefulWidget {
 }
 
 class _TradesSectionState extends State<TradesSection> {
-  SortOption _selectedSortOption = SortOption.mostRecent;
+  SortOption? _selectedSortOption = SortOption.mostRecent;
+  SortDirection? _selectedSortDirection = SortDirection.top;
   List<int> selectedIds = [];
 
   void _updateSelectionMode(bool isSelectionMode) {
@@ -71,9 +72,11 @@ class _TradesSectionState extends State<TradesSection> {
                       context: context,
                       title: 'Sorting',
                       selectedOption: _selectedSortOption,
-                      onOptionSelected: (result) {
+                      selectedDirection: _selectedSortDirection,
+                      onOptionSelected: (option, direction) {
                         setState(() {
-                          _selectedSortOption = result;
+                          _selectedSortOption = option;
+                          _selectedSortDirection = direction;
                         });
                         // TODO: Apply sorting logic
                       },

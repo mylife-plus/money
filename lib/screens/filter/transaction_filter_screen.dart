@@ -11,6 +11,7 @@ import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
+import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
 
@@ -621,57 +622,33 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                           spacing: 8.w,
                           runSpacing: 8.h,
                           children: selectedHashtags.map((hashtag) {
-                            // Find parent group name if it's a subgroup
-                            String? parentName;
-                            if (hashtag.isSubgroup) {
-                              final parent = hashtagController.allGroups
+                            // Find latest hashtag data from controller
+                            final currentHashtag =
+                                hashtagController.findGroupById(
+                                  hashtag.id ?? -1,
+                                ) ??
+                                hashtag;
+
+                            // Find parent group name
+                            String categoryGroup = 'Main Group';
+                            if (currentHashtag.isSubgroup) {
+                              final mainGroup = hashtagController.allGroups
                                   .firstWhereOrNull(
-                                    (g) => g.id == hashtag.parentId,
+                                    (g) => g.id == currentHashtag.parentId,
                                   );
-                              parentName = parent?.name;
+                              categoryGroup = mainGroup?.name ?? 'Unknown';
                             }
 
-                            return Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8.w,
-                                vertical: 6.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Color(0xffF5F5F5),
-                                borderRadius: BorderRadius.circular(4.r),
-                                border: Border.all(color: Color(0xffDFDFDF)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CustomText('#${hashtag.name}', size: 14.sp),
-                                  if (parentName != null) ...[
-                                    4.horizontalSpace,
-                                    CustomText(
-                                      '($parentName)',
-                                      size: 12.sp,
-                                      color: Color(0xff707070),
-                                    ),
-                                  ],
-                                  6.horizontalSpace,
-                          
-                                  // Close icon
-                                  InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        selectedHashtags.removeWhere(
-                                          (item) => item.id == hashtag.id,
-                                        );
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.close,
-                                      size: 16.sp,
-                                      color: Color(0xff707070),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            return CategoryChip(
+                              category: currentHashtag.name,
+                              categoryGroup: categoryGroup,
+                              onRemove: () {
+                                setState(() {
+                                  selectedHashtags.removeWhere(
+                                    (h) => h.id == hashtag.id,
+                                  );
+                                });
+                              },
                             );
                           }).toList(),
                         ),

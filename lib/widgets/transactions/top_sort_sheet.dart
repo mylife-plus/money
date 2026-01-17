@@ -6,23 +6,28 @@ import 'package:moneyapp/widgets/common/custom_text.dart';
 
 enum SortOption { highestAmount, mostRecent }
 
+enum SortDirection { top, bottom }
+
 class TopSortSheet extends StatefulWidget {
   final String title;
-  final SortOption selectedOption;
-  final Function(SortOption) onOptionSelected;
+  final SortOption? selectedOption;
+  final SortDirection? selectedDirection;
+  final Function(SortOption?, SortDirection?) onOptionSelected;
 
   const TopSortSheet({
     super.key,
     required this.title,
-    required this.selectedOption,
+    this.selectedOption,
+    this.selectedDirection,
     required this.onOptionSelected,
   });
 
   static Future<void> show({
     required BuildContext context,
     required String title,
-    required SortOption selectedOption,
-    required Function(SortOption) onOptionSelected,
+    SortOption? selectedOption,
+    SortDirection? selectedDirection,
+    required Function(SortOption?, SortDirection?) onOptionSelected,
   }) {
     return showGeneralDialog<void>(
       context: context,
@@ -34,8 +39,9 @@ class TopSortSheet extends StatefulWidget {
         return TopSortSheet(
           title: title,
           selectedOption: selectedOption,
-          onOptionSelected: (option) {
-            onOptionSelected(option);
+          selectedDirection: selectedDirection,
+          onOptionSelected: (option, direction) {
+            onOptionSelected(option, direction);
           },
         );
       },
@@ -56,32 +62,35 @@ class TopSortSheet extends StatefulWidget {
 }
 
 class _TopSortSheetState extends State<TopSortSheet> {
-  late SortOption _selectedOption;
-  late List<SortOption> _sortedOptions;
+  SortOption? _selectedOption;
+  SortDirection? _selectedDirection;
 
   @override
   void initState() {
     super.initState();
     _selectedOption = widget.selectedOption;
-    _sortedOptions = _getSortedOptions();
-  }
-
-  List<SortOption> _getSortedOptions() {
-    final options = List<SortOption>.from(SortOption.values);
-    // Move selected option to the bottom
-    options.remove(_selectedOption);
-    options.add(_selectedOption);
-    return options;
+    _selectedDirection = widget.selectedDirection;
   }
 
   void _onOptionTapped(SortOption option) {
-    if (_selectedOption != option) {
-      setState(() {
+    setState(() {
+      if (_selectedOption == option) {
+        // Same option tapped - toggle direction or deselect
+        if (_selectedDirection == SortDirection.top) {
+          // Toggle to bottom
+          _selectedDirection = SortDirection.bottom;
+        } else if (_selectedDirection == SortDirection.bottom) {
+          // Deselect
+          _selectedOption = null;
+          _selectedDirection = null;
+        }
+      } else {
+        // Different option tapped - select with 'top'
         _selectedOption = option;
-        _sortedOptions = _getSortedOptions();
-      });
-      widget.onOptionSelected(option);
-    }
+        _selectedDirection = SortDirection.top;
+      }
+    });
+    widget.onOptionSelected(_selectedOption, _selectedDirection);
   }
 
   String _getOptionLabel(SortOption option) {
@@ -106,14 +115,15 @@ class _TopSortSheetState extends State<TopSortSheet> {
 
   Widget _buildOptionItem(SortOption option) {
     final isSelected = _selectedOption == option;
+    final directionText = isSelected && _selectedDirection != null
+        ? (_selectedDirection == SortDirection.top ? 'top' : 'bottom')
+        : 'top';
 
     return Padding(
       padding: EdgeInsets.only(bottom: 5.h),
       child: InkWell(
         onTap: () => _onOptionTapped(option),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+        child: Container(
           padding: EdgeInsets.fromLTRB(
             17.w,
             10.h,
@@ -146,7 +156,7 @@ class _TopSortSheetState extends State<TopSortSheet> {
                 ),
               ),
               CustomText(
-                'top',
+                directionText,
                 size: 20.sp,
                 fontWeight: FontWeight.w400,
                 color: isSelected
@@ -201,37 +211,10 @@ class _TopSortSheetState extends State<TopSortSheet> {
                         horizontal: 7.w,
                         vertical: 14.h,
                       ),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        switchInCurve: Curves.easeInOut,
-                        switchOutCurve: Curves.easeInOut,
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0, 0.1),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: child,
-                            ),
-                          );
-                        },
-                        layoutBuilder: (currentChild, previousChildren) {
-                          return Stack(
-                            alignment: Alignment.topCenter,
-                            children: <Widget>[
-                              ...previousChildren,
-                              if (currentChild != null) currentChild,
-                            ],
-                          );
-                        },
-                        child: Column(
-                          key: ValueKey(_selectedOption),
-                          children: _sortedOptions.map((option) {
-                            return _buildOptionItem(option);
-                          }).toList(),
-                        ),
+                      child: Column(
+                        children: SortOption.values.map((option) {
+                          return _buildOptionItem(option);
+                        }).toList(),
                       ),
                     ),
                   ),

@@ -17,8 +17,9 @@ class HomeController extends GetxController {
   // ... existing code ...
 
   /// Update sort option
-  void updateSortOption(SortOption option) {
+  void updateSortOption(SortOption? option, SortDirection? direction) {
     selectedSortOption.value = option;
+    selectedSortDirection.value = direction;
   }
 
   final TransactionRepository _transactionRepository = TransactionRepository();
@@ -50,7 +51,8 @@ class HomeController extends GetxController {
   List<int> _cachedSortedYears = [];
 
   // Sort Option
-  final Rx<SortOption> selectedSortOption = SortOption.mostRecent.obs;
+  final Rxn<SortOption> selectedSortOption = Rxn<SortOption>(SortOption.mostRecent);
+  final Rxn<SortDirection> selectedSortDirection = Rxn<SortDirection>(SortDirection.top);
 
   @override
   void onInit() {
@@ -71,6 +73,11 @@ class HomeController extends GetxController {
     );
     debounce(
       selectedSortOption,
+      (_) => _rebuildCacheAndItems(),
+      time: const Duration(milliseconds: 50),
+    );
+    debounce(
+      selectedSortDirection,
       (_) => _rebuildCacheAndItems(),
       time: const Duration(milliseconds: 50),
     );
@@ -662,12 +669,28 @@ class HomeController extends GetxController {
       for (var month in _cachedGroupedData[year]!.keys) {
         var monthTransactions = _cachedGroupedData[year]![month]!;
 
-        if (selectedSortOption.value == SortOption.highestAmount) {
-          // Highest Amount First
-          monthTransactions.sort((a, b) => b.amount.compareTo(a.amount));
-        } else {
-          // Most Recent First (Date Descending)
-          monthTransactions.sort((a, b) => b.date.compareTo(a.date));
+        if (selectedSortOption.value != null) {
+          final isTopDirection = selectedSortDirection.value == SortDirection.top;
+
+          if (selectedSortOption.value == SortOption.highestAmount) {
+            // Sort by Amount
+            if (isTopDirection) {
+              // Highest Amount First (top)
+              monthTransactions.sort((a, b) => b.amount.compareTo(a.amount));
+            } else {
+              // Lowest Amount First (bottom)
+              monthTransactions.sort((a, b) => a.amount.compareTo(b.amount));
+            }
+          } else if (selectedSortOption.value == SortOption.mostRecent) {
+            // Sort by Date
+            if (isTopDirection) {
+              // Most Recent First (top)
+              monthTransactions.sort((a, b) => b.date.compareTo(a.date));
+            } else {
+              // Oldest First (bottom)
+              monthTransactions.sort((a, b) => a.date.compareTo(b.date));
+            }
+          }
         }
       }
     }
