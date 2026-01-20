@@ -84,7 +84,7 @@ class StepLineChartWidget extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 24.h,
-                // Dynamic interval: Show roughly 5 labels max to prevent overlap
+                // Fixed: Show exactly 4 labels on X-axis
                 interval: data.length > 4
                     ? (data.length / 3)
                           .ceilToDouble() // Divide by 3 to get 4 ticks (0, 0.33, 0.66, 1.0)
@@ -155,19 +155,19 @@ class StepLineChartWidget extends StatelessWidget {
           minY: 0,
           maxY: _getMaxY(),
 
-          // Step Line Data
+          // Smooth Curved Line Data
           lineBarsData: [
             LineChartBarData(
               spots: _getSpots(),
-              // Enable step line
-              isStepLineChart: true,
-              lineChartStepData: LineChartStepData(
-                stepDirection: _getStepDirection(),
-              ),
+              
+              // Enable smooth curve
+              isCurved: true,
+              curveSmoothness: 01, // 0.0 = sharp corners, 1.0 = very smooth
+              preventCurveOverShooting: true, // Prevents curve from going too far
               // Line styling
               color: lineColor,
               barWidth: lineWidth,
-              isStrokeCapRound: false,
+              isStrokeCapRound: true, // Rounded line caps
               dotData: FlDotData(
                 show: showDot,
                 getDotPainter: (spot, percent, barData, index) {
@@ -239,8 +239,5 @@ class StepLineChartWidget extends StatelessWidget {
     return value.toInt().toString();
   }
 
-  double _getStepDirection() {
-    // 0 = middle, 1 = forward (right then up), 2 = backward (up then right)
-    return 1.0; // Forward direction for step line
-  }
+
 }

@@ -425,190 +425,96 @@ class HomeController extends GetxController {
     // Yearly is Total / (Days / 365) => Total * 365 / Days
     averageYearly.value = (totalAmount / durationInDays) * 365;
 
-    // 6. Generate Chart Data with Gaps Filled
+    // 6. Generate Chart Data with Fixed 90-100 Points
     List<ChartDataPoint> points = [];
 
-    // Define Granularity based on duration
-    // 1-2 Days -> Hourly
-    // <= 1 Month (approx 31 days) -> Daily
-    // <= 3 Months (approx 93 days) -> Weekly
-    // <= 2 Years (approx 730 days) -> Monthly
-    // > 2 Years -> Yearly
+    // Target: Always generate 90-100 data points for consistent graph
+    const int targetPoints = 90;
 
-    if (durationInDays <= 2) {
-      // --- HOURLY ---
-      // Align start to the start of the hour
-      var current = DateTime(
-        transactionDateStart.year,
-        transactionDateStart.month,
-        transactionDateStart.day,
-        transactionDateStart.hour,
-      );
-      // Ensure specific end time cover
-      var end = transactionDateEnd; // Use exact end
+    // Calculate aggregation window in milliseconds
+    final totalDurationMs = transactionDateEnd.millisecondsSinceEpoch -
+                           transactionDateStart.millisecondsSinceEpoch;
+    final windowSizeMs = totalDurationMs / targetPoints;
 
-      Map<DateTime, double> hourlyData = {};
-      for (var t in relevantTransactions) {
-        // Quantize transaction time to hour bucket
-        var key = DateTime(t.date.year, t.date.month, t.date.day, t.date.hour);
-        hourlyData.update(
-          key,
-          (Val) => Val + t.amount,
-          ifAbsent: () => t.amount,
-        );
-      }
+    // Create a map of all transactions by timestamp for quick lookup
+    Map<int, List<Transaction>> transactionsByWindow = {};
+    for (var t in relevantTransactions) {
+      final windowIndex = ((t.date.millisecondsSinceEpoch -
+                           transactionDateStart.millisecondsSinceEpoch) /
+                           windowSizeMs).floor();
+      transactionsByWindow.putIfAbsent(windowIndex, () => []).add(t);
+    }
 
-      // Fill gaps
-      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
-        double val = hourlyData[current] ?? 0.0;
-        points.add(
-          ChartDataPoint(
-            label: DateFormat('HH:mm').format(current),
-            value: val,
-            tooltipLabel:
-                '${val.toStringAsFixed(2)}\n${DateFormat('HH:mm').format(current)}',
-          ),
-        );
-        current = current.add(const Duration(hours: 1));
-      }
-    } else if (durationInDays <= 35) {
-      // --- DAILY ---
-      // Normalize start to beginning of day
-      var current = DateTime(
-        transactionDateStart.year,
-        transactionDateStart.month,
-        transactionDateStart.day,
-      );
-      var end = DateTime(
-        transactionDateEnd.year,
-        transactionDateEnd.month,
-        transactionDateEnd.day,
+    // Generate exactly 90 points
+    double lastValue = 0.0; // Track last non-zero value for smoothing
+
+    for (int i = 0; i < targetPoints; i++) {
+      final windowStartMs = transactionDateStart.millisecondsSinceEpoch +
+                           (i * windowSizeMs).toInt();
+      final windowEndMs = windowStartMs + windowSizeMs.toInt();
+
+      // Create DateTime objects for start and end of window
+      final windowStart = DateTime.fromMillisecondsSinceEpoch(windowStartMs);
+      final windowEnd = DateTime.fromMillisecondsSinceEpoch(windowEndMs);
+      final windowMidpoint = DateTime.fromMillisecondsSinceEpoch(
+        ((windowStartMs + windowEndMs) / 2).toInt(),
       );
 
-      Map<DateTime, double> dailyData = {};
-      for (var t in relevantTransactions) {
-        var key = DateTime(t.date.year, t.date.month, t.date.day);
-        dailyData.update(
-          key,
-          (val) => val + t.amount,
-          ifAbsent: () => t.amount,
-        );
+      // Calculate average/sum for this window
+      double windowValue = 0.0;
+      if (transactionsByWindow.containsKey(i)) {
+        final windowTransactions = transactionsByWindow[i]!;
+        windowValue = windowTransactions.fold(0.0, (sum, t) => sum + t.amount);
+
+        // For averaging: divide by number of transactions or days in window
+        // For now, we'll use sum to show total spending in that period
+        lastValue = windowValue; // Update last value for smoothing
+      } else {
+        // No data in this window - use last value for smooth line
+        windowValue = lastValue;
       }
 
-      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
-        double val = dailyData[current] ?? 0.0;
-        points.add(
-          ChartDataPoint(
-            label: DateFormat('dd.MM.yyyy').format(current),
-            value: val,
-            tooltipLabel:
-                '${val.toStringAsFixed(2)}\n${DateFormat('dd.MM.yyyy').format(current)}',
-          ),
-        );
-        current = current.add(const Duration(days: 1));
+      // Format label based on duration (for X-axis)
+      String label;
+      String tooltipLabel;
+
+      if (durationInDays <= 2) {
+        // Hourly labels
+        label = DateFormat('HH:mm').format(windowMidpoint);
+        // Tooltip shows exact time range
+        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+                      '${DateFormat('HH:mm dd.MM.yyyy').format(windowStart)} - '
+                      '${DateFormat('HH:mm dd.MM.yyyy').format(windowEnd)}';
+      } else if (durationInDays <= 35) {
+        // Daily labels
+        label = DateFormat('dd.MM.yyyy').format(windowMidpoint);
+        // Tooltip shows exact date range
+        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+                      '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
+                      '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
+      } else if (durationInDays <= 365 * 2 + 10) {
+        // Monthly labels
+        label = DateFormat('MMM yyyy').format(windowMidpoint);
+        // Tooltip shows exact date range
+        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+                      '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
+                      '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
+      } else {
+        // Yearly labels
+        label = DateFormat('yyyy').format(windowMidpoint);
+        // Tooltip shows exact date range
+        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+                      '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
+                      '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       }
-    } else if (durationInDays <= 100) {
-      // --- WEEKLY ---
-      // Align to Monday
-      // weekday: Mon=1 ... Sun=7.
-      // previous Monday = date - (weekday - 1)
-      var start = DateTime(
-        transactionDateStart.year,
-        transactionDateStart.month,
-        transactionDateStart.day,
+
+      points.add(
+        ChartDataPoint(
+          label: label,
+          value: windowValue,
+          tooltipLabel: tooltipLabel,
+        ),
       );
-      var current = start.subtract(Duration(days: start.weekday - 1));
-
-      var end = DateTime(
-        transactionDateEnd.year,
-        transactionDateEnd.month,
-        transactionDateEnd.day,
-      );
-
-      Map<DateTime, double> weeklyData = {};
-      for (var t in relevantTransactions) {
-        var tDate = DateTime(t.date.year, t.date.month, t.date.day);
-        var weekStart = tDate.subtract(Duration(days: tDate.weekday - 1));
-        weeklyData.update(
-          weekStart,
-          (val) => val + t.amount,
-          ifAbsent: () => t.amount,
-        );
-      }
-
-      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
-        // Only include if the week overlaps significantly or just iterating through
-        // We iterate through full weeks covering the range
-        double val = weeklyData[current] ?? 0.0;
-        points.add(
-          ChartDataPoint(
-            label: DateFormat('dd.MM.yyyy').format(current),
-            value: val,
-            tooltipLabel:
-                '${val.toStringAsFixed(2)}\n${DateFormat('dd.MM.yyyy').format(current)}',
-          ),
-        );
-        current = current.add(const Duration(days: 7));
-      }
-    } else if (durationInDays <= 365 * 2 + 10) {
-      // --- MONTHLY ---
-      var current = DateTime(
-        transactionDateStart.year,
-        transactionDateStart.month,
-        1,
-      );
-      var end = DateTime(transactionDateEnd.year, transactionDateEnd.month, 1);
-
-      Map<DateTime, double> monthlyData = {};
-      for (var t in relevantTransactions) {
-        var key = DateTime(t.date.year, t.date.month, 1);
-        monthlyData.update(
-          key,
-          (val) => val + t.amount,
-          ifAbsent: () => t.amount,
-        );
-      }
-
-      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
-        double val = monthlyData[current] ?? 0.0;
-        points.add(
-          ChartDataPoint(
-            label: DateFormat('MMM yyyy').format(current),
-            value: val,
-            tooltipLabel:
-                '${val.toStringAsFixed(2)}\n${DateFormat('MMM yyyy').format(current)}',
-          ),
-        );
-        // Add one month
-        current = DateTime(current.year, current.month + 1, 1);
-      }
-    } else {
-      // --- YEARLY ---
-      var current = DateTime(transactionDateStart.year, 1, 1);
-      var end = DateTime(transactionDateEnd.year, 1, 1);
-
-      Map<DateTime, double> yearlyData = {};
-      for (var t in relevantTransactions) {
-        var key = DateTime(t.date.year, 1, 1);
-        yearlyData.update(
-          key,
-          (val) => val + t.amount,
-          ifAbsent: () => t.amount,
-        );
-      }
-
-      while (current.isBefore(end) || current.isAtSameMomentAs(end)) {
-        double val = yearlyData[current] ?? 0.0;
-        points.add(
-          ChartDataPoint(
-            label: DateFormat('yyyy').format(current),
-            value: val,
-            tooltipLabel:
-                '${val.toStringAsFixed(2)}\n${DateFormat('yyyy').format(current)}',
-          ),
-        );
-        current = DateTime(current.year + 1, 1, 1);
-      }
     }
 
     chartData.value = points;

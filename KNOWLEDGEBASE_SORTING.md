@@ -1,45 +1,104 @@
 # Transaction Sorting System - Knowledge Base
 
 ## Overview
-The app implements a transaction sorting system that allows users to sort transactions by either **highest amount** or **most recent date**. The sorting is applied within each month's transactions while maintaining the year/month hierarchy.
+The app implements a transaction sorting system that allows users to sort transactions by either **highest amount** or **most recent date**, with support for both **ascending** and **descending** directions. The sorting is applied within each month's transactions while maintaining the year/month hierarchy.
 
 **Key Characteristics**:
 - ✅ Sorts transactions **within each month** only
 - ✅ Year/month hierarchy always remains descending (newest first)
-- ✅ Default sort: Most Recent (by date)
-- ✅ Reactive: Auto-updates when sort option changes
+- ✅ Default sort: Most Recent (by date) with "top" direction (descending)
+- ✅ **Toggle functionality**: Tap to select, tap again to reverse direction, tap third time to deselect
+- ✅ **Bidirectional sorting**: Each option supports both "top" (descending) and "bottom" (ascending)
+- ✅ Reactive: Auto-updates when sort option or direction changes
 - ✅ Works seamlessly with filters
 - ⚠️ Sort preference does NOT persist across app restarts
 
 **Visual Flow Diagram**: See "Transaction Sorting System Flow" Mermaid diagram for complete data flow.
+
+---
+
+## Recent Updates (2026-01-20)
+
+### Major Changes to Sorting UI and Logic
+
+1. **Removed Animation & Position Switching**
+   - Options now stay in **fixed positions** (no longer move to bottom when selected)
+   - Removed `AnimatedSwitcher` and position reordering logic
+   - Cleaner, more predictable UI behavior
+
+2. **Added Toggle Direction Functionality**
+   - New `SortDirection` enum: `top` (descending) and `bottom` (ascending)
+   - Each sort option can now toggle between two directions
+   - Visual indicator: Selected option shows "top" or "bottom" in yellow text
+
+3. **Three-State Selection Logic**
+   - **First tap**: Select option with "top" direction
+   - **Second tap**: Toggle to "bottom" direction
+   - **Third tap**: Deselect (clear both option and direction)
+
+4. **Bidirectional Sorting**
+   - **Highest Amount + Top**: $500 → $300 → $100 (descending)
+   - **Highest Amount + Bottom**: $100 → $300 → $500 (ascending)
+   - **Most Recent + Top**: Dec 25 → Dec 20 → Dec 15 (newest first)
+   - **Most Recent + Bottom**: Dec 15 → Dec 20 → Dec 25 (oldest first)
 
 ## UI Component: TopSortSheet
 
 ### Location
 `lib/widgets/transactions/top_sort_sheet.dart`
 
-### Sort Options Enum
+### Enums
+
+#### Sort Options
 ```dart
-enum SortOption { 
-  highestAmount,  // Sort by amount (descending)
-  mostRecent      // Sort by date (descending) - DEFAULT
+enum SortOption {
+  highestAmount,  // Sort by amount
+  mostRecent      // Sort by date - DEFAULT
+}
+```
+
+#### Sort Direction (NEW)
+```dart
+enum SortDirection {
+  top,     // Descending order - DEFAULT
+  bottom   // Ascending order
 }
 ```
 
 ### Visual Behavior
-- **Popup Animation**: Slides down from top of screen
-- **Option Display**: Selected option moves to the bottom position
+- **Popup Animation**: Slides down from top of screen (300ms)
+- **Option Display**: **Fixed positions** (no reordering based on selection)
+  - `highestAmount` always appears first
+  - `mostRecent` always appears second
 - **Visual Indicators**:
-  - Selected option: Blue background (#0088FF) with yellow "top" text (#FFFB00)
-  - Unselected option: White background with blue "top" text (#0088FF)
+  - **Selected option**: Blue background (#0088FF) with yellow direction text (#FFFB00)
+  - **Unselected option**: White background with blue "top" text (#0088FF)
+- **Direction Text**:
+  - Shows "top" or "bottom" based on current `SortDirection`
+  - Only selected option shows the actual direction
+  - Unselected options always display "top"
 - **Icons**:
   - `highestAmount`: Transaction icon (AppIcons.transaction)
   - `mostRecent`: Clock icon (AppIcons.clock)
 
+### Toggle Interaction Flow
+
+```
+[Unselected State]
+  ↓ (First Tap)
+[Selected with "top"] ← Blue background, yellow "top" text
+  ↓ (Second Tap - Same Option)
+[Selected with "bottom"] ← Blue background, yellow "bottom" text
+  ↓ (Third Tap - Same Option)
+[Unselected State] ← Back to white background, option = null
+```
+
+**Note**: Tapping a different option immediately selects it with "top" direction.
+
 ### Key Methods
-- `_getSortedOptions()`: Moves selected option to bottom of list
-- `_onOptionTapped()`: Updates selection and triggers callback
+- `_onOptionTapped()`: Handles three-state toggle logic and triggers callback
 - `TopSortSheet.show()`: Static method to display the sheet
+- `_buildOptionItem()`: Renders each option with dynamic direction text
 
 ## Controller: HomeController
 
@@ -48,25 +107,40 @@ enum SortOption {
 
 ### State Management
 ```dart
-// Default sort option
-final Rx<SortOption> selectedSortOption = SortOption.mostRecent.obs;
+// Sort option and direction (nullable to support deselection)
+final Rxn<SortOption> selectedSortOption = Rxn<SortOption>(SortOption.mostRecent);
+final Rxn<SortDirection> selectedSortDirection = Rxn<SortDirection>(SortDirection.top);
 
 // Update method
-void updateSortOption(SortOption option) {
+void updateSortOption(SortOption? option, SortDirection? direction) {
   selectedSortOption.value = option;
+  selectedSortDirection.value = direction;
 }
 ```
 
 ### Reactive Sorting
-The controller uses GetX's `debounce` to automatically re-sort when the option changes:
+The controller uses GetX's `debounce` to automatically re-sort when the option or direction changes:
 
 ```dart
+// Watch for sort option changes
 debounce(
   selectedSortOption,
   (_) => _rebuildCacheAndItems(),
   time: const Duration(milliseconds: 50),
 );
+
+// Watch for sort direction changes
+debounce(
+  selectedSortDirection,
+  (_) => _rebuildCacheAndItems(),
+  time: const Duration(milliseconds: 50),
+);
 ```
+
+**Benefits**:
+- Debounces sort changes to prevent excessive re-sorting
+- 50ms delay ensures smooth performance
+- Both option and direction changes trigger rebuild
 
 ## Sorting Logic Implementation
 
@@ -87,18 +161,34 @@ _cachedSortedYears = _cachedGroupedData.keys.toList()
 - Months within each year are sorted newest to oldest (12 → 1)
 - Independent of user's sort option
 
-#### 3. Transaction Sorting (User-Controlled)
+#### 3. Transaction Sorting (User-Controlled with Direction)
 ```dart
 for (var year in _cachedGroupedData.keys) {
   for (var month in _cachedGroupedData[year]!.keys) {
     var monthTransactions = _cachedGroupedData[year]![month]!;
-    
-    if (selectedSortOption.value == SortOption.highestAmount) {
-      // Highest Amount First
-      monthTransactions.sort((a, b) => b.amount.compareTo(a.amount));
-    } else {
-      // Most Recent First (Date Descending)
-      monthTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+    if (selectedSortOption.value != null) {
+      final isTopDirection = selectedSortDirection.value == SortDirection.top;
+
+      if (selectedSortOption.value == SortOption.highestAmount) {
+        // Sort by Amount
+        if (isTopDirection) {
+          // Highest Amount First (top)
+          monthTransactions.sort((a, b) => b.amount.compareTo(a.amount));
+        } else {
+          // Lowest Amount First (bottom)
+          monthTransactions.sort((a, b) => a.amount.compareTo(b.amount));
+        }
+      } else if (selectedSortOption.value == SortOption.mostRecent) {
+        // Sort by Date
+        if (isTopDirection) {
+          // Most Recent First (top)
+          monthTransactions.sort((a, b) => b.date.compareTo(a.date));
+        } else {
+          // Oldest First (bottom)
+          monthTransactions.sort((a, b) => a.date.compareTo(b.date));
+        }
+      }
     }
   }
 }
@@ -106,7 +196,8 @@ for (var year in _cachedGroupedData.keys) {
 
 ### Sorting Behavior
 
-#### Option 1: Most Recent (Default)
+#### Option 1: Most Recent
+**With "top" direction (descending - DEFAULT)**:
 - **Hierarchy**: Year (desc) → Month (desc) → Date (desc)
 - **Example**:
   ```
@@ -119,7 +210,21 @@ for (var year in _cachedGroupedData.keys) {
       Nov 30, 2024 - Transaction D
   ```
 
+**With "bottom" direction (ascending)**:
+- **Hierarchy**: Year (desc) → Month (desc) → Date (asc)
+- **Example**:
+  ```
+  2024
+    December
+      Dec 15, 2024 - Transaction C
+      Dec 20, 2024 - Transaction B
+      Dec 25, 2024 - Transaction A
+    November
+      Nov 30, 2024 - Transaction D
+  ```
+
 #### Option 2: Highest Amount
+**With "top" direction (descending)**:
 - **Hierarchy**: Year (desc) → Month (desc) → Amount (desc)
 - **Example**:
   ```
@@ -132,10 +237,23 @@ for (var year in _cachedGroupedData.keys) {
       $450.00 - Transaction D (Nov 30)
   ```
 
+**With "bottom" direction (ascending)**:
+- **Hierarchy**: Year (desc) → Month (desc) → Amount (asc)
+- **Example**:
+  ```
+  2024
+    December
+      $100.00 - Transaction C (Dec 15)
+      $300.00 - Transaction A (Dec 25)
+      $500.00 - Transaction B (Dec 20)
+    November
+      $450.00 - Transaction D (Nov 30)
+  ```
+
 ## Integration Points
 
 ### Home Screen
-**Location**: `lib/screens/home/home_screen.dart` (lines 384-394)
+**Location**: `lib/screens/home/home_screen.dart` (lines 384-402)
 
 ```dart
 InkWell(
@@ -144,8 +262,9 @@ InkWell(
       context: context,
       title: 'Sorting',
       selectedOption: controller.selectedSortOption.value,
-      onOptionSelected: (result) {
-        controller.updateSortOption(result);
+      selectedDirection: controller.selectedSortDirection.value,
+      onOptionSelected: (option, direction) {
+        controller.updateSortOption(option, direction);
       },
     );
   },
@@ -179,13 +298,14 @@ These are utility methods but NOT currently used by the main sorting logic. The 
 ## Data Flow
 
 1. **User Action**: Taps sort icon → Opens TopSortSheet
-2. **Selection**: User selects sort option → Calls `onOptionSelected` callback
-3. **Controller Update**: `updateSortOption()` updates `selectedSortOption.value`
-4. **Reactive Trigger**: GetX `debounce` detects change after 50ms
-5. **Rebuild**: `_rebuildCacheAndItems()` is called
-6. **Re-sort**: Transactions within each month are re-sorted
-7. **UI Update**: `_updateVisibleItems()` flattens data for display
-8. **Render**: UI automatically updates via Obx observers
+2. **Selection**: User taps option (toggle logic applies)
+3. **Callback**: `onOptionSelected(option, direction)` called with new values
+4. **Controller Update**: `updateSortOption()` updates both `selectedSortOption.value` and `selectedSortDirection.value`
+5. **Reactive Trigger**: GetX `debounce` detects change after 50ms (watches both observables)
+6. **Rebuild**: `_rebuildCacheAndItems()` is called
+7. **Re-sort**: Transactions within each month are re-sorted based on option and direction
+8. **UI Update**: `_updateVisibleItems()` flattens data for display
+9. **Render**: UI automatically updates via Obx observers
 
 ## Performance Considerations
 
@@ -197,26 +317,29 @@ These are utility methods but NOT currently used by the main sorting logic. The 
 ## UI Display Logic
 
 ### Option Ordering in Popup
-The popup uses a clever UX pattern: **selected option always appears at the bottom**.
+**Updated 2026-01-20**: Options now stay in **fixed positions** (no reordering).
 
 **Enum Definition Order**:
 ```dart
 enum SortOption {
-  highestAmount,  // Index 0
-  mostRecent      // Index 1
+  highestAmount,  // Index 0 - Always first
+  mostRecent      // Index 1 - Always second
 }
 ```
 
-**Display Logic** (`_getSortedOptions()`):
+**Display Logic**:
 ```dart
-final options = List<SortOption>.from(SortOption.values);
-options.remove(_selectedOption);  // Remove selected
-options.add(_selectedOption);     // Add to end
+// Simple iteration - no reordering
+Column(
+  children: SortOption.values.map((option) {
+    return _buildOptionItem(option);
+  }).toList(),
+)
 ```
 
 **Visual Examples**:
 
-When "Most Recent" is selected (default):
+When "Most Recent" is selected with "top":
 ```
 ┌─────────────────────────────┐
 │  💰 highest amount     top  │ ← White background, blue "top"
@@ -225,19 +348,29 @@ When "Most Recent" is selected (default):
 └─────────────────────────────┘
 ```
 
-When "Highest Amount" is selected:
+When "Most Recent" is selected with "bottom":
 ```
 ┌─────────────────────────────┐
-│  🕐 most recent        top  │ ← White background, blue "top"
+│  � highest amount     top  │ ← White background, blue "top"
 ├─────────────────────────────┤
-│  💰 highest amount     top  │ ← Blue background, yellow "top" (SELECTED)
+│  � most recent     bottom  │ ← Blue background, yellow "bottom" (SELECTED)
 └─────────────────────────────┘
 ```
 
-### Why This Pattern?
-- **Visual Emphasis**: Selected option gets prominent bottom position
-- **Consistency**: User always knows where to find their current selection
-- **Animation**: Smooth transition when options swap positions
+When "Highest Amount" is selected with "top":
+```
+┌─────────────────────────────┐
+│  �💰 highest amount     top  │ ← Blue background, yellow "top" (SELECTED)
+├─────────────────────────────┤
+│  🕐 most recent        top  │ ← White background, blue "top"
+└─────────────────────────────┘
+```
+
+### Design Rationale
+- **Fixed Positions**: Easier to find options, no confusing movement
+- **Direction Indicator**: Clear visual feedback of sort direction
+- **Toggle Behavior**: Intuitive three-state interaction
+- **No Animation**: Faster, more responsive UI
 
 ## Verification & Testing
 
@@ -336,7 +469,109 @@ await Future.delayed(Duration(milliseconds: 100));
 
 ---
 
-**Last Updated**: 2026-01-17
-**Version**: 1.0
+## Hashtag Chip Design Standardization
+
+### Overview
+As part of the UI consistency improvements, the hashtag chip design has been standardized across all screens to use the `CategoryChip` widget.
+
+### CategoryChip Widget
+
+**Location**: `lib/widgets/common/category_chip.dart`
+
+**Design Features**:
+- **Two-line layout**: Category group name on top, hashtag name below
+- **Circular close button**: Positioned at top-right corner (-6h, -6w offset)
+- **Box shadow**: Adds depth with 4.r blur radius
+- **Consistent styling**: White background, grey border (#DFDFDF)
+- **Height**: Fixed 42.h for uniform appearance
+
+**Visual Structure**:
+```
+┌──────────────┐
+│ Housing    ⓧ │  ← Category group (12.sp, grey)
+│ # Rent       │  ← Hashtag name (16.sp, black)
+└──────────────┘
+```
+
+### Implementation
+
+```dart
+CategoryChip(
+  category: currentHashtag.name,
+  categoryGroup: categoryGroup,
+  onRemove: () {
+    setState(() {
+      selectedHashtags.removeWhere((h) => h.id == hashtag.id);
+    });
+  },
+)
+```
+
+### Screens Using CategoryChip
+
+1. **New Transaction Screen** (`lib/screens/transactions/new_transaction_screen.dart`)
+   - Lines 641-651
+   - Used in hashtag selection area
+
+2. **Split Spending Screen** (`lib/screens/transactions/split_spending_screen.dart`)
+   - Lines 661-671
+   - Used for each split item's hashtags
+
+3. **Transaction Filter Screen** (`lib/screens/filter/transaction_filter_screen.dart`)
+   - Lines 621-654
+   - **Updated 2026-01-20** to match new cashflow screen design
+
+### Before & After (Filter Screen)
+
+**Before**:
+```dart
+Container(
+  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+  decoration: BoxDecoration(
+    color: Color(0xffF5F5F5),
+    borderRadius: BorderRadius.circular(4.r),
+    border: Border.all(color: Color(0xffDFDFDF)),
+  ),
+  child: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      CustomText('#${hashtag.name}', size: 14.sp),
+      if (parentName != null) ...[
+        CustomText('($parentName)', size: 12.sp),
+      ],
+      InkWell(
+        onTap: () { /* remove */ },
+        child: Icon(Icons.close, size: 16.sp),
+      ),
+    ],
+  ),
+)
+```
+
+**After**:
+```dart
+CategoryChip(
+  category: currentHashtag.name,
+  categoryGroup: categoryGroup,
+  onRemove: () {
+    setState(() {
+      selectedHashtags.removeWhere((h) => h.id == hashtag.id);
+    });
+  },
+)
+```
+
+### Benefits of Standardization
+
+1. **Visual Consistency**: All screens now have identical hashtag chip appearance
+2. **Code Reusability**: Single widget instead of duplicated code
+3. **Easier Maintenance**: Changes to chip design only need to be made in one place
+4. **Better UX**: Users see familiar UI patterns across the app
+5. **Professional Look**: Circular close button and shadow add polish
+
+---
+
+**Last Updated**: 2026-01-20
+**Version**: 2.0
 **Status**: ✅ Verified and Documented
 
