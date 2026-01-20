@@ -161,13 +161,13 @@ class StepLineChartWidget extends StatelessWidget {
               spots: _getSpots(),
               
               // Enable smooth curve
-              isCurved: true,
-              curveSmoothness: 01, // 0.0 = sharp corners, 1.0 = very smooth
-              preventCurveOverShooting: true, // Prevents curve from going too far
+              // isCurved: true,
+              // curveSmoothness: 0.5, // 0.0 = sharp corners, 1.0 = very smooth
+              // preventCurveOverShooting: true, // Prevents curve from going too far
               // Line styling
               color: lineColor,
               barWidth: lineWidth,
-              isStrokeCapRound: true, // Rounded line caps
+              // isStrokeCapRound: true, // Rounded line caps
               dotData: FlDotData(
                 show: showDot,
                 getDotPainter: (spot, percent, barData, index) {

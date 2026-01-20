@@ -425,11 +425,21 @@ class HomeController extends GetxController {
     // Yearly is Total / (Days / 365) => Total * 365 / Days
     averageYearly.value = (totalAmount / durationInDays) * 365;
 
-    // 6. Generate Chart Data with Fixed 90-100 Points
+    // 6. Generate Chart Data with Dynamic Points
     List<ChartDataPoint> points = [];
 
-    // Target: Always generate 90-100 data points for consistent graph
-    const int targetPoints = 90;
+    // Determine target points based on duration
+    int targetPoints;
+    if (durationInDays <= 2) {
+      // 1d: Show 24 hourly points
+      targetPoints = 24;
+    } else if (durationInDays < 90) {
+      // < 90 days: Show actual number of days as points
+      targetPoints = durationInDays.ceil();
+    } else {
+      // >= 90 days: Use fixed 90 points with aggregation
+      targetPoints = 90;
+    }
 
     // Calculate aggregation window in milliseconds
     final totalDurationMs = transactionDateEnd.millisecondsSinceEpoch -
@@ -445,7 +455,7 @@ class HomeController extends GetxController {
       transactionsByWindow.putIfAbsent(windowIndex, () => []).add(t);
     }
 
-    // Generate exactly 90 points
+    // Generate points based on calculated targetPoints
     double lastValue = 0.0; // Track last non-zero value for smoothing
 
     for (int i = 0; i < targetPoints; i++) {
@@ -481,28 +491,26 @@ class HomeController extends GetxController {
       if (durationInDays <= 2) {
         // Hourly labels
         label = DateFormat('HH:mm').format(windowMidpoint);
-        // Tooltip shows exact time range
+        // Tooltip shows exact time (no range for <= 3 months)
         tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
-                      '${DateFormat('HH:mm dd.MM.yyyy').format(windowStart)} - '
-                      '${DateFormat('HH:mm dd.MM.yyyy').format(windowEnd)}';
-      } else if (durationInDays <= 35) {
-        // Daily labels
+                      '${DateFormat('HH:mm dd.MM.yyyy').format(windowMidpoint)}';
+      } else if (durationInDays <= 90) {
+        // Daily labels (<= 3 months)
         label = DateFormat('dd.MM.yyyy').format(windowMidpoint);
-        // Tooltip shows exact date range
+        // Tooltip shows exact date (no range for <= 3 months)
         tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
-                      '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
-                      '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
+                      '${DateFormat('dd.MM.yyyy').format(windowMidpoint)}';
       } else if (durationInDays <= 365 * 2 + 10) {
-        // Monthly labels
+        // Monthly labels (> 3 months)
         label = DateFormat('MMM yyyy').format(windowMidpoint);
-        // Tooltip shows exact date range
+        // Tooltip shows date range (aggregation applied)
         tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
                       '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
                       '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       } else {
-        // Yearly labels
+        // Yearly labels (> 3 months)
         label = DateFormat('yyyy').format(windowMidpoint);
-        // Tooltip shows exact date range
+        // Tooltip shows date range (aggregation applied)
         tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
                       '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
                       '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
