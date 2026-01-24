@@ -161,9 +161,9 @@ class StepLineChartWidget extends StatelessWidget {
               spots: _getSpots(),
               
               // Enable smooth curve
-              // isCurved: true,
-              // curveSmoothness: 0.5, // 0.0 = sharp corners, 1.0 = very smooth
-              // preventCurveOverShooting: true, // Prevents curve from going too far
+              isCurved: true,
+              curveSmoothness: 1.0, // 0.0 = sharp corners, 1.0 = very smooth
+              preventCurveOverShooting: true, // Prevents curve from going too far
               // Line styling
               color: lineColor,
               barWidth: lineWidth,
@@ -196,9 +196,7 @@ class StepLineChartWidget extends StatelessWidget {
 
   List<FlSpot> _getSpots() {
     return data
-        .asMap()
-        .entries
-        .map((entry) => FlSpot(entry.key.toDouble(), entry.value.value))
+        .map((point) => FlSpot(point.xValue, point.value))
         .toList();
   }
 
