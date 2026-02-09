@@ -1,5 +1,5 @@
 ⚠️ all messages need to be in imperative mode. 
-writing the subject line as a command or instruction
+writing the subject line as a command or instruction.
 Think: "If applied, this commit will..." — the message should complete this sentence naturally. 
 
 ### Push Commit Message
