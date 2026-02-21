@@ -9,7 +9,8 @@ import 'package:moneyapp/screens/hashtag/hashtag_group_screen.dart';
 import 'package:moneyapp/screens/home/home_screen.dart';
 import 'package:moneyapp/screens/home/investment_list_screen.dart';
 import 'package:moneyapp/screens/home/investment_screen.dart';
-import 'package:moneyapp/screens/investments/bitcoin_prices_screen.dart';
+
+import 'package:moneyapp/screens/investments/investment_value_history_screen.dart';
 import 'package:moneyapp/screens/investments/new_portfolio_change_screen.dart';
 import 'package:moneyapp/screens/mcc/add_mcc_screen.dart';
 import 'package:moneyapp/screens/setting/settings_screen.dart';
@@ -52,7 +53,9 @@ class AppPages {
         final args = Get.arguments;
         return HashtagGroupScreen(
           fromSettings: args is Map ? (args['fromSettings'] ?? false) : false,
-          isReadOnlyMode: args is Map ? (args['isReadOnlyMode'] ?? false) : false,
+          isReadOnlyMode: args is Map
+              ? (args['isReadOnlyMode'] ?? false)
+              : false,
         );
       },
       binding: HashtagGroupsBinding(),
@@ -115,8 +118,8 @@ class AppPages {
       }),
     ),
     GetPage(
-      name: AppRoutes.bitcoinPrices.path,
-      page: () => const BitcoinPricesScreen(),
+      name: AppRoutes.investmentValueHistory.path,
+      page: () => const InvestmentValueHistoryScreen(),
     ),
     // Add more pages here
   ];
