@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/models/investment_activity_model.dart';
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class TransactionItem extends StatefulWidget {
@@ -186,45 +187,32 @@ class _TransactionItemState extends State<TransactionItem> {
             child: Row(
               children: [
                 Expanded(
-                  flex: 100,
-                  child: CustomText(
-                    isDeposit ? 'deposit' : 'withdraw',
-                    color: isDeposit ? Color(0xff00C00D) : Color(0xffFF0000),
-                    size: 16.sp,
-                  ),
-                ),
-                Expanded(
-                  flex: 100,
+                  flex: 150,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomText.richText(
-                        textAlign: TextAlign.right,
-                        children: [
-                          CustomText.span(
-                            '${_formatAmount(widget.activity.transactionAmount)} ',
-                            color: Colors.black,
-                            size: 16.sp,
-                          ),
-                          CustomText.span(
-                            widget.symbol,
-                            color: AppColors.greyColor,
-                            size: 12.sp,
-                          ),
-                        ],
+                      CustomText(
+                        isDeposit ? 'deposit' : 'withdraw',
+                        color: isDeposit
+                            ? Color(0xff00C00D)
+                            : Color(0xffFF0000),
+                        size: 16.sp,
                       ),
                       CustomText.richText(
                         textAlign: TextAlign.right,
                         children: [
                           CustomText.span(
-                            '${_formatPrice(widget.activity.transactionPrice)} ',
-                            color: Colors.black,
-                            size: 16.sp,
+                            '${_formatAmount(widget.activity.transactionAmount)} ',
+                            color: isDeposit
+                                ? Color(0xff008309)
+                                : Color(0xffFF0000),
+                            fontWeight: FontWeight.bold,
+                            size: 18.sp,
                           ),
                           CustomText.span(
-                            '\$',
+                            widget.symbol,
                             color: AppColors.greyColor,
-                            size: 12.sp,
+                            size: 14.sp,
                           ),
                         ],
                       ),
@@ -233,19 +221,33 @@ class _TransactionItemState extends State<TransactionItem> {
                 ),
                 Expanded(
                   flex: 150,
-                  child: CustomText.richText(
-                    textAlign: TextAlign.right,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      CustomText.span(
-                        '${_formatPrice(widget.activity.transactionTotal)} ',
+                      4.verticalSpace,
+                      CustomText(CurrencyService.instance.portfolioCode, color: Color(0xffCCCCCC), size: 12.sp),
+                      CustomText(
+                        '${_formatPrice(widget.activity.transactionPrice)} ',
                         color: Colors.black,
                         size: 18.sp,
-                        fontWeight: FontWeight.w500,
                       ),
-                      CustomText.span(
-                        '\$',
-                        color: AppColors.greyColor,
-                        size: 12.sp,
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 150,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      4.verticalSpace,
+                      CustomText(CurrencyService.instance.portfolioCode, color: Color(0xff999999), size: 12.sp),
+                      CustomText(
+                        '${_formatPrice(widget.activity.transactionTotal)} ',
+                        color: isDeposit
+                            ? Color(0xff008309)
+                            : Color(0xffFF0000),
+                        size: 18.sp,
+                        fontWeight: FontWeight.w600,
                       ),
                     ],
                   ),

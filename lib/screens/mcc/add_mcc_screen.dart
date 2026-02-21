@@ -74,6 +74,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
     await showDialog(
       context: context,
       builder: (context) => Dialog(
+        insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
         child: Container(
           padding: EdgeInsets.all(16.w),
@@ -237,7 +238,9 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                     ),
                   ),
                   CustomText(
-                    existingMCC != null ? 'Edit MCC' : 'Add New MCC',
+                    existingMCC != null
+                        ? 'Edit Merchant Category Code'
+                        : 'Add New Merchant Category Code',
                     size: 16.sp,
                     color: Colors.black,
                   ),

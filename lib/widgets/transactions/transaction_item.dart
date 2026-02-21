@@ -10,6 +10,7 @@ import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/transactions/transaction_content.dart';
 
 class TransactionItem extends StatefulWidget {
@@ -35,7 +36,10 @@ class TransactionItem extends StatefulWidget {
 }
 
 class _TransactionItemState extends State<TransactionItem> {
+  bool _isMenuOpen = false;
+
   void _showPopupMenu(BuildContext context, TapDownDetails details) {
+    setState(() => _isMenuOpen = true);
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
 
@@ -93,6 +97,7 @@ class _TransactionItemState extends State<TransactionItem> {
       ],
     ).then((value) {
       if (!mounted) return;
+      setState(() => _isMenuOpen = false);
       if (value != null) {
         switch (value) {
           case 'split':
@@ -160,6 +165,50 @@ class _TransactionItemState extends State<TransactionItem> {
     }
   }
 
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+    Color? valueColor,
+    Widget? prefix,
+    Widget? suffix,
+  }) {
+    return Container(
+      height: 41.h,
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xffDFDFDF)),
+        borderRadius: BorderRadius.circular(4.r),
+      ),
+      child: Row(
+        children: [
+          if (prefix != null) ...[prefix, 6.horizontalSpace],
+          Expanded(
+            child: TextField(
+              controller: TextEditingController(text: value),
+              readOnly: true,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                labelText: label,
+                labelStyle: TextStyle(
+                  color: const Color(0xff707070),
+                  fontSize: 16.sp,
+                ),
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: valueColor ?? Colors.black,
+              ),
+            ),
+          ),
+          if (suffix != null) ...[6.horizontalSpace, suffix],
+        ],
+      ),
+    );
+  }
+
   void _showDetailDialog(BuildContext context) {
     final mccController = Get.put(MCCController());
     final mcc = widget.transaction.mccId != null
@@ -170,6 +219,7 @@ class _TransactionItemState extends State<TransactionItem> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
         backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
         child: Container(
@@ -181,242 +231,116 @@ class _TransactionItemState extends State<TransactionItem> {
             children: [
               // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CustomText(
-                    'Cashflow Detailss',
-                    size: 18.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  InkWell(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(Icons.close, size: 24.sp),
+                    'Transaction Details',
+                    size: 16.sp,
+                    fontWeight: FontWeight.w400,
                   ),
                 ],
               ),
               16.verticalSpace,
 
-              // Date
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xffDFDFDF)),
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                child: Row(
-                  children: [
-                    CustomText(
-                      'Date:',
-                      size: 14.sp,
-                      color: const Color(0xff707070),
+              // Date + Amount row
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: _buildReadOnlyField(
+                      label: 'Date',
+                      value: DateFormat(
+                        'dd.MM.yyyy',
+                      ).format(widget.transaction.date),
                     ),
-                    12.horizontalSpace,
-                    CustomText(
-                      DateFormat('dd.MM.yyyy').format(widget.transaction.date),
-                      size: 16.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ],
-                ),
-              ),
-              8.verticalSpace,
-
-              // MCC Category
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xffDFDFDF)),
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                child: Row(
-                  children: [
-                    CustomText(
-                      'MCC:',
-                      size: 14.sp,
-                      color: const Color(0xff707070),
-                    ),
-                    12.horizontalSpace,
-                    if (mcc?.emoji != null)
-                      Text(mcc!.emoji!, style: TextStyle(fontSize: 20.sp)),
-                    8.horizontalSpace,
-                    Expanded(
-                      child: CustomText(
-                        mcc?.name ?? 'Unknown',
-                        size: 16.sp,
-                        fontWeight: FontWeight.w500,
+                  ),
+                  10.horizontalSpace,
+                  Expanded(
+                    flex: 3,
+                    child: _buildReadOnlyField(
+                      label: widget.transaction.isExpense
+                          ? 'Spending'
+                          : 'Income',
+                      value: widget.transaction.getFormattedAmount(
+                        currency: '',
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              8.verticalSpace,
-
-              // Amount
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xffDFDFDF)),
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                child: Row(
-                  children: [
-                    CustomText(
-                      'Amount:',
-                      size: 14.sp,
-                      color: const Color(0xff707070),
-                    ),
-                    12.horizontalSpace,
-                    CustomText(
-                      widget.transaction.getFormattedAmount(),
-                      size: 16.sp,
-                      fontWeight: FontWeight.w600,
-                      color: widget.transaction.isExpense
+                      valueColor: widget.transaction.isExpense
                           ? const Color(0xffFF0000)
                           : const Color(0xff00C00D),
+                      suffix: CustomText(
+                        CurrencyService.instance.cashflowCode,
+                        size: 12.sp,
+                        color: const Color(0xff707070),
+                      ),
                     ),
-                    8.horizontalSpace,
-                    CustomText(
-                      widget.transaction.isExpense ? '(Expense)' : '(Income)',
-                      size: 12.sp,
-                      color: const Color(0xff707070),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              8.verticalSpace,
+              7.verticalSpace,
+
+              // MCC Category
+              if (mcc != null)
+                _buildReadOnlyField(
+                  label: 'MCC',
+                  value: mcc.name,
+                  prefix: mcc.emoji != null
+                      ? Text(mcc.emoji!, style: TextStyle(fontSize: 20.sp))
+                      : null,
+                  suffix: CustomText(
+                    mcc.categoryName,
+                    size: 12.sp,
+                    color: const Color(0xff707070),
+                  ),
+                ),
+              if (mcc != null) 7.verticalSpace,
 
               // Recipient
               if (widget.transaction.recipient.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 10.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xffDFDFDF)),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomText(
-                        'Recipient:',
-                        size: 14.sp,
-                        color: const Color(0xff707070),
-                      ),
-                      4.verticalSpace,
-                      CustomText(
-                        widget.transaction.recipient,
-                        size: 16.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ],
-                  ),
+                _buildReadOnlyField(
+                  label: 'Recipient',
+                  value: widget.transaction.recipient,
                 ),
-                8.verticalSpace,
+                7.verticalSpace,
               ],
 
               // Note
               if (widget.transaction.note.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 10.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xffDFDFDF)),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomText(
-                        'Note:',
-                        size: 14.sp,
-                        color: const Color(0xff707070),
-                      ),
-                      4.verticalSpace,
-                      CustomText(
-                        widget.transaction.note,
-                        size: 16.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ],
-                  ),
+                _buildReadOnlyField(
+                  label: 'Note',
+                  value: widget.transaction.note,
                 ),
-                8.verticalSpace,
+                7.verticalSpace,
               ],
 
               // Hashtags
               if (widget.transaction.hashtags.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 10.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xffDFDFDF)),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomText(
-                        'Hashtags:',
-                        size: 14.sp,
-                        color: const Color(0xff707070),
-                      ),
-                      8.verticalSpace,
-                      Obx(() {
-                        // Register dependency to ensure rebuilds
-                        hashtagController.allGroups.length;
+                Obx(() {
+                  // Register dependency to ensure rebuilds
+                  hashtagController.allGroups.length;
 
-                        return Wrap(
-                          alignment: WrapAlignment.start,
-                          spacing: 8.w,
-                          runSpacing: 8.h,
-                          children: widget.transaction.hashtags.map((hashtag) {
-                            // Fetch fresh hashtag data
-                            final freshHashtag =
-                                hashtagController.findGroupById(
-                                  hashtag.id ?? -1,
-                                ) ??
-                                hashtag;
+                  return Wrap(
+                    spacing: 8.w,
+                    runSpacing: 8.h,
+                    children: widget.transaction.hashtags.map((hashtag) {
+                      final freshHashtag =
+                          hashtagController.findGroupById(hashtag.id ?? -1) ??
+                          hashtag;
 
-                            String groupName = 'Main Group';
-                            if (freshHashtag.isSubgroup) {
-                              final parent = hashtagController.findGroupById(
-                                freshHashtag.parentId ?? -1,
-                              );
-                              groupName = parent?.name ?? 'Unknown';
-                            } else {
-                              // If it's a main group, check if we need to show its own name as group?
-                              // Logic says: if main group, categoryGroup is 'Main Group' usually.
-                              // But existing logic was: hashtag.isMainGroup ? 'Main Group'
-                            }
-
-                            return CategoryChip(
-                              category: freshHashtag.name,
-                              categoryGroup: groupName,
-                            );
-                          }).toList(),
+                      String groupName = 'Main Group';
+                      if (freshHashtag.isSubgroup) {
+                        final parent = hashtagController.findGroupById(
+                          freshHashtag.parentId ?? -1,
                         );
-                      }),
-                    ],
-                  ),
-                ),
+                        groupName = parent?.name ?? 'Unknown';
+                      }
+
+                      return CategoryChip(
+                        category: freshHashtag.name,
+                        categoryGroup: groupName,
+                      );
+                    }).toList(),
+                  );
+                }),
               ],
             ],
           ),
@@ -427,11 +351,12 @@ class _TransactionItemState extends State<TransactionItem> {
 
   @override
   Widget build(BuildContext context) {
+    final bool showHighlight = widget.isSelected || _isMenuOpen;
     return TransactionContent(
       transaction: widget.transaction,
       backgroundColor: widget.backgroundColor,
-      borderWidth: widget.isSelected ? 2 : 1,
-      borderColor: widget.isSelected ? Color(0xff0088FF) : widget.borderColor,
+      borderWidth: showHighlight ? 2 : 1,
+      borderColor: showHighlight ? Color(0xff0088FF) : widget.borderColor,
       onCardTap: widget.isSelectionMode
           ? _handleSelect
           : () => _showDetailDialog(context),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart' as gfonts;
 import 'package:moneyapp/controllers/ui_controller.dart';
@@ -22,7 +23,8 @@ class DeleteHashtagGroupDialog extends StatelessWidget {
     return Obx(
       () => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 10),
+        insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),

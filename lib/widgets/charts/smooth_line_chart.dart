@@ -35,8 +35,11 @@ class SmoothLineChartWidget extends StatelessWidget {
     final spots = _getSpots();
     final minY = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
     final maxY = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    final range = maxY - minY;
-    final padding = range * 0.1;
+    final range = (maxY - minY).abs();
+    final padding = range > 0 ? range * 0.1 : 1.0;
+
+    // Prevent division by zero for horizontalInterval
+    final horizontalInterval = range > 0 ? range / 4 : 1.0;
 
     return LineChart(
       LineChartData(
@@ -48,7 +51,7 @@ class SmoothLineChartWidget extends StatelessWidget {
           show: true,
           drawVerticalLine: true,
           drawHorizontalLine: true,
-          horizontalInterval: (maxY - minY) / 4,
+          horizontalInterval: horizontalInterval,
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: Colors.grey.withValues(alpha: 0.3),

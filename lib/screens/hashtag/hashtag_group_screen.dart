@@ -598,9 +598,18 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             }
 
             try {
+              // If no category selected, auto-assign to N/A group
+              int resolvedParentId;
+              if (parentId != null) {
+                resolvedParentId = parentId;
+              } else {
+                final naGroup = await _hashtagGroupService.getOrCreateNAGroup();
+                resolvedParentId = naGroup.id!;
+              }
+
               final newSubgroup = await _hashtagGroupService.addCustomGroup(
                 name,
-                parentId: parentId ?? hashtagGroupId,
+                parentId: resolvedParentId,
               );
 
               if (newSubgroup == null) {
@@ -1140,27 +1149,29 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                   children: [
                     // Hide edit/delete/add buttons when in filter mode or read-only mode
                     if (!widget.allowMultipleSelection && !widget.isReadOnlyMode) ...[
-                      // Edit button for main hashtag group
-                      IconButton(
-                        icon: ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            uiController.darkMode.value
-                                ? Colors.white.withValues(alpha: 0.6)
-                                : Colors.grey[500] ?? Colors.grey,
-                            BlendMode.srcIn,
+                      // Edit button for main hashtag group (hidden for N/A)
+                      if (mainHashtagGroup.name != HashtagGroupService.naGroupName)
+                        IconButton(
+                          icon: ColorFiltered(
+                            colorFilter: ColorFilter.mode(
+                              uiController.darkMode.value
+                                  ? Colors.white.withValues(alpha: 0.6)
+                                  : Colors.grey[500] ?? Colors.grey,
+                              BlendMode.srcIn,
+                            ),
+                            child: Image.asset(
+                              AppIcons.editV2,
+                              width: 25,
+                              height: 25,
+                            ),
                           ),
-                          child: Image.asset(
-                            AppIcons.editV2,
-                            width: 25,
-                            height: 25,
-                          ),
+                          onPressed: () =>
+                              _showEditHashtagGroupDialog(mainHashtagGroup),
+                          tooltip: 'Edit Hashtag Group',
                         ),
-                        onPressed: () =>
-                            _showEditHashtagGroupDialog(mainHashtagGroup),
-                        tooltip: 'Edit Hashtag Group',
-                      ),
-                      // Delete button for main hashtag group (only show if no subgroups)
-                      if ((mainHashtagGroup.subgroups?.isEmpty ?? true))
+                      // Delete button for main hashtag group (only show if no subgroups, hidden for N/A)
+                      if ((mainHashtagGroup.subgroups?.isEmpty ?? true) &&
+                          mainHashtagGroup.name != HashtagGroupService.naGroupName)
                         IconButton(
                           icon: ColorFiltered(
                             colorFilter: const ColorFilter.mode(

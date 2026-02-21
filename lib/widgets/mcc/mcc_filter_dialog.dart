@@ -70,6 +70,8 @@ class _MCCFilterDialogState extends State<MCCFilterDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       child: Container(
@@ -83,7 +85,7 @@ class _MCCFilterDialogState extends State<MCCFilterDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CustomText(
-                  'Select MCC',
+                  'Select Merchant Category Code',
                   size: 18.sp,
                   fontWeight: FontWeight.w600,
                 ),

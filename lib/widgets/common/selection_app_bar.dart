@@ -94,7 +94,7 @@ class SelectionAppBar extends StatelessWidget {
                 if (onEditMCC != null) ...[
                   Expanded(
                     child: _ActionButton(
-                      label: 'edit MCC',
+                      label: 'edit Merchant Category Code',
                       color: const Color(0xff0071FF),
                       onTap: onEditMCC!,
                     ),

@@ -27,6 +27,9 @@ class CustomToggleSwitch extends StatelessWidget {
   /// Callback when option 2 is tapped
   final VoidCallback onOption2Tap;
 
+  final Color? option1Color;
+  final Color? option2Color;
+
   ///
   final bool iconColorShouldEffect;
 
@@ -40,101 +43,97 @@ class CustomToggleSwitch extends StatelessWidget {
     required this.onOption1Tap,
     required this.onOption2Tap,
     this.iconColorShouldEffect = false,
+    this.option1Color,
+    this.option2Color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(2.r),
-      width: 289.w,
-      height: 40.h,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Row(
-        children: [
-          // Option 1
-          Expanded(
-            child: GestureDetector(
-              onTap: onOption1Tap,
-              child: Container(
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  color: selectedOption == 1
-                      ? Colors.white
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12.r),
+    return Row(
+      children: [
+        91.horizontalSpace,
+        // Option 1
+        InkWell(
+          onTap: onOption1Tap,
+          child: Container(
+            width: selectedOption == 1 ? 118.w : 59.w,
+            height: 35.h,
+            decoration: BoxDecoration(
+              color: selectedOption == 1
+                  ? Color(0xffFFE374)
+                  : AppColors.background,
+              border: Border.all(color: AppColors.greyBorder, width: 1.r),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(9.r)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  option1IconPath,
+                  width: 33.r,
+                  height: 33.r,
+                  color: iconColorShouldEffect
+                      ? (selectedOption == 1 ? null : AppColors.greyColor)
+                      : null,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      option1IconPath,
-                      width: 33.r,
-                      height: 33.r,
-                      color: iconColorShouldEffect
-                          ? (selectedOption == 1 ? null : AppColors.greyColor)
-                          : null,
-                    ),
-                    3.horizontalSpace,
-                    CustomText(
-                      option1Text,
-                      size: 20.sp,
-                      fontWeight: selectedOption == 1
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: selectedOption == 1
-                          ? Colors.black
-                          : const Color(0xff6E6E6E),
-                    ),
-                  ],
-                ),
-              ),
+                if (selectedOption == 1) ...[
+                  3.horizontalSpace,
+                  CustomText(
+                    option1Text,
+                    size: 16.sp,
+                    fontWeight: selectedOption == 1
+                        ? FontWeight.w500
+                        : FontWeight.w500,
+                    color: selectedOption == 1
+                        ? option1Color ?? Colors.black
+                        : const Color(0xff6E6E6E),
+                  ),
+                ],
+              ],
             ),
           ),
-
-          // Option 2
-          Expanded(
-            child: GestureDetector(
-              onTap: onOption2Tap,
-              child: Container(
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  color: selectedOption == 2
-                      ? Colors.white
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12.r),
+        ),
+        InkWell(
+          onTap: onOption2Tap,
+          child: Container(
+            width: selectedOption == 2 ? 118.w : 59.w,
+            height: 35.h,
+            decoration: BoxDecoration(
+              color: selectedOption == 2
+                  ? Color(0xffFFE374)
+                  : AppColors.background,
+              border: Border.all(color: AppColors.greyBorder, width: 2.r),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(9.r)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  option2IconPath,
+                  width: 33.r,
+                  height: 33.r,
+                  color: iconColorShouldEffect
+                      ? (selectedOption == 2 ? null : AppColors.greyColor)
+                      : null,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      option2IconPath,
-                      width: 33.r,
-                      height: 33.r,
-                      color: iconColorShouldEffect
-                          ? (selectedOption == 2 ? null : AppColors.greyColor)
-                          : null,
-                    ),
-                    3.horizontalSpace,
-                    CustomText(
-                      option2Text,
-                      size: 20.sp,
-                      fontWeight: selectedOption == 2
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: selectedOption == 2
-                          ? Colors.black
-                          : AppColors.greyColor,
-                    ),
-                  ],
-                ),
-              ),
+                if (selectedOption == 2) ...[
+                  3.horizontalSpace,
+                  CustomText(
+                    option2Text,
+                    size: 16.sp,
+                    fontWeight: selectedOption == 2
+                        ? FontWeight.w500
+                        : FontWeight.w500,
+                    color: selectedOption == 2
+                        ? option2Color ?? Colors.black
+                        : const Color(0xff6E6E6E),
+                  ),
+                ],
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

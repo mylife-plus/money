@@ -22,12 +22,16 @@ class CustomAppBar extends StatelessWidget {
   /// Callback when action icon is tapped
   final VoidCallback? onActionIconTap;
 
+  /// Callback when returning from settings screen
+  final VoidCallback? onSettingsReturn;
+
   const CustomAppBar({
     super.key,
     required this.title,
     required this.leadingIconPath,
     required this.actionIconPath,
     this.onActionIconTap,
+    this.onSettingsReturn,
   });
 
   @override
@@ -36,64 +40,92 @@ class CustomAppBar extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(21.w, 11.h, 11.w, 0),
       child: Row(
         children: [
+          70.horizontalSpace,
           // Title Section with Leading Icon
-          Expanded(
+          Container(
+            height: 43.h,
+            width: 177.w,
+            decoration: BoxDecoration(
+              color: Color(0xffFFCC00),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(9.r)),
+              border: Border.all(color: AppColors.greyBorder, width: 1.w),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  offset: const Offset(0, 1),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                9.horizontalSpace,
                 Image.asset(leadingIconPath, height: 32.r, width: 32.r),
-                5.horizontalSpace,
+                13.horizontalSpace,
                 CustomText(
                   title,
-                  color: AppColors.appBarText,
+                  color: Colors.white,
                   size: 20.sp,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ],
             ),
           ),
+          17.horizontalSpace,
 
           // Action Icons Section
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Action Icon (in container with shadow)
-              GestureDetector(
-                onTap: onActionIconTap,
-                child: Container(
-                  height: 43.w,
-                  width: 46.w,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(12.r)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        offset: const Offset(0, 1),
-                        blurRadius: 4,
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Action Icon (in container with shadow)
+                GestureDetector(
+                  onTap: onActionIconTap,
+                  child: Container(
+                    height: 43.w,
+                    width: 46.w,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.all(Radius.circular(12.r)),
+                      border: Border.all(
+                        color: AppColors.greyBorder,
+                        width: 1.w,
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      actionIconPath,
-                      height: 32.r,
-                      width: 32.r,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          offset: const Offset(0, 1),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        actionIconPath,
+                        height: 32.r,
+                        width: 32.r,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              13.horizontalSpace,
+                // 13.horizontalSpace,
+                Spacer(),
 
-              // Settings Icon (always present)
-              GestureDetector(
-                onTap: () {
-                  // Navigate to settings screen
-                  Navigator.pushNamed(context, AppRoutes.settings.path);
-                },
-                child: Image.asset(AppIcons.setting, height: 24.r, width: 24.r),
-              ),
-            ],
+                // Settings Icon (always present)
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.pushNamed(context, AppRoutes.settings.path);
+                    onSettingsReturn?.call();
+                  },
+                  child: Image.asset(
+                    AppIcons.setting,
+                    height: 24.r,
+                    width: 24.r,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

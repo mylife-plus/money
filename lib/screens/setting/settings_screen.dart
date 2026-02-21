@@ -5,15 +5,24 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
+import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/services/database/database_helper.dart';
 import 'package:moneyapp/services/test_data_service.dart';
 
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/screens/setting/currency_settings_screen.dart';
 import 'package:moneyapp/screens/setting/settings_tile.dart';
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
-class SettingsScreen extends StatelessWidget {
-  SettingsScreen({super.key});
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
   final uiController = Get.put(UiController());
 
   @override
@@ -95,16 +104,52 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   SettingsTile(
-                    title: 'Currency',
+                    title: '💸 Cashflow Currency',
                     trailing: Padding(
                       padding: EdgeInsets.symmetric(vertical: 12.h),
                       child: CustomText(
-                        'USD',
+                        CurrencyService.instance.cashflowCode,
                         size: 16.sp,
                         color: Color(0xff838383),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CurrencySettingsScreen(
+                            currencyType: CurrencyType.cashflow,
+                          ),
+                        ),
+                      );
+                      setState(() {});
+                    },
+                  ),
+                  SettingsTile(
+                    title: '📈 Investment Currency',
+                    trailing: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      child: CustomText(
+                        CurrencyService.instance.hasPortfolioCurrencySync
+                            ? CurrencyService.instance.portfolioCode
+                            : '',
+                        size: 16.sp,
+                        color: Color(0xff838383),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CurrencySettingsScreen(
+                            currencyType: CurrencyType.portfolio,
+                          ),
+                        ),
+                      );
+                      setState(() {});
+                    },
                   ),
                 ],
               ),
@@ -160,6 +205,11 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icon(Icons.bug_report_outlined, size: 24.r),
                     title: 'Load Test Data (Dev)',
                     onTap: () => _showLoadTestDataDialog(context),
+                  ),
+                  SettingsTile(
+                    icon: Icon(Icons.trending_up_outlined, size: 24.r),
+                    title: 'Load Investment Test Data (Dev)',
+                    onTap: () => _showLoadInvestmentTestDataDialog(context),
                   ),
                 ],
               ),
@@ -323,6 +373,85 @@ class SettingsScreen extends StatelessWidget {
           Navigator.pop(context); // close progress
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Test data loaded successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context); // close progress
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showLoadInvestmentTestDataDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Load Investment Test Data'),
+        content: const Text(
+          '⚠️ WARNING: This will DELETE all existing investments, activities, and portfolio snapshots.\n\n'
+          'It will create sample investments (BTC, ETH, AAPL, etc.) with random transactions and trades.\n\n'
+          'Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Load Data'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // Show progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text("Generating investment data..."),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      try {
+        // Register controller BEFORE generating data so test service can use it
+        InvestmentController controller;
+        if (Get.isRegistered<InvestmentController>()) {
+          controller = Get.find<InvestmentController>();
+        } else {
+          controller = Get.put(InvestmentController());
+        }
+
+        await TestDataService().generateInvestmentTestData();
+
+        // Reload Controller to refresh UI with new data
+        await controller.loadData();
+
+        if (context.mounted) {
+          Navigator.pop(context); // close progress
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Investment test data loaded successfully'),
+            ),
           );
         }
       } catch (e) {

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:moneyapp/constants/app_colors.dart';
-import 'package:moneyapp/models/investment_recommendation.dart';
+import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/screens/home/investment_list_screen.dart';
 
 class InvestmentSelectorButton extends StatefulWidget {
   final TextEditingController controller;
   final String hintText;
-  final Function(InvestmentRecommendation)? onSelected;
+  final Function(Investment)? onSelected;
 
   const InvestmentSelectorButton({
     super.key,
@@ -54,7 +54,7 @@ class _InvestmentSelectorButtonState extends State<InvestmentSelectorButton> {
         controller: widget.controller,
         readOnly: true,
         onTap: () async {
-          final result = await Navigator.push<InvestmentRecommendation>(
+          final result = await Navigator.push<Investment>(
             context,
             MaterialPageRoute(
               builder: (context) => const InvestmentListScreen(),
@@ -62,7 +62,7 @@ class _InvestmentSelectorButtonState extends State<InvestmentSelectorButton> {
           );
 
           if (result != null) {
-            widget.controller.text = result.text;
+            widget.controller.text = result.name;
             widget.onSelected?.call(result);
           }
         },

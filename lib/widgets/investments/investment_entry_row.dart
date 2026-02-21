@@ -1,13 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
-import 'package:moneyapp/models/investment_recommendation.dart';
+import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class InvestmentEntryRow extends StatefulWidget {
-  final InvestmentRecommendation? initialData;
+  final Investment? initialData;
   final bool initialIsEditable;
   final bool isNewEntry;
 
@@ -25,7 +29,7 @@ class InvestmentEntryRow extends StatefulWidget {
 class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
   late bool isEditable;
   late TextEditingController nameController;
-  late TextEditingController shortTextController;
+  late TextEditingController tickerController;
   String? selectedAssetPath;
   Color? selectedColor;
   final InvestmentController _controller = Get.find();
@@ -57,19 +61,19 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
     super.initState();
     isEditable = widget.initialIsEditable || widget.isNewEntry;
     nameController = TextEditingController(
-      text: widget.initialData?.text ?? '',
+      text: widget.initialData?.name ?? '',
     );
-    shortTextController = TextEditingController(
-      text: widget.initialData?.shortText ?? '',
+    tickerController = TextEditingController(
+      text: widget.initialData?.ticker ?? '',
     );
-    selectedAssetPath = widget.initialData?.assetPath;
+    selectedAssetPath = widget.initialData?.imagePath;
     selectedColor = widget.initialData?.color;
   }
 
   @override
   void dispose() {
     nameController.dispose();
-    shortTextController.dispose();
+    tickerController.dispose();
     super.dispose();
   }
 
@@ -77,6 +81,8 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
     await showDialog(
       context: context,
       builder: (context) => Dialog(
+        insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
         child: Container(
           padding: EdgeInsets.all(16.w),
@@ -137,6 +143,8 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
     await showDialog(
       context: context,
       builder: (context) => Dialog(
+        insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
         child: Container(
           padding: EdgeInsets.all(16.w),
@@ -190,8 +198,23 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
     );
   }
 
-  void _handleSave() {
-    if (nameController.text.isEmpty || shortTextController.text.isEmpty) {
+  /// Copy asset to temp file for use with the new Investment model
+  Future<File?> _copyAssetToTempFile(String assetPath) async {
+    try {
+      final byteData = await rootBundle.load(assetPath);
+      final tempDir = await getTemporaryDirectory();
+      final ext = p.extension(assetPath);
+      final tempFile = File(p.join(tempDir.path, 'temp_investment$ext'));
+      await tempFile.writeAsBytes(byteData.buffer.asUint8List());
+      return tempFile;
+    } catch (e) {
+      debugPrint('[InvestmentEntryRow] Error copying asset: $e');
+      return null;
+    }
+  }
+
+  Future<void> _handleSave() async {
+    if (nameController.text.isEmpty || tickerController.text.isEmpty) {
       return;
     }
 
@@ -199,38 +222,78 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
       return;
     }
 
-    // Limit short text to 3 characters
-    final shortText = shortTextController.text.length > 3
-        ? shortTextController.text.substring(0, 3)
-        : shortTextController.text;
+    // Limit ticker to 5 characters
+    final ticker = tickerController.text.length > 5
+        ? tickerController.text.substring(0, 5).toUpperCase()
+        : tickerController.text.toUpperCase();
 
-    final newRecommendation = InvestmentRecommendation.fromAsset(
-      assetPath: selectedAssetPath!,
-      text: nameController.text,
-      shortText: shortText,
-      color: selectedColor,
-    );
+    final color = selectedColor ?? Colors.grey;
 
     if (widget.isNewEntry) {
-      _controller.addRecommendation(newRecommendation);
+      // Copy asset to temp file for the service to use
+      final imageFile = await _copyAssetToTempFile(selectedAssetPath!);
+      if (imageFile == null) return;
+
+      await _controller.addInvestment(
+        name: nameController.text,
+        ticker: ticker,
+        color: color,
+        imageFile: imageFile,
+      );
+
       // Clear fields after adding
       nameController.clear();
-      shortTextController.clear();
+      tickerController.clear();
       setState(() {
         selectedAssetPath = null;
         selectedColor = null;
       });
-    } else {
+    } else if (widget.initialData?.id != null) {
       // Update existing
-      final index = _controller.recommendations.indexWhere(
-        (r) => r.text == widget.initialData?.text,
-      );
-      if (index != -1) {
-        _controller.updateRecommendation(index, newRecommendation);
+      File? imageFile;
+      if (selectedAssetPath != null &&
+          selectedAssetPath!.startsWith('assets/')) {
+        imageFile = await _copyAssetToTempFile(selectedAssetPath!);
       }
+
+      await _controller.updateInvestment(
+        widget.initialData!.id!,
+        name: nameController.text,
+        ticker: ticker,
+        color: color,
+        newImageFile: imageFile,
+      );
+
       setState(() {
         isEditable = false;
       });
+    }
+  }
+
+  Widget _buildImageWidget() {
+    if (selectedAssetPath == null) {
+      return Image.asset(
+        AppIcons.plus,
+        width: 16.w,
+        height: 16.h,
+        color: const Color(0xffB4B4B4),
+      );
+    }
+
+    // Check if it's an asset path or file path
+    if (selectedAssetPath!.startsWith('assets/')) {
+      return Image.asset(selectedAssetPath!, width: 16.w, height: 16.h);
+    } else {
+      final file = File(selectedAssetPath!);
+      if (file.existsSync()) {
+        return Image.file(file, width: 16.w, height: 16.h, fit: BoxFit.cover);
+      }
+      return Image.asset(
+        AppIcons.plus,
+        width: 16.w,
+        height: 16.h,
+        color: const Color(0xffB4B4B4),
+      );
     }
   }
 
@@ -250,23 +313,7 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
               border: Border.all(color: const Color(0xffDFDFDF)),
               borderRadius: BorderRadius.circular(6.r),
             ),
-            child: Center(
-              child: widget.isNewEntry && selectedAssetPath == null
-                  ? Image.asset(
-                      AppIcons.plus,
-                      width: 16.w,
-                      height: 16.h,
-                      color: const Color(0xffB4B4B4),
-                    )
-                  : selectedAssetPath != null
-                  ? Image.asset(selectedAssetPath!, width: 16.w, height: 16.h)
-                  : Image.asset(
-                      AppIcons.plus,
-                      width: 16.w,
-                      height: 16.h,
-                      color: const Color(0xffB4B4B4),
-                    ),
-            ),
+            child: Center(child: _buildImageWidget()),
           ),
         ),
         6.horizontalSpace,
@@ -274,7 +321,6 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
         Expanded(
           child: Container(
             height: 35.h,
-            // width: 188.w,
             padding: EdgeInsets.symmetric(horizontal: 8.w),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -311,7 +357,7 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
           ),
         ),
         4.horizontalSpace,
-        // Short Text Field
+        // Ticker Field
         Container(
           height: 35.h,
           width: 56.w,
@@ -324,9 +370,10 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
           child: Center(
             child: isEditable
                 ? TextField(
-                    controller: shortTextController,
+                    controller: tickerController,
                     textAlign: TextAlign.start,
-                    maxLength: 3,
+                    maxLength: 5,
+                    textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: '???',
@@ -341,11 +388,11 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
                     style: TextStyle(fontSize: 14.sp, color: Colors.black),
                   )
                 : CustomText(
-                    shortTextController.text.isEmpty
+                    tickerController.text.isEmpty
                         ? '???'
-                        : shortTextController.text,
+                        : tickerController.text,
                     size: 14.sp,
-                    color: shortTextController.text.isEmpty
+                    color: tickerController.text.isEmpty
                         ? const Color(0xffB4B4B4)
                         : Colors.black,
                   ),

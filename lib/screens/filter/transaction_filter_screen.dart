@@ -282,87 +282,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       12.verticalSpace,
-                      // Amount Range Filters
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 41.h,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 7.w,
-                                vertical: 2.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: AppColors.greyBorder),
-                                borderRadius: BorderRadius.circular(4.r),
-                              ),
-                              child: TextField(
-                                controller: minAmountController,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  labelText: 'min amount',
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
 
-                                  labelStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 12.sp,
-                                  ),
-                                  hintStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
-                                  ),
-                                ),
-
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                          10.horizontalSpace,
-                          Expanded(
-                            child: Container(
-                              height: 41.h,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 7.w,
-                                vertical: 2.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: AppColors.greyBorder),
-                                borderRadius: BorderRadius.circular(4.r),
-                              ),
-                              child: TextField(
-                                controller: maxAmountController,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  labelText: 'max amount',
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  labelStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 12.sp,
-                                  ),
-                                  hintStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
-                                  ),
-                                ),
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      12.verticalSpace,
                       // Date range filters
                       Row(
                         children: [
@@ -602,7 +522,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                               Expanded(
                                 child: CustomText(
                                   selectedHashtags.isEmpty
-                                      ? 'Filter Hashtags'
+                                      ? 'Hashtags'
                                       : '${selectedHashtags.length} Hashtag${selectedHashtags.length > 1 ? 's' : ''} selected',
                                   size: 16.sp,
                                   color: selectedHashtags.isEmpty
@@ -653,6 +573,108 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                           }).toList(),
                         ),
                       ],
+                      7.verticalSpace,
+                      // Amount Range Filters
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: TextField(
+                                controller: minAmountController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  labelText: 'min amount',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  prefixIconConstraints: BoxConstraints(
+                                    minWidth: 20.w,
+                                    minHeight: 20.h,
+                                  ),
+                                  prefixIcon: Image.asset(
+                                    AppIcons.receipt,
+                                    height: 20.r,
+                                    width: 20.r,
+                                    color: AppColors.greyColor,
+                                  ),
+
+                                  labelStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                  hintStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                          10.horizontalSpace,
+                          Expanded(
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: TextField(
+                                controller: maxAmountController,
+
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  prefixIconConstraints: BoxConstraints(
+                                    minWidth: 20.w,
+                                    minHeight: 20.h,
+                                  ),
+                                  prefixIcon: Image.asset(
+                                    AppIcons.receipt,
+                                    height: 20.r,
+                                    width: 20.r,
+                                    color: AppColors.greyColor,
+                                  ),
+                                  border: InputBorder.none,
+                                  labelText: 'max amount',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  labelStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                  hintStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
 
                       25.verticalSpace,
                       // Action buttons

@@ -1,11 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
-import 'package:moneyapp/models/investment_recommendation.dart';
-import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/controllers/investment_controller.dart';
+import 'package:moneyapp/models/investment_model.dart';
+import 'package:moneyapp/screens/home/investment_list_screen.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
@@ -19,11 +21,14 @@ class PortfolioFilterScreen extends StatefulWidget {
 class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
   DateTime? fromDate;
   DateTime? toDate;
-  String selectedTradeType = 'Trades & Transaction'; // Default value
-  List<InvestmentRecommendation> selectedInvestments = [];
+  String selectedActivityType = 'Trades & Transaction'; // Default value
+  List<Investment> selectedInvestments = [];
+  late final InvestmentController controller;
+  final TextEditingController minAmountController = TextEditingController();
+  final TextEditingController maxAmountController = TextEditingController();
 
-  // Dropdown options for trades/transactions
-  final List<String> tradeTypeOptions = [
+  // Dropdown options for activity types
+  final List<String> activityTypeOptions = [
     'Trades & Transaction',
     'Trade',
     'Transaction',
@@ -32,10 +37,37 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
   @override
   void initState() {
     super.initState();
+    controller = Get.find<InvestmentController>();
+
+    // Load current filter state from controller
+    fromDate = controller.filterFromDate.value;
+    toDate = controller.filterToDate.value;
+    selectedActivityType = controller.filterActivityType.value;
+
+    // Load selected investments
+    if (controller.filterInvestmentIds.isNotEmpty) {
+      selectedInvestments = controller.investments
+          .where(
+            (inv) =>
+                inv.id != null &&
+                controller.filterInvestmentIds.contains(inv.id),
+          )
+          .toList();
+    }
+
+    // Load min/max amount
+    if (controller.filterMinAmount.value != null) {
+      minAmountController.text = controller.filterMinAmount.value.toString();
+    }
+    if (controller.filterMaxAmount.value != null) {
+      maxAmountController.text = controller.filterMaxAmount.value.toString();
+    }
   }
 
   @override
   void dispose() {
+    minAmountController.dispose();
+    maxAmountController.dispose();
     super.dispose();
   }
 
@@ -44,12 +76,16 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
       context,
       initialDate: fromDate,
       firstDate: DateTime(1900),
-      lastDate: toDate,
+      lastDate: toDate ?? DateTime.now(),
     );
 
     if (picked != null) {
       setState(() {
         fromDate = picked;
+        // Validate: if toDate is before fromDate, reset toDate
+        if (toDate != null && toDate!.isBefore(picked)) {
+          toDate = null;
+        }
       });
     }
   }
@@ -59,6 +95,7 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
       context,
       initialDate: toDate,
       firstDate: fromDate ?? DateTime(1900),
+      lastDate: DateTime.now(),
     );
 
     if (picked != null) {
@@ -69,14 +106,15 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
   }
 
   Future<void> _navigateToInvestmentScreen() async {
-    final result = await Navigator.pushNamed(
+    final result = await Navigator.push(
       context,
-      AppRoutes.investmentList.path,
+      MaterialPageRoute(builder: (context) => const InvestmentListScreen()),
     );
 
-    if (result != null && result is InvestmentRecommendation) {
+    if (result != null && result is Investment) {
       setState(() {
-        if (!selectedInvestments.any((inv) => inv.text == result.text)) {
+        // Add investment if not already selected
+        if (!selectedInvestments.any((inv) => inv.id == result.id)) {
           selectedInvestments.add(result);
         }
       });
@@ -84,8 +122,96 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
   }
 
   void _applyFilter() {
-    // TODO: Implement filter logic
+    // Validate dates
+    if (fromDate != null && toDate != null && toDate!.isBefore(fromDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"To Date" cannot be before "From Date"'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Parse and validate amounts (handle both . and , as decimal separator)
+    double? minAmount;
+    double? maxAmount;
+
+    if (minAmountController.text.trim().isNotEmpty) {
+      minAmount = double.tryParse(
+        minAmountController.text.trim().replaceAll(',', '.'),
+      );
+      if (minAmount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invalid min amount'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (maxAmountController.text.trim().isNotEmpty) {
+      maxAmount = double.tryParse(
+        maxAmountController.text.trim().replaceAll(',', '.'),
+      );
+      if (maxAmount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invalid max amount'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Validate amount range
+    if (minAmount != null && maxAmount != null && maxAmount < minAmount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Max amount cannot be less than min amount'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Debug: Print filter values
+    debugPrint('[PortfolioFilter] Applying filter:');
+    debugPrint('  fromDate: $fromDate');
+    debugPrint('  toDate: $toDate');
+    debugPrint('  activityType: $selectedActivityType');
+    debugPrint('  investmentIds: ${selectedInvestments.map((inv) => inv.id).toList()}');
+    debugPrint('  minAmount: $minAmount');
+    debugPrint('  maxAmount: $maxAmount');
+
+    // Apply filter to controller
+    controller.applyFilter(
+      fromDate: fromDate,
+      toDate: toDate,
+      activityType: selectedActivityType,
+      investmentIds: selectedInvestments.map((inv) => inv.id!).toList(),
+      minAmount: minAmount,
+      maxAmount: maxAmount,
+    );
+
+    // Manually trigger update of visible activities immediately
+    controller.forceUpdateVisibleActivities();
+
+    // Navigate back
     Navigator.of(context).pop();
+
+    // Show success message (this will appear on the previous screen)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Column(
@@ -116,9 +242,14 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
     setState(() {
       fromDate = null;
       toDate = null;
-      selectedTradeType = 'Trades & Transaction';
+      selectedActivityType = 'Trades & Transaction';
       selectedInvestments.clear();
+      minAmountController.clear();
+      maxAmountController.clear();
     });
+
+    // Reset controller filters
+    controller.resetFilters();
   }
 
   @override
@@ -304,13 +435,15 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
                             Expanded(
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
-                                  value: selectedTradeType,
+                                  value: selectedActivityType,
                                   isExpanded: true,
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     color: Colors.black,
                                   ),
-                                  items: tradeTypeOptions.map((String value) {
+                                  items: activityTypeOptions.map((
+                                    String value,
+                                  ) {
                                     return DropdownMenuItem<String>(
                                       value: value,
                                       child: CustomText(
@@ -323,7 +456,7 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       setState(() {
-                                        selectedTradeType = newValue;
+                                        selectedActivityType = newValue;
                                       });
                                     }
                                   },
@@ -397,21 +530,32 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (investment.assetPath != null)
-                                    Image.asset(
-                                      investment.assetPath!,
-                                      width: 16.r,
-                                      height: 16.r,
+                                  if (investment.imagePath.isNotEmpty)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(2.r),
+                                      child: Image.file(
+                                        File(investment.imagePath),
+                                        width: 16.r,
+                                        height: 16.r,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                width: 16.r,
+                                                height: 16.r,
+                                                color: investment.color,
+                                              );
+                                            },
+                                      ),
                                     ),
                                   6.horizontalSpace,
-                                  CustomText(investment.text, size: 14.sp),
+                                  CustomText(investment.ticker, size: 14.sp),
                                   6.horizontalSpace,
                                   InkWell(
                                     onTap: () {
                                       setState(() {
                                         selectedInvestments.removeWhere(
-                                          (item) =>
-                                              item.text == investment.text,
+                                          (item) => item.id == investment.id,
                                         );
                                       });
                                     },
@@ -427,6 +571,107 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
                           }).toList(),
                         ),
                       ],
+
+                      7.verticalSpace,
+
+                      // Min and Max amount filters
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: TextField(
+                                controller: minAmountController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  labelText: 'min amount',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  prefixIconConstraints: BoxConstraints(
+                                    minWidth: 20.w,
+                                    minHeight: 20.h,
+                                  ),
+                                  prefixIcon: Image.asset(
+                                    AppIcons.receipt,
+                                    height: 20.r,
+                                    width: 20.r,
+                                    color: AppColors.greyColor,
+                                  ),
+                                  labelStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                  hintStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                          10.horizontalSpace,
+                          Expanded(
+                            child: Container(
+                              height: 41.h,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.greyBorder),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: TextField(
+                                controller: maxAmountController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  prefixIconConstraints: BoxConstraints(
+                                    minWidth: 20.w,
+                                    minHeight: 20.h,
+                                  ),
+                                  prefixIcon: Image.asset(
+                                    AppIcons.receipt,
+                                    height: 20.r,
+                                    width: 20.r,
+                                    color: AppColors.greyColor,
+                                  ),
+                                  border: InputBorder.none,
+                                  labelText: 'max amount',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  labelStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                  hintStyle: TextStyle(
+                                    color: AppColors.greyColor,
+                                    fontSize: 16.sp,
+                                  ),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
 
                       25.verticalSpace,
                       // Action buttons

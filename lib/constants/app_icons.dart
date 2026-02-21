@@ -6,6 +6,7 @@ class AppIcons {
   // General Icons
   static const String home = 'assets/icons/home_icon.png';
   static const String plus = 'assets/icons/plus_icon.png';
+  static const String roundedPlus = 'assets/icons/rounded_plus.png';
   static const String plusThin = 'assets/icons/plus_icon_thin.png';
   static const String minus = 'assets/icons/minus_icon.png';
   static const String closeBold = 'assets/icons/close_icon_bold.png';
@@ -39,6 +40,7 @@ class AppIcons {
   static const String cart = 'assets/icons/cart_icon.png';
   static const String car = 'assets/icons/car_icon.png';
   static const String investment = 'assets/icons/investment_icon.png';
+  static const String investmentGraphIcon = 'assets/icons/investment.png';
   static const String digitalCurrency =
       'assets/icons/digital_currency_icon.png';
   static const String bitcoinConvert = 'assets/icons/bitcoin-convert.png';
@@ -55,4 +57,7 @@ class AppIcons {
   static const String tickLight = 'assets/icons/tick_icon_light.png';
   static const String tickCircle = 'assets/icons/tick_circle_icon.png';
   static const String blackCheck = 'assets/icons/black_check_icon.png';
+  static const String receipt = 'assets/icons/receipt.png';
+  static const String colorPicker = 'assets/icons/color_picker.png';
+  static const String addImage = 'assets/icons/add_image.png';
 }

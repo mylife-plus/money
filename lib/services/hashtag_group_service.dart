@@ -14,8 +14,37 @@ class HashtagGroupService {
   factory HashtagGroupService() => _instance;
   HashtagGroupService._internal();
 
+  static const String naGroupName = 'N/A';
+
   final HashtagRepository _repository = HashtagRepository();
   final TransactionRepository _transactionRepository = TransactionRepository();
+
+  /// Get or create the N/A default group
+  Future<HashtagGroup> getOrCreateNAGroup() async {
+    final allGroups = await getAllGroupsFlat();
+    final existing = allGroups.where(
+      (g) => g.name == naGroupName && g.parentId == null,
+    );
+    if (existing.isNotEmpty) return existing.first;
+
+    // Create if missing (e.g. data was cleared)
+    final now = DateTime.now();
+    final group = HashtagGroup(
+      name: naGroupName,
+      parentId: null,
+      order: 999,
+      isCustom: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+    final id = await _repository.insert(group.toMap());
+    return group.copyWith(id: id);
+  }
+
+  /// Check if a group is the protected N/A group
+  bool isNAGroup(HashtagGroup group) {
+    return group.name == naGroupName && group.parentId == null;
+  }
 
   /// Update an existing hashtag group
   Future<bool> updateGroup(int groupId, String name, {int? newParentId}) async {
@@ -30,6 +59,10 @@ class HashtagGroupService {
 
       // Get the old name before updating
       final oldGroup = await getGroupById(groupId);
+      if (oldGroup != null && isNAGroup(oldGroup)) {
+        debugPrint('[HashtagGroupService][updateGroup] Cannot rename the N/A group');
+        throw Exception('CANNOT_EDIT_NA_GROUP');
+      }
       final oldName = oldGroup?.name;
       final newName = name.trim();
 
@@ -166,7 +199,8 @@ class HashtagGroupService {
           e.toString().contains('CANNOT_CHANGE_MAIN_GROUP_PARENT') ||
           e.toString().contains('PARENT_NOT_FOUND') ||
           e.toString().contains('INVALID_PARENT_NOT_MAIN_GROUP') ||
-          e.toString().contains('SUBGROUP_CONFLICTS_WITH_PARENT')) {
+          e.toString().contains('SUBGROUP_CONFLICTS_WITH_PARENT') ||
+          e.toString().contains('CANNOT_EDIT_NA_GROUP')) {
         rethrow;
       }
       return false;
@@ -324,6 +358,11 @@ class HashtagGroupService {
           '[HashtagGroupService][deleteGroup] Group not found for ID: $groupId',
         );
         return false;
+      }
+
+      if (isNAGroup(group)) {
+        debugPrint('[HashtagGroupService][deleteGroup] Cannot delete the N/A group');
+        throw Exception('CANNOT_DELETE_NA_GROUP');
       }
 
       // Check if any transactions are using this hashtag

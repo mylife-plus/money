@@ -104,15 +104,26 @@ class HashtagGroupsController extends GetxController {
   }
 
   /// Add a new custom hashtag group
+  /// If parentId is null and this is a subgroup (name-only), auto-assign to N/A group.
   Future<bool> addCustomGroup(String name, {int? parentId}) async {
     try {
+      // Defense-in-depth: if no parentId provided, auto-assign to N/A group
+      int? resolvedParentId = parentId;
+      if (parentId == null) {
+        final naGroup = await _hashtagGroupService.getOrCreateNAGroup();
+        resolvedParentId = naGroup.id;
+        debugPrint(
+          '[HashtagGroupsController][addCustomGroup] No parentId — auto-assigning to N/A group (id: $resolvedParentId)',
+        );
+      }
+
       debugPrint(
-        '[HashtagGroupsController][addCustomGroup] Adding group: $name, parentId: $parentId',
+        '[HashtagGroupsController][addCustomGroup] Adding group: $name, parentId: $resolvedParentId',
       );
 
       final newGroup = await _hashtagGroupService.addCustomGroup(
         name,
-        parentId: parentId,
+        parentId: resolvedParentId,
       );
 
       if (newGroup != null) {

@@ -1,6 +1,8 @@
 /// App Routes Enum
 /// Define all route names here
 enum AppRoutes {
+  welcome,
+  currencySelection,
   home,
   investment,
   investmentList,
@@ -25,6 +27,10 @@ enum AppRoutes {
 extension AppRoutesExtension on AppRoutes {
   String get path {
     switch (this) {
+      case AppRoutes.welcome:
+        return '/welcome';
+      case AppRoutes.currencySelection:
+        return '/currencySelection';
       case AppRoutes.home:
         return '/home';
       case AppRoutes.investment:

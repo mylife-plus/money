@@ -1,10 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
-import 'package:moneyapp/models/investment_recommendation.dart';
+import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/investments/investment_selection_dialog.dart';
 
@@ -17,14 +18,14 @@ class InvestmentListScreen extends StatefulWidget {
 
 class _InvestmentListScreenState extends State<InvestmentListScreen> {
   final TextEditingController searchController = TextEditingController();
-  List<InvestmentRecommendation> filteredInvestments = [];
+  List<Investment> filteredInvestments = [];
   late final InvestmentController controller;
 
   @override
   void initState() {
     super.initState();
     controller = Get.find<InvestmentController>();
-    filteredInvestments = controller.recommendations;
+    filteredInvestments = controller.investments;
     searchController.addListener(_onSearchChanged);
   }
 
@@ -38,13 +39,17 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
   void _onSearchChanged() {
     setState(() {
       if (searchController.text.isEmpty) {
-        filteredInvestments = controller.recommendations;
+        filteredInvestments = controller.investments;
       } else {
-        filteredInvestments = controller.recommendations
+        filteredInvestments = controller.investments
             .where(
-              (investment) => investment.text.toLowerCase().contains(
-                searchController.text.toLowerCase(),
-              ),
+              (investment) =>
+                  investment.name.toLowerCase().contains(
+                    searchController.text.toLowerCase(),
+                  ) ||
+                  investment.ticker.toLowerCase().contains(
+                    searchController.text.toLowerCase(),
+                  ),
             )
             .toList();
       }
@@ -52,7 +57,7 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
   }
 
   Future<void> _showAddDialog(BuildContext context) async {
-    await showDialog<InvestmentRecommendation>(
+    await showDialog<Investment>(
       context: context,
       builder: (context) => AddEditInvestmentDialog(),
     );
@@ -60,9 +65,9 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
 
   Future<void> _showEditDialog(
     BuildContext context,
-    InvestmentRecommendation investment,
+    Investment investment,
   ) async {
-    await showDialog<InvestmentRecommendation>(
+    await showDialog<Investment>(
       context: context,
       builder: (context) =>
           AddEditInvestmentDialog(existingInvestment: investment),
@@ -71,9 +76,8 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
 
   Future<void> _deleteInvestment(
     BuildContext context,
-    InvestmentRecommendation investment,
+    Investment investment,
   ) async {
-    final InvestmentController controller = Get.find();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -85,7 +89,7 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
           fontWeight: FontWeight.w600,
         ),
         content: CustomText(
-          'Are you sure you want to delete "${investment.text}"? This action cannot be undone.',
+          'Are you sure you want to delete "${investment.name}"? This action cannot be undone.',
           size: 14.sp,
         ),
         actions: [
@@ -110,10 +114,49 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
       ),
     );
 
-    if (confirmed == true) {
-      final index = controller.recommendations.indexOf(investment);
-      if (index != -1) {
-        controller.removeRecommendation(index);
+    if (!mounted) return;
+
+    if (confirmed == true && investment.id != null) {
+      try {
+        final success = await controller.deleteInvestment(investment.id!);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Success',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'Investment deleted successfully',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        String message = 'Failed to delete investment';
+        if (e.toString().contains('CANNOT_DELETE_INVESTMENT_IN_USE')) {
+          message =
+              'Cannot delete "${investment.name}" because it has existing transactions or trades. Delete those activities first.';
+        } else if (e.toString().contains(
+          'CANNOT_DELETE_INVESTMENT_HAS_SNAPSHOTS',
+        )) {
+          message =
+              'Cannot delete "${investment.name}" because it has portfolio history. Delete the price snapshots first.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Column(
@@ -121,19 +164,16 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Success',
+                  'Error',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                Text(
-                  'Investment deleted successfully',
-                  style: TextStyle(color: Colors.white),
-                ),
+                Text(message, style: TextStyle(color: Colors.white)),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
           ),
@@ -182,63 +222,66 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
                 ],
               ),
             ),
-            38.verticalSpace,
+            24.verticalSpace,
 
             // Search field
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 28.w),
-              child: Container(
-                height: 41.h,
-                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppColors.greyBorder),
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                child: TextField(
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: '',
-                    suffixIcon: Icon(
-                      Icons.search,
-                      size: 20.sp,
-                      color: AppColors.greyColor,
-                    ),
-                    suffixIconConstraints: BoxConstraints(
-                      minWidth: 24.w,
-                      minHeight: 24.h,
-                    ),
-                    label: Text('Search Investment'),
+            // Padding(
+            //   padding: EdgeInsets.symmetric(horizontal: 28.w),
+            //   child: Container(
+            //     height: 41.h,
+            //     padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+            //     decoration: BoxDecoration(
+            //       color: Colors.white,
+            //       border: Border.all(color: AppColors.greyBorder),
+            //       borderRadius: BorderRadius.circular(4.r),
+            //     ),
+            //     child: TextField(
+            //       controller: searchController,
+            //       decoration: InputDecoration(
+            //         border: InputBorder.none,
+            //         hintText: '',
+            //         suffixIcon: Icon(
+            //           Icons.search,
+            //           size: 20.sp,
+            //           color: AppColors.greyColor,
+            //         ),
+            //         suffixIconConstraints: BoxConstraints(
+            //           minWidth: 24.w,
+            //           minHeight: 24.h,
+            //         ),
+            //         label: Text('Search Investment'),
 
-                    labelStyle: TextStyle(
-                      color: AppColors.greyColor,
-                      fontSize: 16.sp,
-                    ),
-                    hintStyle: TextStyle(
-                      color: AppColors.greyColor,
-                      fontSize: 16.sp,
-                    ),
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  style: TextStyle(fontSize: 16.sp),
-                ),
-              ),
-            ),
-            16.verticalSpace,
-
+            //         labelStyle: TextStyle(
+            //           color: AppColors.greyColor,
+            //           fontSize: 16.sp,
+            //         ),
+            //         hintStyle: TextStyle(
+            //           color: AppColors.greyColor,
+            //           fontSize: 16.sp,
+            //         ),
+            //         isDense: true,
+            //         contentPadding: EdgeInsets.zero,
+            //       ),
+            //       style: TextStyle(fontSize: 16.sp),
+            //     ),
+            //   ),
+            // ),
+            // 16.verticalSpace,
             Expanded(
               child: Obx(() {
-                // Update filtered list when recommendations change
+                // Update filtered list when investments change
                 if (searchController.text.isEmpty) {
-                  filteredInvestments = controller.recommendations;
+                  filteredInvestments = controller.investments;
                 } else {
-                  filteredInvestments = controller.recommendations
+                  filteredInvestments = controller.investments
                       .where(
-                        (investment) => investment.text.toLowerCase().contains(
-                          searchController.text.toLowerCase(),
-                        ),
+                        (investment) =>
+                            investment.name.toLowerCase().contains(
+                              searchController.text.toLowerCase(),
+                            ) ||
+                            investment.ticker.toLowerCase().contains(
+                              searchController.text.toLowerCase(),
+                            ),
                       )
                       .toList();
                 }
@@ -267,7 +310,7 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
 }
 
 class _InvestmentListItem extends StatelessWidget {
-  final InvestmentRecommendation investment;
+  final Investment investment;
   final VoidCallback? onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -279,51 +322,79 @@ class _InvestmentListItem extends StatelessWidget {
     required this.onDelete,
   });
 
+  Widget _buildImageWidget() {
+    final imagePath = investment.imagePath;
+
+    // Check if it's an asset path or file path
+    if (imagePath.startsWith('assets/')) {
+      return Image.asset(imagePath, width: 16.w, height: 16.h);
+    } else if (imagePath.isNotEmpty) {
+      final file = File(imagePath);
+      if (file.existsSync()) {
+        return Image.file(file, width: 16.w, height: 16.h, fit: BoxFit.cover);
+      }
+    }
+    return Icon(Icons.image, size: 16.sp, color: const Color(0xffB4B4B4));
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-        decoration: BoxDecoration(
-          color: investment.color,
-          border: Border.all(color: AppColors.greyBorder),
-          borderRadius: BorderRadius.circular(4.r),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Image/Icon Container
-            investment.isAssetImage
-                ? Image.asset(investment.assetPath!, width: 16.w, height: 16.h)
-                : investment.isFileImage
-                ? Image.file(investment.imageFile!, width: 16.w, height: 16.h)
-                : Icon(
-                    Icons.image,
-                    size: 16.sp,
-                    color: const Color(0xffB4B4B4),
+      child: Stack(
+        children: [
+          Container(
+            height: 44.h,
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: investment.color,
+              border: Border.all(width: 1, color: AppColors.greyBorder),
+
+              borderRadius: BorderRadius.circular(4.r),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Image/Icon Container
+                55.horizontalSpace,
+                Expanded(
+                  child: CustomText(
+                    investment.name,
+                    size: 20.sp,
+                    color: Colors.black,
                   ),
-            23.horizontalSpace,
+                ),
+                4.horizontalSpace,
+                // Ticker
+                CustomText(investment.ticker, size: 20.sp, color: Colors.black),
+                20.horizontalSpace,
 
-            Expanded(
-              child: CustomText(
-                investment.text,
-                size: 20.sp,
-                color: Colors.black,
+                // Edit Icon (only show in non-selection mode)
+                InkWell(
+                  onTap: onEdit,
+                  child: Image.asset(
+                    AppIcons.editV2,
+                    width: 22.r,
+                    height: 22.r,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              height: 44.h,
+              width: 45.w,
+              decoration: BoxDecoration(
+                color: AppColors.greyColor,
+                border: Border.all(color: Colors.white),
+                borderRadius: BorderRadius.circular(3.r),
               ),
+              child: _buildImageWidget(),
             ),
-            4.horizontalSpace,
-            // Short Text Field
-            CustomText(investment.shortText, size: 20.sp, color: Colors.black),
-            20.horizontalSpace,
-
-            // Edit Icon (only show in non-selection mode)
-            InkWell(
-              onTap: onEdit,
-              child: Image.asset(AppIcons.edit, width: 22.r, height: 22.r),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

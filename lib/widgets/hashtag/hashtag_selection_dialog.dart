@@ -244,19 +244,19 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
             }
 
             // Case 2: Existing logic (Regular add to existing parent or no parent)
+            // If no category selected, auto-assign to N/A group
+            int resolvedParentId;
             if (parentId == null) {
-              _showLocalSnackbar(
-                'Invalid Category',
-                'Please select a category',
-                isError: true,
-              );
-              return;
+              final naGroup = await _hashtagGroupService.getOrCreateNAGroup();
+              resolvedParentId = naGroup.id!;
+            } else {
+              resolvedParentId = parentId;
             }
 
             try {
               final newSubgroup = await _hashtagGroupService.addCustomGroup(
                 name,
-                parentId: parentId,
+                parentId: resolvedParentId,
               );
 
               if (newSubgroup == null) {
@@ -386,11 +386,14 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
               }
             } catch (e) {
               debugPrint('[HashtagSelectionDialog] Error updating hashtag: $e');
-              String errorMessage = 'Unable to update hashtag. Please try again.';
+              String errorMessage =
+                  'Unable to update hashtag. Please try again.';
 
               if (e.toString().contains('DUPLICATE_HASHTAG_NAME')) {
                 errorMessage = 'Hashtag with this name already exists.';
-              } else if (e.toString().contains('SUBGROUP_CONFLICTS_WITH_PARENT')) {
+              } else if (e.toString().contains(
+                'SUBGROUP_CONFLICTS_WITH_PARENT',
+              )) {
                 errorMessage = 'This name is already used by the parent group.';
               }
 
@@ -428,6 +431,8 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       child: Container(
@@ -580,7 +585,12 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                                 InkWell(
                                   onTap: () => _showEditHashtagDialog(hashtag),
                                   child: Padding(
-                                    padding: const EdgeInsets.only(left: 8.0, right: 0, top: 2, bottom: 2),
+                                    padding: const EdgeInsets.only(
+                                      left: 8.0,
+                                      right: 0,
+                                      top: 2,
+                                      bottom: 2,
+                                    ),
                                     child: Image.asset(
                                       AppIcons.editV2,
                                       width: 22.r,
@@ -608,10 +618,7 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                   navigator.pop();
                   final result = await navigator.pushNamed(
                     AppRoutes.hashtagGroups.path,
-                    arguments: {
-                      'fromSettings': false,
-                      'isReadOnlyMode': true,
-                    },
+                    arguments: {'fromSettings': false, 'isReadOnlyMode': true},
                   );
 
                   if (result != null && result is HashtagGroup) {

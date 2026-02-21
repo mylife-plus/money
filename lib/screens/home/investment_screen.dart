@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/routes/app_routes.dart';
+import 'package:moneyapp/screens/investments/new_portfolio_change_screen.dart';
 import 'package:moneyapp/widgets/common/custom_app_bar.dart';
 import 'package:moneyapp/widgets/common/custom_toggle_switch.dart';
+import 'package:moneyapp/widgets/common/slide_from_top_route.dart';
 import 'package:moneyapp/widgets/investments/portfolio_section.dart';
 import 'package:moneyapp/widgets/trades/trades_section.dart';
 
@@ -26,6 +28,8 @@ class _InvestmentScreenState extends State<InvestmentScreen>
   double _lastScrollOffset = 0;
   bool _isAppBarVisible = true;
   bool _isSelectionMode = false;
+  static const double _scrollThreshold =
+      5.0; // Minimum scroll distance to trigger
 
   @override
   void initState() {
@@ -45,19 +49,20 @@ class _InvestmentScreenState extends State<InvestmentScreen>
     final currentScrollOffset = _scrollController.offset;
     final scrollDelta = currentScrollOffset - _lastScrollOffset;
 
-    // Scrolling down
+    // Only process if scroll delta exceeds threshold
+    if (scrollDelta.abs() < _scrollThreshold) return;
+
+    // Scrolling down - hide app bar
     if (scrollDelta > 0 && _isAppBarVisible && currentScrollOffset > 50) {
-      setState(() {
-        _isAppBarVisible = false;
-      });
+      _isAppBarVisible = false;
       _animationController.reverse();
+      setState(() {}); // Minimal setState after animation starts
     }
-    // Scrolling up
+    // Scrolling up - show app bar
     else if (scrollDelta < 0 && !_isAppBarVisible) {
-      setState(() {
-        _isAppBarVisible = true;
-      });
+      _isAppBarVisible = true;
       _animationController.forward();
+      setState(() {}); // Minimal setState after animation starts
     }
 
     _lastScrollOffset = currentScrollOffset;
@@ -75,6 +80,26 @@ class _InvestmentScreenState extends State<InvestmentScreen>
     final controller = Get.find<InvestmentController>();
 
     return Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            SlideFromTopRoute(page: const NewPortfolioChangeScreen()),
+          );
+        },
+        child: Container(
+          height: 51.r,
+          width: 51.r,
+          decoration: BoxDecoration(
+            color: const Color(0xffFFCC00),
+            borderRadius: BorderRadius.circular(5.r),
+          ),
+          child: Center(
+            child: Image.asset(AppIcons.roundedPlus, height: 27.r, width: 27.r),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -96,8 +121,10 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                             AppRoutes.home.path,
                           );
                         },
+                        onSettingsReturn: () {
+                          setState(() {});
+                        },
                       ),
-                      4.verticalSpace,
                     ],
                   ),
                 ),
@@ -108,7 +135,7 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                 child: Column(
                   children: [
                     if (!_isSelectionMode) ...[
-                      20.verticalSpace,
+                      // 20.verticalSpace,
                       Obx(
                         () => CustomToggleSwitch(
                           iconColorShouldEffect: true,
@@ -123,18 +150,22 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                       ),
                     ],
                     Obx(() {
-                      return controller.isPortfolioSelected
-                          ? PortfolioSection(
-                              isPortfolioSelected:
-                                  controller.isPortfolioSelected,
-                            )
-                          : TradesSection(
-                              onSelectionModeChanged: (isSelectionMode) {
-                                setState(() {
-                                  _isSelectionMode = isSelectionMode;
-                                });
-                              },
-                            );
+                      return IndexedStack(
+                        index: controller.isPortfolioSelected ? 0 : 1,
+                        sizing: StackFit.loose,
+                        children: [
+                          PortfolioSection(
+                            isPortfolioSelected: controller.isPortfolioSelected,
+                          ),
+                          TradesSection(
+                            onSelectionModeChanged: (isSelectionMode) {
+                              setState(() {
+                                _isSelectionMode = isSelectionMode;
+                              });
+                            },
+                          ),
+                        ],
+                      );
                     }),
                   ],
                 ),

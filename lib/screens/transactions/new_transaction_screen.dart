@@ -11,6 +11,7 @@ import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
@@ -426,7 +427,8 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                     color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
-                                  suffixText: 'EUR',
+                                  suffixText:
+                                      CurrencyService.instance.cashflowCode,
                                 ),
                                 keyboardType: TextInputType.numberWithOptions(
                                   decimal: true,

@@ -4,13 +4,14 @@ import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
-
+import 'package:moneyapp/models/investment_list_item.dart';
 import 'package:moneyapp/screens/filter/portfolio_filter_screen.dart';
-
 import 'package:moneyapp/screens/investments/trade_search_screen.dart';
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/selection_app_bar.dart';
 import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
+import 'package:moneyapp/widgets/trades/transaction_item.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 import 'package:moneyapp/widgets/common/slide_from_top_route.dart';
 import 'package:moneyapp/screens/investments/new_portfolio_change_screen.dart';
@@ -25,8 +26,6 @@ class TradesSection extends StatefulWidget {
 }
 
 class _TradesSectionState extends State<TradesSection> {
-  SortOption? _selectedSortOption = SortOption.mostRecent;
-  SortDirection? _selectedSortDirection = SortDirection.top;
   List<int> selectedIds = [];
 
   void _updateSelectionMode(bool isSelectionMode) {
@@ -52,8 +51,8 @@ class _TradesSectionState extends State<TradesSection> {
                 _updateSelectionMode(false);
               });
             },
-            onDelete: () {
-              controller.deleteTrades(selectedIds);
+            onDelete: () async {
+              await controller.deleteTrades(selectedIds);
               setState(() {
                 selectedIds.clear();
                 _updateSelectionMode(false);
@@ -71,14 +70,10 @@ class _TradesSectionState extends State<TradesSection> {
                     await TopSortSheet.show(
                       context: context,
                       title: 'Sorting',
-                      selectedOption: _selectedSortOption,
-                      selectedDirection: _selectedSortDirection,
+                      selectedOption: controller.selectedSortOption.value,
+                      selectedDirection: controller.selectedSortDirection.value,
                       onOptionSelected: (option, direction) {
-                        setState(() {
-                          _selectedSortOption = option;
-                          _selectedSortDirection = direction;
-                        });
-                        // TODO: Apply sorting logic
+                        controller.updateSortOption(option, direction);
                       },
                     );
                   },
@@ -89,13 +84,19 @@ class _TradesSectionState extends State<TradesSection> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      SlideFromTopRoute(page: PortfolioFilterScreen()),
+                      SlideFromTopRoute(page: const PortfolioFilterScreen()),
                     );
                   },
-                  child: Image.asset(
-                    AppIcons.filter,
-                    height: 24.r,
-                    width: 24.r,
+                  child: Obx(
+                    () => Badge(
+                      isLabelVisible: controller.activeFilterCount > 0,
+                      label: Text(controller.activeFilterCount.toString()),
+                      child: Image.asset(
+                        AppIcons.filter,
+                        height: 24.r,
+                        width: 24.r,
+                      ),
+                    ),
                   ),
                 ),
                 40.horizontalSpace,
@@ -113,31 +114,54 @@ class _TradesSectionState extends State<TradesSection> {
                   ),
                 ),
                 Spacer(),
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      SlideFromTopRoute(page: const NewPortfolioChangeScreen()),
-                    );
-                  },
-                  child: Image.asset(AppIcons.plus, height: 21.r, width: 21.r),
-                ),
               ],
             ),
           ),
           16.verticalSpace,
         ],
 
-        // Dynamic year/month/day/trade hierarchy
+        // High-performance list with ListView.builder
         Obx(() {
-          final years = controller.sortedYears;
+          final items = controller.visibleActivities;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var year in years) ...[
-                // Year Row
-                Padding(
+          return ListView.separated(
+            shrinkWrap: true,
+            physics:
+                const NeverScrollableScrollPhysics(), // Let parent handle scrolling
+            addAutomaticKeepAlives: false, // Reduce memory overhead
+            addRepaintBoundaries: true, // Optimize repaints
+            itemCount: items.length,
+            separatorBuilder: (context, index) {
+              final item = items[index];
+              final nextItem = index < items.length - 1
+                  ? items[index + 1]
+                  : null;
+
+              // Add spacing between activity items
+              if (item is InvestmentActivityItem) {
+                if (nextItem is InvestmentActivityItem) {
+                  return SizedBox(height: 10.h);
+                } else if (nextItem is InvestmentDayHeaderItem) {
+                  return SizedBox(height: 22.h);
+                } else {
+                  return SizedBox(height: 9.h);
+                }
+              } else if (item is InvestmentDayHeaderItem) {
+                return SizedBox(height: 9.h);
+              } else if (item is InvestmentMonthHeaderItem) {
+                return SizedBox(height: 13.h);
+              } else if (item is InvestmentYearHeaderItem &&
+                  nextItem is InvestmentMonthHeaderItem) {
+                return SizedBox(height: 18.h);
+              }
+
+              return const SizedBox.shrink();
+            },
+            itemBuilder: (context, index) {
+              final item = items[index];
+
+              return switch (item) {
+                InvestmentYearHeaderItem(:final year) => Padding(
                   padding: EdgeInsets.symmetric(horizontal: 15.w),
                   child: InkWell(
                     onTap: () => controller.toggleYearExpansion(year),
@@ -161,158 +185,140 @@ class _TradesSectionState extends State<TradesSection> {
                   ),
                 ),
 
-                // Months (when year expanded)
-                if (controller.isYearExpanded(year)) ...[
-                  18.verticalSpace,
-                  for (var month in controller.getSortedMonths(year)) ...[
-                    // Month Row
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 15.w),
-                      child: InkWell(
-                        onTap: () =>
-                            controller.toggleMonthExpansion(year, month),
-                        child: Row(
-                          children: [
-                            CustomText(
-                              controller.getMonthName(month),
-                              color: AppColors.greyColor,
-                              size: 16.sp,
-                            ),
-                            5.horizontalSpace,
-                            Icon(
-                              controller.isMonthExpanded(year, month)
-                                  ? Icons.arrow_drop_down_rounded
-                                  : Icons.arrow_drop_up_rounded,
-                              size: 32.r,
-                              color: AppColors.greyColor,
-                            ),
-                          ],
-                        ),
+                InvestmentMonthHeaderItem(
+                  :final year,
+                  :final month,
+                  :final monthName,
+                ) =>
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 15.w),
+                    child: InkWell(
+                      onTap: () => controller.toggleMonthExpansion(year, month),
+                      child: Row(
+                        children: [
+                          CustomText(
+                            monthName,
+                            color: AppColors.greyColor,
+                            size: 16.sp,
+                          ),
+                          5.horizontalSpace,
+                          Icon(
+                            controller.isMonthExpanded(year, month)
+                                ? Icons.arrow_drop_down_rounded
+                                : Icons.arrow_drop_up_rounded,
+                            size: 32.r,
+                            color: AppColors.greyColor,
+                          ),
+                        ],
                       ),
                     ),
+                  ),
 
-                    // Days (when month expanded)
-                    if (controller.isMonthExpanded(year, month)) ...[
-                      13.verticalSpace,
-                      for (var day in controller.getSortedDays(
-                        year,
-                        month,
-                      )) ...[
-                        // Day label (non-collapsible)
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 6.w),
-                          child: Row(
-                            children: [
-                              8.horizontalSpace,
-                              Expanded(
-                                flex: 100,
-
-                                child: CustomText(
-                                  '$day. ${controller.getMonthName(month).substring(0, 3)}.',
-                                  textAlign: TextAlign.start,
-                                  color: Color(0xffCCCCCC),
-                                  size: 14.sp,
-                                ),
-                              ),
-
-                              // Show "Amount/Price" and "Total" headers only for first day of month
-                              if (day ==
-                                  controller
-                                      .getSortedDays(year, month)
-                                      .first) ...[
-                                Expanded(
-                                  flex: 100,
-                                  child: CustomText(
-                                    textAlign: TextAlign.center,
-                                    'Amount/Price',
-                                    color: Color(0xffCCCCCC),
-                                    size: 14.sp,
-                                  ),
-                                ),
-
-                                Expanded(
-                                  flex: 150,
-                                  child: CustomText(
-                                    'Total',
-                                    textAlign: TextAlign.center,
-                                    color: Color(0xffCCCCCC),
-                                    size: 14.sp,
-                                  ),
-                                ),
-                              ] else ...[
-                                // Add spacer with same flex values to maintain alignment
-                                Expanded(flex: 100, child: SizedBox()),
-                                Expanded(flex: 150, child: SizedBox()),
-                              ],
-                            ],
+                InvestmentDayHeaderItem(
+                  :final day,
+                  :final monthAbbr,
+                  :final showHeaders,
+                ) =>
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w),
+                    child: Row(
+                      children: [
+                        8.horizontalSpace,
+                        Expanded(
+                          flex: 100,
+                          child: CustomText(
+                            '$day. $monthAbbr.',
+                            textAlign: TextAlign.start,
+                            color: Color(0xffCCCCCC),
+                            size: 14.sp,
                           ),
                         ),
-                        9.verticalSpace,
-
-                        // Trades for this day
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 6.w),
-                          child: Column(
-                            spacing: 10.h,
-                            children: [
-                              for (var trade in controller.getTradesForDay(
-                                year,
-                                month,
-                                day,
-                              ))
-                                if (trade.id != null)
-                                  TradeItemPair(
-                                    tradeId: trade.id,
-                                    soldAmount: trade.soldAmount,
-                                    soldSymbol: trade.soldSymbol,
-                                    soldPrice: trade.soldPrice,
-                                    soldPriceSymbol: trade.soldPriceSymbol,
-                                    soldTotal: trade.soldTotal,
-                                    soldTotalSymbol: trade.soldTotalSymbol,
-                                    boughtAmount: trade.boughtAmount,
-                                    boughtSymbol: trade.boughtSymbol,
-                                    boughtPrice: trade.boughtPrice,
-                                    boughtPriceSymbol: trade.boughtPriceSymbol,
-                                    boughtTotal: trade.boughtTotal,
-                                    boughtTotalSymbol: trade.boughtTotalSymbol,
-                                    isSelected: selectedIds.contains(trade.id),
-                                    onSelect: (id) {
-                                      setState(() {
-                                        if (selectedIds.contains(id)) {
-                                          selectedIds.remove(id);
-                                        } else {
-                                          selectedIds.add(id);
-                                        }
-                                        _updateSelectionMode(
-                                          selectedIds.isNotEmpty,
-                                        );
-                                      });
-                                    },
-                                    onDelete: (id) {
-                                      controller.deleteTrades([id]);
-                                    },
-                                    isSelectionMode: selectedIds.isNotEmpty,
-                                  ),
-                            ],
+                        if (showHeaders) ...[
+                          Expanded(
+                            flex: 100,
+                            child: CustomText(
+                              textAlign: TextAlign.center,
+                              'Amount/Price',
+                              color: Color(0xffCCCCCC),
+                              size: 14.sp,
+                            ),
                           ),
-                        ),
-
-                        if (day != controller.getSortedDays(year, month).last)
-                          22.verticalSpace,
+                          Expanded(
+                            flex: 150,
+                            child: CustomText(
+                              'Total',
+                              textAlign: TextAlign.center,
+                              color: Color(0xffCCCCCC),
+                              size: 14.sp,
+                            ),
+                          ),
+                        ] else ...[
+                          Expanded(flex: 100, child: SizedBox()),
+                          Expanded(flex: 150, child: SizedBox()),
+                        ],
                       ],
-                    ],
+                    ),
+                  ),
 
-                    18.verticalSpace,
-                  ],
-                ],
+                InvestmentActivityItem(:final activity) => Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w),
+                  child: activity.isTrade
+                      ? TradeItemPair(
+                          tradeId: activity.id,
+                          soldAmount: item.soldAmount ?? '',
+                          soldSymbol: item.soldSymbol ?? '???',
+                          soldPrice: item.soldPrice ?? '',
+                          soldPriceSymbol: CurrencyService.instance.portfolioCode,
+                          soldTotal: item.soldTotal ?? '',
+                          soldTotalSymbol: CurrencyService.instance.portfolioCode,
+                          boughtAmount: item.boughtAmount ?? '',
+                          boughtSymbol: item.boughtSymbol ?? '???',
+                          boughtPrice: item.boughtPrice ?? '',
+                          boughtPriceSymbol: CurrencyService.instance.portfolioCode,
+                          boughtTotal: item.boughtTotal ?? '',
+                          boughtTotalSymbol: CurrencyService.instance.portfolioCode,
+                          isSelected: selectedIds.contains(activity.id),
+                          onSelect: (id) {
+                            setState(() {
+                              if (selectedIds.contains(id)) {
+                                selectedIds.remove(id);
+                              } else {
+                                selectedIds.add(id);
+                              }
+                              _updateSelectionMode(selectedIds.isNotEmpty);
+                            });
+                          },
+                          onDelete: (id) {
+                            controller.deleteTrades([id]);
+                          },
+                          isSelectionMode: selectedIds.isNotEmpty,
+                        )
+                      : TransactionItem(
+                          activity: activity,
+                          symbol: item.transactionSymbol ?? '???',
+                          isSelected: selectedIds.contains(activity.id),
+                          onSelect: (id) {
+                            setState(() {
+                              if (selectedIds.contains(id)) {
+                                selectedIds.remove(id);
+                              } else {
+                                selectedIds.add(id);
+                              }
+                              _updateSelectionMode(selectedIds.isNotEmpty);
+                            });
+                          },
+                          onDelete: (id) {
+                            controller.deleteTrades([id]);
+                          },
+                          isSelectionMode: selectedIds.isNotEmpty,
+                        ),
+                ),
 
-                if (year != years.last) 18.verticalSpace,
-              ],
-            ],
+                InvestmentSpacerItem() => const SizedBox.shrink(),
+              };
+            },
           );
         }),
-
-        9.verticalSpace,
       ],
     );
   }

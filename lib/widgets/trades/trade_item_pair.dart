@@ -146,66 +146,73 @@ class _TradeItemPairState extends State<TradeItemPair> {
             child: Row(
               children: [
                 Expanded(
-                  flex: 100,
-                  child: CustomText(
-                    'sold',
-                    color: Color(0xffFF0000),
-                    size: 16.sp,
-                  ),
-                ),
-
-                Expanded(
-                  flex: 100,
+                  flex: 150,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      CustomText(
+                        'sold',
+                        color: Color(0xffFF0000),
+                        size: 16.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
                       CustomText.richText(
+                        overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         children: [
                           CustomText.span(
                             '${widget.soldAmount} ',
-                            color: Colors.black,
-                            size: 16.sp,
+                            color: Color(0xffFF0000),
+                            size: 18.sp,
+                            fontWeight: FontWeight.bold,
                           ),
                           CustomText.span(
                             widget.soldSymbol,
                             color: AppColors.greyColor,
-                            size: 12.sp,
-                          ),
-                        ],
-                      ),
-                      CustomText.richText(
-                        children: [
-                          CustomText.span(
-                            '${widget.soldPrice} ',
-                            color: Colors.black,
-                            size: 16.sp,
-                          ),
-                          CustomText.span(
-                            widget.soldPriceSymbol,
-                            color: AppColors.greyColor,
-                            size: 12.sp,
+                            size: 14.sp,
+                            fontWeight: FontWeight.w400,
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
+
                 Expanded(
                   flex: 150,
-                  child: CustomText.richText(
-                    textAlign: TextAlign.right,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      CustomText.span(
-                        '${widget.soldTotal} ',
+                      CustomText(
+                        widget.soldPriceSymbol,
+                        color: AppColors.greyColor,
+                        size: 12.sp,
+                      ),
+                      CustomText(
+                        widget.soldPrice,
                         color: Colors.black,
                         size: 18.sp,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                       ),
-                      CustomText.span(
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 150,
+
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      CustomText(
                         widget.soldTotalSymbol,
                         color: AppColors.greyColor,
                         size: 12.sp,
+                      ),
+                      CustomText(
+                        widget.soldTotal,
+                        color: Color(0xffFF0000),
+                        size: 18.sp,
+                        fontWeight: FontWeight.w600,
                       ),
                     ],
                   ),
@@ -232,66 +239,74 @@ class _TradeItemPairState extends State<TradeItemPair> {
             child: Row(
               children: [
                 Expanded(
-                  flex: 100,
-                  child: CustomText(
-                    'bought',
-                    color: Color(0xff00C00D),
-                    size: 16.sp,
-                  ),
-                ),
-
-                Expanded(
-                  flex: 100,
+                  flex: 150,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      CustomText(
+                        'bought',
+                        color: Color(0xff00C00D),
+                        size: 16.sp,
+                      ),
                       CustomText.richText(
-                        textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                         children: [
                           CustomText.span(
                             '${widget.boughtAmount} ',
-                            color: Colors.black,
-                            size: 16.sp,
+                            color: Color(0xff008309),
+                            size: 18.sp,
+                            fontWeight: FontWeight.bold,
                           ),
                           CustomText.span(
                             widget.boughtSymbol,
                             color: AppColors.greyColor,
-                            size: 12.sp,
-                          ),
-                        ],
-                      ),
-                      CustomText.richText(
-                        children: [
-                          CustomText.span(
-                            '${widget.boughtPrice} ',
-                            color: Colors.black,
-                            size: 16.sp,
-                          ),
-                          CustomText.span(
-                            widget.boughtPriceSymbol,
-                            color: AppColors.greyColor,
-                            size: 12.sp,
+                            size: 14.sp,
+                            fontWeight: FontWeight.w400,
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
+
                 Expanded(
                   flex: 150,
-                  child: CustomText.richText(
-                    textAlign: TextAlign.right,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      CustomText.span(
-                        '${widget.boughtTotal} ',
+                      4.verticalSpace,
+                      CustomText(
+                        widget.boughtPriceSymbol,
+                        color: AppColors.greyColor,
+                        size: 12.sp,
+                      ),
+                      CustomText(
+                        widget.boughtPrice,
                         color: Colors.black,
                         size: 18.sp,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                       ),
-                      CustomText.span(
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 150,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      4.verticalSpace,
+
+                      CustomText(
                         widget.boughtTotalSymbol,
                         color: AppColors.greyColor,
                         size: 12.sp,
+                      ),
+                      CustomText(
+                        widget.boughtTotal,
+                        color: Color(0xff008309),
+                        size: 18.sp,
+                        fontWeight: FontWeight.w600,
                       ),
                     ],
                   ),

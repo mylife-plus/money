@@ -106,10 +106,8 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
       // and the caller should handle creating the new category
       widget.onSave?.call(name, null, newCategoryName: newCategoryName);
     } else if (selectedParentGroup == _selectCategoryValue) {
-      setState(() {
-        _errorMessage = 'Please select a category';
-      });
-      return;
+      // No category selected — caller will assign to N/A
+      widget.onSave?.call(name, null);
     } else {
       widget.onSave?.call(name, selectedParentGroup);
     }
@@ -142,7 +140,7 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 10),
+      insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(10),

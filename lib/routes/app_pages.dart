@@ -7,6 +7,8 @@ import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/screens/filter/transaction_filter_screen.dart';
 import 'package:moneyapp/screens/hashtag/hashtag_group_screen.dart';
 import 'package:moneyapp/screens/home/home_screen.dart';
+import 'package:moneyapp/screens/onboarding/currency_selection_screen.dart';
+import 'package:moneyapp/screens/onboarding/welcome_screen.dart';
 import 'package:moneyapp/screens/home/investment_list_screen.dart';
 import 'package:moneyapp/screens/home/investment_screen.dart';
 
@@ -25,10 +27,20 @@ class AppPages {
   AppPages._();
 
   /// Initial route when app starts
-  static final initial = AppRoutes.home.path;
+  static String initial = AppRoutes.home.path;
 
   /// List of all app pages with their routes and bindings
   static final routes = [
+    GetPage(
+      name: AppRoutes.welcome.path,
+      page: () => const WelcomeScreen(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: AppRoutes.currencySelection.path,
+      page: () => const CurrencySelectionScreen(),
+      transition: Transition.noTransition,
+    ),
     GetPage(
       name: AppRoutes.home.path,
       page: () => HomeScreen(),
@@ -46,7 +58,7 @@ class AppPages {
       page: () => const InvestmentListScreen(),
       binding: InvestmentBinding(),
     ),
-    GetPage(name: AppRoutes.settings.path, page: () => SettingsScreen()),
+    GetPage(name: AppRoutes.settings.path, page: () => const SettingsScreen()),
     GetPage(
       name: AppRoutes.hashtagGroups.path,
       page: () {

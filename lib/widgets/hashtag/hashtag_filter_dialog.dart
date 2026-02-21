@@ -105,6 +105,7 @@ class _HashtagFilterDialogState extends State<HashtagFilterDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       child: Container(

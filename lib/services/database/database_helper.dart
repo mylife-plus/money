@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 /// Each entity (transactions, MCCs, hashtags, assets, etc.) should have its own repository
 class DatabaseHelper {
   static const _databaseName = 'money_app.db';
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 5;
 
   // Table names
   static const tableHashtagGroups = 'hashtag_groups';
@@ -16,6 +16,14 @@ class DatabaseHelper {
   static const tableMCCCategories = 'mcc_categories';
   static const tableMCCItems = 'mcc_items';
   static const tableAssets = 'assets';
+  static const tableInvestments = 'investments';
+  static const tableInvestmentActivities = 'investment_activities';
+  static const tablePortfolioSnapshots = 'portfolio_snapshots';
+  static const tableAppSettings = 'app_settings';
+
+  // App Settings table columns
+  static const columnSettingKey = 'setting_key';
+  static const columnSettingValue = 'setting_value';
 
   // Hashtag Groups table columns
   static const columnHashtagGroupId = 'hashtag_group_id';
@@ -37,6 +45,50 @@ class DatabaseHelper {
   static const columnTransactionHashtags = 'transaction_hashtags';
   static const columnTransactionCreatedAt = 'transaction_created_at';
   static const columnTransactionUpdatedAt = 'transaction_updated_at';
+
+  // Investments table columns
+  static const columnInvestmentId = 'investment_id';
+  static const columnInvestmentName = 'investment_name';
+  static const columnInvestmentTicker = 'investment_ticker';
+  static const columnInvestmentColor = 'investment_color';
+  static const columnInvestmentImagePath = 'investment_image_path';
+  static const columnInvestmentCreatedAt = 'investment_created_at';
+  static const columnInvestmentUpdatedAt = 'investment_updated_at';
+
+  // Investment Activities table columns
+  static const columnActivityId = 'activity_id';
+  static const columnActivityType = 'activity_type';
+  static const columnActivityDate = 'activity_date';
+  static const columnActivityDescription = 'activity_description';
+  static const columnActivityCreatedAt = 'activity_created_at';
+  static const columnActivityUpdatedAt = 'activity_updated_at';
+  // Transaction-specific columns (NULL for trades)
+  static const columnTxIsWithdraw = 'tx_is_withdraw';
+  static const columnTxInvestmentId = 'tx_investment_id';
+  static const columnTxAmount = 'tx_amount';
+  static const columnTxPrice = 'tx_price';
+  static const columnTxTotal = 'tx_total';
+  // Trade-specific columns (NULL for transactions)
+  static const columnTradeSoldInvestmentId = 'trade_sold_investment_id';
+  static const columnTradeSoldAmount = 'trade_sold_amount';
+  static const columnTradeSoldPrice = 'trade_sold_price';
+  static const columnTradeSoldTotal = 'trade_sold_total';
+  static const columnTradeBoughtInvestmentId = 'trade_bought_investment_id';
+  static const columnTradeBoughtAmount = 'trade_bought_amount';
+  static const columnTradeBoughtPrice = 'trade_bought_price';
+  static const columnTradeBoughtTotal = 'trade_bought_total';
+
+  // Portfolio Snapshots table columns
+  static const columnSnapshotId = 'snapshot_id';
+  static const columnSnapshotInvestmentId = 'snapshot_investment_id';
+  static const columnSnapshotDate = 'snapshot_date';
+  static const columnSnapshotUnitPrice = 'snapshot_unit_price';
+  static const columnSnapshotIsManualPrice = 'snapshot_is_manual_price';
+  static const columnSnapshotEntryType = 'snapshot_entry_type';
+  static const columnSnapshotActivityId = 'snapshot_activity_id';
+  static const columnSnapshotNote = 'snapshot_note';
+  static const columnSnapshotCreatedAt = 'snapshot_created_at';
+  static const columnSnapshotUpdatedAt = 'snapshot_updated_at';
 
   // Singleton pattern
   DatabaseHelper._privateConstructor();
@@ -120,12 +172,19 @@ class DatabaseHelper {
     ''');
     debugPrint('[DatabaseHelper] ✅ Hashtag groups table created');
 
-    // TODO: Add more tables as needed
-    // Example:
+    // Seed the default N/A hashtag group
+    await _seedNAGroup(db);
+
     // Create Transactions table
     await _createTransactionsTable(db);
-    // await _createMCCTables(db);
-    // await _createAssetsTable(db);
+
+    // Create Investment tables
+    await _createInvestmentsTable(db);
+    await _createInvestmentActivitiesTable(db);
+    await _createPortfolioSnapshotsTable(db);
+
+    // Create App Settings table
+    await _createAppSettingsTable(db);
   }
 
   Future<void> _createTransactionsTable(Database db) async {
@@ -146,17 +205,169 @@ class DatabaseHelper {
     debugPrint('[DatabaseHelper] ✅ Transactions table created');
   }
 
+  /// Create investments table
+  Future<void> _createInvestmentsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE $tableInvestments (
+        $columnInvestmentId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnInvestmentName TEXT NOT NULL,
+        $columnInvestmentTicker TEXT NOT NULL,
+        $columnInvestmentColor INTEGER NOT NULL,
+        $columnInvestmentImagePath TEXT NOT NULL,
+        $columnInvestmentCreatedAt TEXT NOT NULL,
+        $columnInvestmentUpdatedAt TEXT NOT NULL
+      )
+    ''');
+    debugPrint('[DatabaseHelper] ✅ Investments table created');
+  }
+
+  /// Create investment activities table (unified for transactions and trades)
+  Future<void> _createInvestmentActivitiesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE $tableInvestmentActivities (
+        $columnActivityId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnActivityType TEXT NOT NULL,
+        $columnActivityDate TEXT NOT NULL,
+        $columnActivityDescription TEXT,
+        $columnActivityCreatedAt TEXT NOT NULL,
+        $columnActivityUpdatedAt TEXT NOT NULL,
+
+        -- Transaction-specific fields (NULL for trades)
+        $columnTxIsWithdraw INTEGER,
+        $columnTxInvestmentId INTEGER,
+        $columnTxAmount REAL,
+        $columnTxPrice REAL,
+        $columnTxTotal REAL,
+
+        -- Trade-specific fields (NULL for transactions)
+        $columnTradeSoldInvestmentId INTEGER,
+        $columnTradeSoldAmount REAL,
+        $columnTradeSoldPrice REAL,
+        $columnTradeSoldTotal REAL,
+        $columnTradeBoughtInvestmentId INTEGER,
+        $columnTradeBoughtAmount REAL,
+        $columnTradeBoughtPrice REAL,
+        $columnTradeBoughtTotal REAL,
+
+        FOREIGN KEY ($columnTxInvestmentId) REFERENCES $tableInvestments ($columnInvestmentId),
+        FOREIGN KEY ($columnTradeSoldInvestmentId) REFERENCES $tableInvestments ($columnInvestmentId),
+        FOREIGN KEY ($columnTradeBoughtInvestmentId) REFERENCES $tableInvestments ($columnInvestmentId)
+      )
+    ''');
+
+    // Create index for faster date-based queries
+    await db.execute('''
+      CREATE INDEX idx_activities_date ON $tableInvestmentActivities ($columnActivityDate DESC)
+    ''');
+
+    debugPrint('[DatabaseHelper] ✅ Investment activities table created');
+  }
+
+  /// Create portfolio snapshots table
+  Future<void> _createPortfolioSnapshotsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE $tablePortfolioSnapshots (
+        $columnSnapshotId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnSnapshotInvestmentId INTEGER NOT NULL,
+        $columnSnapshotDate TEXT NOT NULL,
+        $columnSnapshotUnitPrice REAL NOT NULL,
+        $columnSnapshotIsManualPrice INTEGER NOT NULL DEFAULT 0,
+        $columnSnapshotEntryType TEXT NOT NULL,
+        $columnSnapshotActivityId INTEGER,
+        $columnSnapshotNote TEXT,
+        $columnSnapshotCreatedAt TEXT NOT NULL,
+        $columnSnapshotUpdatedAt TEXT NOT NULL,
+
+        FOREIGN KEY ($columnSnapshotInvestmentId) REFERENCES $tableInvestments ($columnInvestmentId) ON DELETE RESTRICT,
+        FOREIGN KEY ($columnSnapshotActivityId) REFERENCES $tableInvestmentActivities ($columnActivityId) ON DELETE SET NULL
+      )
+    ''');
+
+    // Create indexes for faster queries
+    await db.execute('''
+      CREATE INDEX idx_snapshots_investment ON $tablePortfolioSnapshots ($columnSnapshotInvestmentId)
+    ''');
+    await db.execute('''
+      CREATE INDEX idx_snapshots_date ON $tablePortfolioSnapshots ($columnSnapshotDate DESC)
+    ''');
+
+    debugPrint('[DatabaseHelper] ✅ Portfolio snapshots table created');
+  }
+
+  /// Create app settings table (key-value store)
+  Future<void> _createAppSettingsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE $tableAppSettings (
+        $columnSettingKey TEXT PRIMARY KEY,
+        $columnSettingValue TEXT NOT NULL
+      )
+    ''');
+    debugPrint('[DatabaseHelper] App settings table created');
+  }
+
+  /// Seed the default N/A hashtag group
+  Future<void> _seedNAGroup(Database db) async {
+    final now = DateTime.now().toIso8601String();
+    await db.insert(tableHashtagGroups, {
+      columnHashtagGroupName: 'N/A',
+      columnHashtagGroupParentId: null,
+      columnHashtagGroupOrder: 999,
+      columnHashtagGroupIsCustom: 0,
+      columnHashtagGroupCreatedAt: now,
+      columnHashtagGroupUpdatedAt: now,
+    });
+    debugPrint('[DatabaseHelper] ✅ N/A hashtag group seeded');
+  }
+
   /// Handle database upgrades
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     debugPrint(
       '[DatabaseHelper] Upgrading database from version $oldVersion to $newVersion',
     );
 
-    // Add migration logic here when you update the schema
-    // Example:
-    // if (oldVersion < 2) {
-    //   await db.execute('ALTER TABLE ...');
-    // }
+    // Migration from version 1 to 2: Add investment tables
+    if (oldVersion < 2) {
+      debugPrint(
+        '[DatabaseHelper] Migrating to version 2: Adding investment tables',
+      );
+      await _createInvestmentsTable(db);
+      await _createInvestmentActivitiesTable(db);
+      await _createPortfolioSnapshotsTable(db);
+    }
+
+    // Migration from version 2 to 3: Redesign portfolio snapshots for per-investment tracking
+    if (oldVersion < 3) {
+      debugPrint(
+        '[DatabaseHelper] Migrating to version 3: Redesigning portfolio snapshots',
+      );
+      // Drop and recreate portfolio_snapshots table (clears old data)
+      await db.execute('DROP TABLE IF EXISTS $tablePortfolioSnapshots');
+      await _createPortfolioSnapshotsTable(db);
+      debugPrint('[DatabaseHelper] ✅ Portfolio snapshots table recreated');
+    }
+
+    // Migration from version 3 to 4: Add app settings table
+    if (oldVersion < 4) {
+      debugPrint(
+        '[DatabaseHelper] Migrating to version 4: Adding app settings table',
+      );
+      await _createAppSettingsTable(db);
+    }
+
+    // Migration from version 4 to 5: Seed N/A hashtag group
+    if (oldVersion < 5) {
+      debugPrint(
+        '[DatabaseHelper] Migrating to version 5: Seeding N/A hashtag group',
+      );
+      final existing = await db.query(
+        tableHashtagGroups,
+        where: '$columnHashtagGroupName = ?',
+        whereArgs: ['N/A'],
+      );
+      if (existing.isEmpty) {
+        await _seedNAGroup(db);
+      }
+    }
   }
 
   /// Verify database is accessible
@@ -243,6 +454,10 @@ class DatabaseHelper {
 
       await db.delete(tableHashtagGroups);
       await db.delete(tableTransactions);
+      // Clear investment tables (order matters due to foreign keys)
+      await db.delete(tablePortfolioSnapshots);
+      await db.delete(tableInvestmentActivities);
+      await db.delete(tableInvestments);
       // TODO: Add more tables when they are created
       // await db.delete(tableMCCCategories);
       // await db.delete(tableMCCItems);

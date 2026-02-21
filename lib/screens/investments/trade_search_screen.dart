@@ -4,8 +4,11 @@ import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
+import 'package:moneyapp/models/investment_activity_model.dart';
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
+import 'package:moneyapp/widgets/trades/transaction_item.dart';
 
 class TradeSearchScreen extends StatefulWidget {
   const TradeSearchScreen({super.key});
@@ -17,7 +20,8 @@ class TradeSearchScreen extends StatefulWidget {
 class _TradeSearchScreenState extends State<TradeSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  List<Trade> _filteredTrades = [];
+  List<InvestmentActivity> _filteredActivities = [];
+  final InvestmentController _controller = Get.find<InvestmentController>();
 
   @override
   void initState() {
@@ -35,33 +39,90 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
     super.dispose();
   }
 
+  /// Format double value as string for display
+  String _formatAmount(double? value) {
+    if (value == null) return '0';
+    // Remove trailing zeros
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value
+        .toStringAsFixed(4)
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
+  }
+
+  /// Format price/total value as string
+  String _formatPrice(double? value) {
+    if (value == null) return '0';
+    return value.toStringAsFixed(2);
+  }
+
+  /// Get investment ticker by ID
+  String _getInvestmentTicker(int? investmentId) {
+    if (investmentId == null) return '???';
+    final investment = _controller.getInvestmentById(investmentId);
+    return investment?.ticker ?? '???';
+  }
+
   void _performSearch(String query) {
     if (query.isEmpty) {
       setState(() {
-        _filteredTrades = [];
+        _filteredActivities = [];
       });
       return;
     }
 
-    final controller = Get.find<InvestmentController>();
-    final allTrades = controller.trades;
+    final allActivities = _controller.activities;
 
-    // Filter trades based on search query
+    // Filter activities (both transactions and trades) based on search query
     final lowerQuery = query.toLowerCase();
-    _filteredTrades = allTrades.where((trade) {
-      final soldSymbol = trade.soldSymbol.toLowerCase();
-      final boughtSymbol = trade.boughtSymbol.toLowerCase();
-      final soldAmount = trade.soldAmount.toLowerCase();
-      final boughtAmount = trade.boughtAmount.toLowerCase();
-      final soldTotal = trade.soldTotal.toLowerCase();
-      final boughtTotal = trade.boughtTotal.toLowerCase();
+    _filteredActivities = allActivities.where((activity) {
+      final description = (activity.description ?? '').toLowerCase();
 
-      return soldSymbol.contains(lowerQuery) ||
-          boughtSymbol.contains(lowerQuery) ||
-          soldAmount.contains(lowerQuery) ||
-          boughtAmount.contains(lowerQuery) ||
-          soldTotal.contains(lowerQuery) ||
-          boughtTotal.contains(lowerQuery);
+      if (activity.isTrade) {
+        // Search trade fields
+        final soldTicker = _getInvestmentTicker(
+          activity.tradeSoldInvestmentId,
+        ).toLowerCase();
+        final boughtTicker = _getInvestmentTicker(
+          activity.tradeBoughtInvestmentId,
+        ).toLowerCase();
+        final soldAmount = _formatAmount(
+          activity.tradeSoldAmount,
+        ).toLowerCase();
+        final boughtAmount = _formatAmount(
+          activity.tradeBoughtAmount,
+        ).toLowerCase();
+        final soldTotal = _formatPrice(activity.tradeSoldTotal).toLowerCase();
+        final boughtTotal = _formatPrice(
+          activity.tradeBoughtTotal,
+        ).toLowerCase();
+
+        return soldTicker.contains(lowerQuery) ||
+            boughtTicker.contains(lowerQuery) ||
+            soldAmount.contains(lowerQuery) ||
+            boughtAmount.contains(lowerQuery) ||
+            soldTotal.contains(lowerQuery) ||
+            boughtTotal.contains(lowerQuery) ||
+            description.contains(lowerQuery);
+      } else {
+        // Search transaction fields
+        final ticker = _getInvestmentTicker(
+          activity.transactionInvestmentId,
+        ).toLowerCase();
+        final amount = _formatAmount(activity.transactionAmount).toLowerCase();
+        final price = _formatPrice(activity.transactionPrice).toLowerCase();
+        final total = _formatPrice(activity.transactionTotal).toLowerCase();
+        final direction = activity.isDeposit ? 'deposit' : 'withdraw';
+
+        return ticker.contains(lowerQuery) ||
+            amount.contains(lowerQuery) ||
+            price.contains(lowerQuery) ||
+            total.contains(lowerQuery) ||
+            direction.contains(lowerQuery) ||
+            description.contains(lowerQuery);
+      }
     }).toList();
 
     setState(() {});
@@ -88,7 +149,11 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
                       height: 21.h,
                     ),
                   ),
-                  CustomText('Search Trades', size: 16.sp, color: Colors.black),
+                  CustomText(
+                    'Search Activities',
+                    size: 16.sp,
+                    color: Colors.black,
+                  ),
                   SizedBox(width: 21.w),
                 ],
               ),
@@ -157,12 +222,12 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
                       ],
                     ),
                   ),
-                  if (_filteredTrades.isNotEmpty) ...[
+                  if (_filteredActivities.isNotEmpty) ...[
                     10.verticalSpace,
                     Align(
                       alignment: Alignment.centerLeft,
                       child: CustomText(
-                        '${_filteredTrades.length} result${_filteredTrades.length == 1 ? '' : 's'} found',
+                        '${_filteredActivities.length} result${_filteredActivities.length == 1 ? '' : 's'} found',
                         size: 14.sp,
                         color: AppColors.greyColor,
                       ),
@@ -177,7 +242,7 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
             Expanded(
               child: _searchController.text.isEmpty
                   ? _buildEmptyState()
-                  : _filteredTrades.isEmpty
+                  : _filteredActivities.isEmpty
                   ? _buildNoResultsState()
                   : _buildSearchResults(),
             ),
@@ -200,14 +265,14 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
           ),
           20.verticalSpace,
           CustomText(
-            'Search for trades',
+            'Search for activities',
             size: 16.sp,
             color: AppColors.greyColor,
             fontWeight: FontWeight.w400,
           ),
           8.verticalSpace,
           CustomText(
-            'Try searching by symbol, amount, or total',
+            'Try searching by symbol, amount, total, or type',
             size: 14.sp,
             color: AppColors.greyColor.withValues(alpha: 0.7),
             fontWeight: FontWeight.w300,
@@ -252,29 +317,45 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
   }
 
   Widget _buildSearchResults() {
-    return Expanded(
-      child: ListView.separated(
-        padding: EdgeInsets.symmetric(horizontal: 6.w),
-        itemCount: _filteredTrades.length,
-        separatorBuilder: (context, index) => 10.verticalSpace,
-        itemBuilder: (context, index) {
-          final trade = _filteredTrades[index];
+    return ListView.separated(
+      padding: EdgeInsets.symmetric(horizontal: 6.w),
+      itemCount: _filteredActivities.length,
+      separatorBuilder: (context, index) => 10.verticalSpace,
+      itemBuilder: (context, index) {
+        final activity = _filteredActivities[index];
+
+        if (activity.isTrade) {
           return TradeItemPair(
-            soldAmount: trade.soldAmount,
-            soldSymbol: trade.soldSymbol,
-            soldPrice: trade.soldPrice,
-            soldPriceSymbol: trade.soldPriceSymbol,
-            soldTotal: trade.soldTotal,
-            soldTotalSymbol: trade.soldTotalSymbol,
-            boughtAmount: trade.boughtAmount,
-            boughtSymbol: trade.boughtSymbol,
-            boughtPrice: trade.boughtPrice,
-            boughtPriceSymbol: trade.boughtPriceSymbol,
-            boughtTotal: trade.boughtTotal,
-            boughtTotalSymbol: trade.boughtTotalSymbol,
+            tradeId: activity.id,
+            soldAmount: _formatAmount(activity.tradeSoldAmount),
+            soldSymbol: _getInvestmentTicker(activity.tradeSoldInvestmentId),
+            soldPrice: _formatPrice(activity.tradeSoldPrice),
+            soldPriceSymbol: CurrencyService.instance.portfolioCode,
+            soldTotal: _formatPrice(activity.tradeSoldTotal),
+            soldTotalSymbol: CurrencyService.instance.portfolioCode,
+            boughtAmount: _formatAmount(activity.tradeBoughtAmount),
+            boughtSymbol: _getInvestmentTicker(
+              activity.tradeBoughtInvestmentId,
+            ),
+            boughtPrice: _formatPrice(activity.tradeBoughtPrice),
+            boughtPriceSymbol: CurrencyService.instance.portfolioCode,
+            boughtTotal: _formatPrice(activity.tradeBoughtTotal),
+            boughtTotalSymbol: CurrencyService.instance.portfolioCode,
           );
-        },
-      ),
+        } else {
+          return TransactionItem(
+            activity: activity,
+            symbol: _getInvestmentTicker(activity.transactionInvestmentId),
+            isSelected: false,
+            onSelect: (id) {},
+            onDelete: (id) {
+              _controller.deleteTrades([id]);
+              _performSearch(_searchController.text);
+            },
+            isSelectionMode: false,
+          );
+        }
+      },
     );
   }
 }
