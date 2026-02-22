@@ -69,7 +69,6 @@ class PortfolioSection extends StatelessWidget {
           }
 
           double percentChange = 0;
-          String latestDate = DateFormat('dd.MM.yyyy').format(DateTime.now());
 
           // Build chart data from filtered portfolio snapshots
           final filteredSnapshots = controller.filteredPortfolioHistory;
@@ -146,10 +145,8 @@ class PortfolioSection extends StatelessWidget {
                 percentChange = ((lastValue - firstValue) / firstValue) * 100;
               }
               currentValue = lastValue;
-              latestDate = chartData.last.label;
             } else if (chartData.length == 1) {
               currentValue = chartData.first.value;
-              latestDate = chartData.first.label;
             }
           }
 
@@ -175,20 +172,18 @@ class PortfolioSection extends StatelessWidget {
                 height: 227.h,
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        24.horizontalSpace,
-                        Padding(
-                          padding: EdgeInsets.only(right: 15.w),
-                          child: CustomText(
-                            latestDate,
-                            size: 14.sp,
-                            fontWeight: FontWeight.normal,
-                            color: AppColors.greyColor,
-                          ),
-                        ),
-                        Spacer(),
-                        CustomText.richText(
+                    Center(
+                      child: CustomText(
+                        enrichedData.isEmpty
+                            ? 'N/A  -  N/A'
+                            : '${DateFormat('dd.MM.yyyy').format(controller.portfolioDateStart.value)}  -  ${DateFormat('dd.MM.yyyy').format(controller.portfolioDateEnd.value)}',
+                        size: 14.sp,
+                        color: AppColors.greyColor,
+                      ),
+                    ),
+                    if (enrichedData.isNotEmpty)
+                      Center(
+                        child: CustomText.richText(
                           children: [
                             CustomText.span(
                               '${CurrencyService.instance.portfolioSymbol} ${_formatCurrency(currentValue)}',
@@ -210,11 +205,16 @@ class PortfolioSection extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Spacer(),
-                        70.horizontalSpace,
-                      ],
-                    ),
-                    12.verticalSpace,
+                      )
+                    else
+                      Center(
+                        child: CustomText(
+                          '0',
+                          size: 20.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
                     Expanded(
                       child: SmoothLineChartWidget(
                         data: chartData,
@@ -229,55 +229,63 @@ class PortfolioSection extends StatelessWidget {
               Obx(
                 () => Padding(
                   padding: EdgeInsets.symmetric(horizontal: 7.w),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      spacing: 6.w,
-                      children: [
-                        for (final duration
-                            in controller.availablePortfolioDurationTabs)
-                          InkWell(
-                            onTap: () =>
-                                controller.updatePortfolioDurationTab(duration),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10.w,
-                                vertical: 5.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    controller
-                                            .selectedPortfolioDurationTab
-                                            .value ==
-                                        duration
-                                    ? const Color(0xff0088FF)
-                                    : Colors.white,
-                                border: Border.all(
-                                  color:
-                                      controller
-                                              .selectedPortfolioDurationTab
-                                              .value ==
-                                          duration
-                                      ? Colors.transparent
-                                      : AppColors.greyColor,
+                  child: Row(
+                    mainAxisAlignment:
+                        controller.availablePortfolioDurationTabs.length <= 1
+                        ? MainAxisAlignment.end
+                        : MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Wrap(
+                          spacing: 6.w,
+                          runSpacing: 4.h,
+                          children: [
+                            for (final duration
+                                in controller.availablePortfolioDurationTabs)
+                              InkWell(
+                                onTap: () => controller
+                                    .updatePortfolioDurationTab(duration),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10.w,
+                                    vertical: 5.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        controller
+                                                .selectedPortfolioDurationTab
+                                                .value ==
+                                            duration
+                                        ? const Color(0xff0088FF)
+                                        : Colors.white,
+                                    border: Border.all(
+                                      color:
+                                          controller
+                                                  .selectedPortfolioDurationTab
+                                                  .value ==
+                                              duration
+                                          ? Colors.transparent
+                                          : AppColors.greyColor,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4.r),
+                                  ),
+                                  child: CustomText(
+                                    duration,
+                                    size: 16.sp,
+                                    color:
+                                        controller
+                                                .selectedPortfolioDurationTab
+                                                .value ==
+                                            duration
+                                        ? Colors.white
+                                        : AppColors.greyColor,
+                                  ),
                                 ),
-                                borderRadius: BorderRadius.circular(4.r),
                               ),
-                              child: CustomText(
-                                duration,
-                                size: 16.sp,
-                                color:
-                                    controller
-                                            .selectedPortfolioDurationTab
-                                            .value ==
-                                        duration
-                                    ? Colors.white
-                                    : AppColors.greyColor,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

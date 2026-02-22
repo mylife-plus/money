@@ -295,6 +295,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (Get.isRegistered<HashtagGroupsController>()) {
           await Get.find<HashtagGroupsController>().loadHashtagGroups();
         }
+        if (Get.isRegistered<InvestmentController>()) {
+          await Get.find<InvestmentController>().loadData();
+        }
 
         if (context.mounted) {
           Navigator.pop(context); // close progress

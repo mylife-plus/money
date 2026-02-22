@@ -293,6 +293,15 @@ class _HomeScreenState extends State<HomeScreen>
                                   height: 227.h,
                                   child: Column(
                                     children: [
+                                      Center(
+                                        child: CustomText(
+                                          controller.transactions.isEmpty
+                                              ? 'N/A  -  N/A'
+                                              : '${DateFormat('dd.MM.yyyy').format(controller.transactionDateStart)}  -  ${DateFormat('dd.MM.yyyy').format(controller.transactionDateEnd)}',
+                                          size: 14.sp,
+                                          color: AppColors.greyColor,
+                                        ),
+                                      ),
                                       Expanded(
                                         child: StepLineChartWidget(
                                           data: controller.chartData,
@@ -308,6 +317,13 @@ class _HomeScreenState extends State<HomeScreen>
                                 9.verticalSpace,
                                 Obx(
                                   () => Column(
+                                    crossAxisAlignment:
+                                        controller
+                                                .availableDurationTabs
+                                                .length <=
+                                            1
+                                        ? CrossAxisAlignment.end
+                                        : CrossAxisAlignment.center,
                                     children: [
                                       Padding(
                                         padding: EdgeInsets.symmetric(

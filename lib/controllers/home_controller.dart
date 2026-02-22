@@ -6,6 +6,7 @@ import 'package:moneyapp/models/home_list_item.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/services/database/repositories/transaction_repository.dart';
 
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/models/mcc_model.dart';
@@ -212,48 +213,24 @@ class HomeController extends GetxController {
     return startMatches && endMatches;
   }
 
-  // Available Duration filtering
+  // Available Duration filtering — only show tabs whose duration <= data span
   List<String> get availableDurationTabs {
-    // Determine the extent of the data
-    // If no transactions, fallback to basic options
-    if (transactions.isEmpty) {
-      return ['1d', '7d', '2w', '1m', '3m', '6m', 'All'];
-    }
+    if (transactions.isEmpty) return ['All'];
 
-    // Min date vs Now
-    // We base "availability" on whether there is any data extending back that far?
-    // OR just use minDate vs Now duration?
-    // "if you have dates from up to 6 years you show all"
-    // So we calculate the difference between Now and MinDate.
+    final days = DateTime.now().difference(minDate).inDays;
+    final tabs = <String>[];
 
-    final now = DateTime.now();
-    final dataMin = minDate; // This is computed from transactions
-    final duration = now.difference(dataMin);
-    final days = duration.inDays;
-
-    final tabs = <String>['1d', '7d', '2w', '1m', '3m', '6m'];
-
-    // Add 1y if we have >= 365 days of data (approx)
-    // Or actually, the request says: "if only transaction from 1 year are there [show up to 6m, all]"
-    // This implies 1y button only appears if there's > 1 year of data? Or maybe >= 6 months?
-    // "if only transaction from 1 year are there you should only show(1d, 7d, 2w, 1m, 3m, 6m, all)"
-    // This phrasing is slightly ambiguous. "From 1 year" could mean data IS 1 year old.
-    // Let's assume:
-    // If data duration >= 1 year -> Show 1y
-    // If data duration >= 2 years -> Show 2y
-    // If data duration >= 5 years -> Show 5y
-
-    if (days >= 365) {
-      tabs.add('1y');
-    }
-    if (days >= 365 * 2) {
-      tabs.add('2y');
-    }
-    if (days >= 365 * 5) {
-      tabs.add('5y');
-    }
-
+    tabs.add('1d');
+    if (days >= 7) tabs.add('7d');
+    if (days >= 14) tabs.add('2w');
+    if (days >= 30) tabs.add('1m');
+    if (days >= 90) tabs.add('3m');
+    if (days >= 180) tabs.add('6m');
+    if (days >= 365) tabs.add('1y');
+    if (days >= 730) tabs.add('2y');
+    if (days >= 1825) tabs.add('5y');
     tabs.add('All');
+
     return tabs;
   }
 
@@ -488,30 +465,28 @@ class HomeController extends GetxController {
       String label;
       String tooltipLabel;
 
+      final currencySymbol = CurrencyService.instance.cashflowSymbol;
+
       if (durationInDays <= 2) {
         // Hourly labels
         label = DateFormat('HH:mm').format(windowMidpoint);
-        // Tooltip shows exact time (no range for <= 3 months)
-        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
                       '${DateFormat('HH:mm dd.MM.yyyy').format(windowMidpoint)}';
       } else if (durationInDays <= 90) {
         // Daily labels (<= 3 months)
         label = DateFormat('dd.MM.yyyy').format(windowMidpoint);
-        // Tooltip shows exact date (no range for <= 3 months)
-        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
                       '${DateFormat('dd.MM.yyyy').format(windowMidpoint)}';
       } else if (durationInDays <= 365 * 2 + 10) {
         // Monthly labels (> 3 months)
         label = DateFormat('MMM yyyy').format(windowMidpoint);
-        // Tooltip shows date range (aggregation applied)
-        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
                       '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
                       '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       } else {
         // Yearly labels (> 3 months)
         label = DateFormat('yyyy').format(windowMidpoint);
-        // Tooltip shows date range (aggregation applied)
-        tooltipLabel = '${windowValue.toStringAsFixed(2)}\n'
+        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
                       '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
                       '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       }

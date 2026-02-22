@@ -10,6 +10,7 @@ class StepLineChartWidget extends StatelessWidget {
   final Color lineColor;
   final double lineWidth;
   final bool showDot;
+  final Color? tooltipAmountColor;
 
   const StepLineChartWidget({
     super.key,
@@ -17,6 +18,7 @@ class StepLineChartWidget extends StatelessWidget {
     this.lineColor = const Color(0xFF4CAF50),
     this.lineWidth = 3,
     this.showDot = true,
+    this.tooltipAmountColor,
   });
 
   @override
@@ -33,24 +35,42 @@ class StepLineChartWidget extends StatelessWidget {
           // Tooltip settings
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (_) => Colors.white,
+              tooltipBorder: BorderSide(color: Colors.grey.shade300),
+              tooltipRoundedRadius: 8,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
                   final index = barSpot.x.toInt();
                   if (index >= 0 && index < data.length) {
+                    final parts = data[index].tooltipLabel.split('\n');
+                    final amount = parts.isNotEmpty ? parts[0] : '';
+                    final date = parts.length > 1 ? parts[1] : '';
                     return LineTooltipItem(
-                      data[index].tooltipLabel,
-                      const TextStyle(
-                        color: Colors.white,
+                      amount,
+                      TextStyle(
+                        color: tooltipAmountColor ?? lineColor,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12.sp,
                       ),
+                      children: [
+                        if (date.isNotEmpty)
+                          TextSpan(
+                            text: '\n$date',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.normal,
+                              fontSize: 11.sp,
+                            ),
+                          ),
+                      ],
                       textAlign: TextAlign.center,
                     );
                   }
                   // Fallback (should not happen)
                   return LineTooltipItem(
                     barSpot.y.toStringAsFixed(2).replaceAll('.', ','),
-                    const TextStyle(
-                      color: Colors.white,
+                    TextStyle(
+                      color: tooltipAmountColor ?? lineColor,
                       fontWeight: FontWeight.bold,
                     ),
                   );
@@ -159,7 +179,7 @@ class StepLineChartWidget extends StatelessWidget {
           lineBarsData: [
             LineChartBarData(
               spots: _getSpots(),
-              
+
               // Enable smooth curve
               // isCurved: true,
               // curveSmoothness: 0.5, // 0.0 = sharp corners, 1.0 = very smooth
@@ -171,15 +191,6 @@ class StepLineChartWidget extends StatelessWidget {
               dotData: FlDotData(
                 show: showDot,
                 getDotPainter: (spot, percent, barData, index) {
-                  // Show circle only on last point
-                  // if (index == data.length - 1) {
-                  //   return FlDotCirclePainter(
-                  //     radius: 6,
-                  //     color: lineColor,
-                  //     strokeWidth: 3,
-                  //     strokeColor: Colors.white,
-                  //   );
-                  // }
                   return FlDotCirclePainter(
                     radius: 0,
                     color: Colors.transparent,
@@ -238,6 +249,4 @@ class StepLineChartWidget extends StatelessWidget {
     }
     return value.toInt().toString();
   }
-
-
 }

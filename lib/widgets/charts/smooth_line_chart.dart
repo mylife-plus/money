@@ -9,6 +9,7 @@ class SmoothLineChartWidget extends StatelessWidget {
   final double lineWidth;
   final bool showDots;
   final bool showEndDot;
+  final Color? tooltipAmountColor;
 
   const SmoothLineChartWidget({
     super.key,
@@ -17,6 +18,7 @@ class SmoothLineChartWidget extends StatelessWidget {
     this.lineWidth = 3,
     this.showDots = false,
     this.showEndDot = true,
+    this.tooltipAmountColor,
   });
 
   List<FlSpot> _getSpots() {
@@ -40,6 +42,8 @@ class SmoothLineChartWidget extends StatelessWidget {
 
     // Prevent division by zero for horizontalInterval
     final horizontalInterval = range > 0 ? range / 4 : 1.0;
+
+    final amountColor = tooltipAmountColor ?? const Color(0xff0088FF);
 
     return LineChart(
       LineChartData(
@@ -81,7 +85,11 @@ class SmoothLineChartWidget extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 22.h,
+              reservedSize: 24.h,
+              // Show exactly 4 labels on X-axis (same as step_line_chart)
+              interval: data.length > 4
+                  ? (data.length / 3).ceilToDouble()
+                  : 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index >= 0 && index < data.length) {
@@ -149,15 +157,32 @@ class SmoothLineChartWidget extends StatelessWidget {
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => Colors.white,
+            tooltipBorder: BorderSide(color: Colors.grey.shade300),
+            tooltipRoundedRadius: 8,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
+                final parts = data[spot.x.toInt()].tooltipLabel.split('\n');
+                final amount = parts.isNotEmpty ? parts[0] : '';
+                final date = parts.length > 1 ? parts[1] : '';
                 return LineTooltipItem(
-                  data[spot.x.toInt()].tooltipLabel,
+                  amount,
                   TextStyle(
-                    color: Colors.white,
+                    color: amountColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 12.sp,
                   ),
+                  children: [
+                    if (date.isNotEmpty)
+                      TextSpan(
+                        text: '\n$date',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 11.sp,
+                        ),
+                      ),
+                  ],
                   textAlign: TextAlign.center,
                 );
               }).toList();

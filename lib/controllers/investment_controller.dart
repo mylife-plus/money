@@ -196,30 +196,24 @@ class InvestmentController extends GetxController {
     selectedPortfolioDurationTab.value = 'All';
   }
 
-  /// Available duration tabs based on portfolio data range (max 8 tabs)
+  /// Available duration tabs — only show tabs whose duration <= data span
   List<String> get availablePortfolioDurationTabs {
-    if (portfolioHistory.isEmpty) {
-      return ['1d', '7d', '1m', '6m', 'All'];
-    }
+    if (portfolioHistory.isEmpty) return ['All'];
 
-    final now = DateTime.now();
-    final dataMin = portfolioSliderMinDate.value;
-    final duration = now.difference(dataMin);
-    final days = duration.inDays;
+    final days = DateTime.now().difference(portfolioSliderMinDate.value).inDays;
+    final tabs = <String>[];
 
-    final tabs = <String>['1d', '7d', '1m', '6m'];
-
-    if (days >= 365) {
-      tabs.add('1y');
-    }
-    if (days >= 365 * 2) {
-      tabs.add('2y');
-    }
-    if (days >= 365 * 5) {
-      tabs.add('5y');
-    }
-
+    tabs.add('1d');
+    if (days >= 7) tabs.add('7d');
+    if (days >= 14) tabs.add('2w');
+    if (days >= 30) tabs.add('1m');
+    if (days >= 90) tabs.add('3m');
+    if (days >= 180) tabs.add('6m');
+    if (days >= 365) tabs.add('1y');
+    if (days >= 730) tabs.add('2y');
+    if (days >= 1825) tabs.add('5y');
     tabs.add('All');
+
     return tabs;
   }
 
