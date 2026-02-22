@@ -52,8 +52,12 @@ class HomeController extends GetxController {
   List<int> _cachedSortedYears = [];
 
   // Sort Option
-  final Rxn<SortOption> selectedSortOption = Rxn<SortOption>(SortOption.mostRecent);
-  final Rxn<SortDirection> selectedSortDirection = Rxn<SortDirection>(SortDirection.top);
+  final Rxn<SortOption> selectedSortOption = Rxn<SortOption>(
+    SortOption.mostRecent,
+  );
+  final Rxn<SortDirection> selectedSortDirection = Rxn<SortDirection>(
+    SortDirection.top,
+  );
 
   @override
   void onInit() {
@@ -419,25 +423,29 @@ class HomeController extends GetxController {
     }
 
     // Calculate aggregation window in milliseconds
-    final totalDurationMs = transactionDateEnd.millisecondsSinceEpoch -
-                           transactionDateStart.millisecondsSinceEpoch;
+    final totalDurationMs =
+        transactionDateEnd.millisecondsSinceEpoch -
+        transactionDateStart.millisecondsSinceEpoch;
     final windowSizeMs = totalDurationMs / targetPoints;
 
     // Create a map of all transactions by timestamp for quick lookup
     Map<int, List<Transaction>> transactionsByWindow = {};
     for (var t in relevantTransactions) {
-      final windowIndex = ((t.date.millisecondsSinceEpoch -
-                           transactionDateStart.millisecondsSinceEpoch) /
-                           windowSizeMs).floor();
+      final windowIndex =
+          ((t.date.millisecondsSinceEpoch -
+                      transactionDateStart.millisecondsSinceEpoch) /
+                  windowSizeMs)
+              .floor();
       transactionsByWindow.putIfAbsent(windowIndex, () => []).add(t);
     }
 
-    // Generate points based on calculated targetPoints
-    double lastValue = 0.0; // Track last non-zero value for smoothing
+    // Generate points with step-line effect (duplicate points at transitions)
+    double lastValue = 0.0; // Track last value for step effect
 
     for (int i = 0; i < targetPoints; i++) {
-      final windowStartMs = transactionDateStart.millisecondsSinceEpoch +
-                           (i * windowSizeMs).toInt();
+      final windowStartMs =
+          transactionDateStart.millisecondsSinceEpoch +
+          (i * windowSizeMs).toInt();
       final windowEndMs = windowStartMs + windowSizeMs.toInt();
 
       // Create DateTime objects for start and end of window
@@ -452,12 +460,8 @@ class HomeController extends GetxController {
       if (transactionsByWindow.containsKey(i)) {
         final windowTransactions = transactionsByWindow[i]!;
         windowValue = windowTransactions.fold(0.0, (sum, t) => sum + t.amount);
-
-        // For averaging: divide by number of transactions or days in window
-        // For now, we'll use sum to show total spending in that period
-        lastValue = windowValue; // Update last value for smoothing
       } else {
-        // No data in this window - use last value for smooth line
+        // No data in this window - use last value
         windowValue = lastValue;
       }
 
@@ -470,34 +474,56 @@ class HomeController extends GetxController {
       if (durationInDays <= 2) {
         // Hourly labels
         label = DateFormat('HH:mm').format(windowMidpoint);
-        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
-                      '${DateFormat('HH:mm dd.MM.yyyy').format(windowMidpoint)}';
+        tooltipLabel =
+            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
+            '${DateFormat('HH:mm dd.MM.yyyy').format(windowMidpoint)}';
       } else if (durationInDays <= 90) {
         // Daily labels (<= 3 months)
         label = DateFormat('dd.MM.yyyy').format(windowMidpoint);
-        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
-                      '${DateFormat('dd.MM.yyyy').format(windowMidpoint)}';
+        tooltipLabel =
+            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
+            '${DateFormat('dd.MM.yyyy').format(windowMidpoint)}';
       } else if (durationInDays <= 365 * 2 + 10) {
         // Monthly labels (> 3 months)
         label = DateFormat('MMM yyyy').format(windowMidpoint);
-        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
-                      '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
-                      '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
+        tooltipLabel =
+            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
+            '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
+            '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       } else {
         // Yearly labels (> 3 months)
         label = DateFormat('yyyy').format(windowMidpoint);
-        tooltipLabel = '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
-                      '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
-                      '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
+        tooltipLabel =
+            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
+            '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
+            '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       }
 
+      // Step-line effect: Add duplicate point at transition if value changed
+      if (i > 0 && windowValue != lastValue) {
+        // Add point at current X position with PREVIOUS value (horizontal continuation)
+        points.add(
+          ChartDataPoint(
+            label: label,
+            value: lastValue, // Keep previous value
+            tooltipLabel: '${lastValue.toStringAsFixed(2)}\n$label',
+            xValue: i.toDouble(), // Same X position as new value
+          ),
+        );
+      }
+
+      // Add the actual point with new value
       points.add(
         ChartDataPoint(
           label: label,
           value: windowValue,
           tooltipLabel: tooltipLabel,
+          xValue: i.toDouble(), // X position based on window index
         ),
       );
+
+      // Update last value for next iteration
+      lastValue = windowValue;
     }
 
     chartData.value = points;
@@ -559,7 +585,8 @@ class HomeController extends GetxController {
         var monthTransactions = _cachedGroupedData[year]![month]!;
 
         if (selectedSortOption.value != null) {
-          final isTopDirection = selectedSortDirection.value == SortDirection.top;
+          final isTopDirection =
+              selectedSortDirection.value == SortDirection.top;
 
           if (selectedSortOption.value == SortOption.highestAmount) {
             // Sort by Amount
