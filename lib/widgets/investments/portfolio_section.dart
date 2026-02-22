@@ -133,6 +133,9 @@ class PortfolioSection extends StatelessWidget {
                   value: entry.value,
                   tooltipLabel:
                       '${CurrencyService.instance.portfolioSymbol}${_formatCurrency(entry.value)}\n${entry.key}',
+                  xValue: DateFormat(
+                    'dd.MM.yyyy',
+                  ).parse(entry.key).millisecondsSinceEpoch.toDouble(),
                 ),
               );
             }
@@ -153,8 +156,21 @@ class PortfolioSection extends StatelessWidget {
           // If no chart data, show placeholder
           if (chartData.isEmpty) {
             chartData = [
-              ChartDataPoint(label: '2024', value: 0, tooltipLabel: '0\n2024'),
-              ChartDataPoint(label: '2025', value: 0, tooltipLabel: '0\n2025'),
+              ChartDataPoint(
+                label: '2024',
+                value: 0,
+                tooltipLabel: '0\n2024',
+                xValue: DateTime.now().millisecondsSinceEpoch.toDouble(),
+              ),
+              ChartDataPoint(
+                label: '2025',
+                value: 0,
+                tooltipLabel: '0\n2025',
+                xValue: DateTime.now()
+                    .add(const Duration(days: 365))
+                    .millisecondsSinceEpoch
+                    .toDouble(),
+              ),
             ];
           }
 
