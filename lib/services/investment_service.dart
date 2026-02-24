@@ -348,6 +348,41 @@ class InvestmentService {
     }
   }
 
+  /// Update an activity and refresh its auto-created snapshots.
+  /// Deletes the old snapshots linked to this activityId, then creates
+  /// new ones from the updated prices/dates.
+  Future<bool> updateActivityWithSnapshot(InvestmentActivity activity) async {
+    try {
+      debugPrint(
+        '[InvestmentService][updateActivityWithSnapshot] Updating ID: ${activity.id}',
+      );
+
+      final updated = activity.copyWithUpdatedTimestamp();
+      final result = await _activityRepo.update(updated);
+      if (result <= 0) return false;
+
+      // Delete old auto-snapshots for this activity.
+      if (updated.id != null) {
+        await _snapshotRepo.deleteByActivityId(updated.id!);
+      }
+
+      // Re-create snapshots with the new values.
+      await _createAutoSnapshot(
+        activity: updated,
+        entryType: updated.isTrade
+            ? SnapshotEntryType.trade
+            : SnapshotEntryType.transaction,
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint(
+        '[InvestmentService][updateActivityWithSnapshot] ❌ Error: $e',
+      );
+      return false;
+    }
+  }
+
   /// Delete an activity (snapshot FK will be set to NULL)
   Future<bool> deleteActivity(int id) async {
     try {
@@ -361,16 +396,64 @@ class InvestmentService {
     }
   }
 
-  /// Delete multiple activities
+  /// Delete multiple activities, their auto-created snapshots, and all
+  /// snapshots for any investment that has no remaining activities.
   Future<bool> deleteActivities(List<int> ids) async {
     try {
       debugPrint(
         '[InvestmentService][deleteActivities] Deleting ${ids.length} activities',
       );
+
+      // 1. Fetch each activity to know which investments are affected,
+      //    then delete its auto-created snapshot (activityId link).
+      final affectedInvestmentIds = <int>{};
+      for (final id in ids) {
+        final activity = await _activityRepo.getById(id);
+        if (activity != null) {
+          if (activity.isTransaction &&
+              activity.transactionInvestmentId != null) {
+            affectedInvestmentIds.add(activity.transactionInvestmentId!);
+          } else if (activity.isTrade) {
+            if (activity.tradeSoldInvestmentId != null) {
+              affectedInvestmentIds.add(activity.tradeSoldInvestmentId!);
+            }
+            if (activity.tradeBoughtInvestmentId != null) {
+              affectedInvestmentIds.add(activity.tradeBoughtInvestmentId!);
+            }
+          }
+          await _snapshotRepo.deleteByActivityId(id);
+        }
+      }
+
+      // 2. Delete the activities themselves.
       final result = await _activityRepo.deleteByIds(ids);
       debugPrint(
         '[InvestmentService][deleteActivities] ✅ Deleted: $result rows',
       );
+
+      if (result > 0) {
+        // 3. For each affected investment, if no activities remain,
+        //    delete ALL its snapshots (including manually-added ones).
+        for (final investmentId in affectedInvestmentIds) {
+          final remaining = await _investmentRepo.countActivitiesForInvestment(
+            investmentId,
+          );
+          if (remaining == 0) {
+            final snapshots = await _snapshotRepo.getByInvestmentId(
+              investmentId,
+            );
+            for (final snapshot in snapshots) {
+              if (snapshot.id != null) {
+                await _snapshotRepo.delete(snapshot.id!);
+              }
+            }
+            debugPrint(
+              '[InvestmentService][deleteActivities] Cleared ${snapshots.length} orphan snapshots for investment $investmentId',
+            );
+          }
+        }
+      }
+
       return result > 0;
     } catch (e) {
       debugPrint('[InvestmentService][deleteActivities] ❌ Error: $e');

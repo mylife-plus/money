@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +9,7 @@ import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/constants/app_theme.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
+import 'package:moneyapp/main.dart';
 import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
@@ -30,17 +33,8 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
   File? selectedImageFile;
   Color? selectedColor;
 
-  // Predefined colors for selection
-  final List<Color> predefinedColors = [
-    Color(0xffFFE5E5), // Light pink
-    Color(0xffFFD4A3), // Light orange
-    Color(0xffFFE5A3), // Light yellow
-    Color(0xffE5FFE5), // Light green
-    Color(0xffA3D4FF), // Light blue
-    Color(0xffD4A3FF), // Light purple
-    Color(0xffFFA3D4), // Light magenta
-    Color(0xffA3FFD4), // Light cyan
-  ];
+  // Inline error message shown inside the dialog
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -60,6 +54,26 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
     super.dispose();
   }
 
+  void _setError(String message) {
+    if (mounted) setState(() => _errorMessage = message);
+  }
+
+  void _clearError() {
+    if (mounted && _errorMessage != null) setState(() => _errorMessage = null);
+  }
+
+  /// Show a success snackbar after the dialog has been closed.
+  void _showSuccessSnackbar(String message) {
+    rootScaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Future<void> _showIconSelectionDialog() async {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -72,22 +86,26 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
       if (pickedFile != null) {
         setState(() {
           selectedImageFile = File(pickedFile.path);
-          selectedAssetPath = null; // Clear old asset path
+          selectedAssetPath = null;
         });
+        _clearError();
       }
     } catch (e) {
       debugPrint('[AddEditInvestmentDialog] Error picking image: $e');
-      _showSnackbar('Error', 'Failed to pick image from gallery');
+      _setError('Failed to pick image from gallery');
     }
   }
 
   Future<void> _showColorSelectionDialog() async {
+    Color pickerColor = selectedColor ?? const Color(0xffA3D4FF);
+
     await showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+        backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-        child: Container(
+        child: Padding(
           padding: EdgeInsets.all(16.w),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -98,67 +116,51 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
                 fontWeight: FontWeight.w600,
               ),
               16.verticalSpace,
-              GridView.builder(
-                shrinkWrap: true,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  crossAxisSpacing: 10.w,
-                  mainAxisSpacing: 10.h,
-                ),
-                itemCount: predefinedColors.length,
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        selectedColor = predefinedColors[index];
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: predefinedColors[index],
-                        border: Border.all(
-                          color: selectedColor == predefinedColors[index]
-                              ? const Color(0xff0088FF)
-                              : const Color(0xffDFDFDF),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                      height: 40.h,
-                      width: 40.w,
-                    ),
-                  );
+              HueRingPicker(
+                pickerColor: pickerColor,
+                onColorChanged: (Color value) {
+                  setState(() {
+                    pickerColor = value;
+                  });
                 },
+                displayThumbColor: true,
+                enableAlpha: false,
+              ),
+              16.verticalSpace,
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    selectedColor = pickerColor;
+                  });
+                  Navigator.pop(dialogContext);
+                },
+                child: Container(
+                  width: 120.w,
+                  height: 41.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffFFFFFF),
+                    borderRadius: BorderRadius.circular(13.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 4,
+                        offset: const Offset(0, 0),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: CustomText(
+                      'OK',
+                      size: 16.sp,
+                      color: const Color(0xff0071FF),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showSnackbar(String title, String message, {bool isError = true}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(message, style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -178,7 +180,6 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
     }
 
     if (selectedAssetPath != null && selectedAssetPath!.isNotEmpty) {
-      // Existing investment with saved image
       final file = File(selectedAssetPath!);
       if (file.existsSync()) {
         return ClipRRect(
@@ -192,31 +193,36 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
   }
 
   Future<void> _saveInvestment() async {
+    _clearError();
+
     if (nameController.text.trim().isEmpty) {
-      _showSnackbar('Error', 'Please enter investment name');
+      _setError('Please enter investment name');
       return;
     }
 
     if (tickerController.text.trim().isEmpty) {
-      _showSnackbar('Error', 'Please enter ticker');
+      _setError('Please enter ticker');
       return;
     }
 
     if (selectedImageFile == null && selectedAssetPath == null) {
-      _showSnackbar('Error', 'Please select an image');
+      _setError('Please select an image');
       return;
     }
 
-    // Limit ticker to 5 characters
+    if (selectedColor == null) {
+      _setError('Please select a color');
+      return;
+    }
+
     final ticker = tickerController.text.length > 5
         ? tickerController.text.substring(0, 5).toUpperCase()
         : tickerController.text.toUpperCase();
 
-    final color = selectedColor ?? Colors.grey;
+    final color = selectedColor!;
 
     try {
       if (widget.existingInvestment != null) {
-        // Update existing investment
         final success = await investmentController.updateInvestment(
           widget.existingInvestment!.id!,
           name: nameController.text.trim(),
@@ -226,19 +232,14 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
         );
 
         if (success) {
-          _showSnackbar(
-            'Success',
-            'Investment updated successfully',
-            isError: false,
-          );
           if (mounted) Navigator.pop(context);
+          _showSuccessSnackbar('Investment updated successfully');
         } else {
-          _showSnackbar('Error', 'Failed to update investment');
+          _setError('Failed to update investment');
         }
       } else {
-        // Add new investment
         if (selectedImageFile == null) {
-          _showSnackbar('Error', 'Please select an image');
+          _setError('Please select an image');
           return;
         }
 
@@ -250,21 +251,17 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
         );
 
         if (investment != null) {
-          _showSnackbar(
-            'Success',
-            'Investment added successfully',
-            isError: false,
-          );
           if (mounted) Navigator.pop(context, investment);
+          _showSuccessSnackbar('Investment added successfully');
         } else {
-          _showSnackbar('Error', 'Failed to add investment');
+          _setError('Failed to add investment');
         }
       }
     } catch (e) {
       if (e.toString().contains('TICKER_ALREADY_EXISTS')) {
-        _showSnackbar('Error', 'Ticker already exists');
+        _setError('Ticker already exists');
       } else {
-        _showSnackbar('Error', 'An error occurred');
+        _setError('An error occurred');
       }
     }
   }
@@ -317,29 +314,23 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
 
         if (success) {
           if (mounted) Navigator.pop(context);
-          _showSnackbar(
-            'Success',
-            'Investment deleted successfully',
-            isError: false,
-          );
+          _showSuccessSnackbar('Investment deleted successfully');
         } else {
-          _showSnackbar('Error', 'Failed to delete investment');
+          _setError('Failed to delete investment');
         }
       } catch (e) {
         if (e.toString().contains('CANNOT_DELETE_INVESTMENT_IN_USE')) {
-          _showSnackbar(
-            'Cannot Delete',
+          _setError(
             'This investment has existing transactions or trades. Delete those activities first.',
           );
         } else if (e.toString().contains(
           'CANNOT_DELETE_INVESTMENT_HAS_SNAPSHOTS',
         )) {
-          _showSnackbar(
-            'Cannot Delete',
+          _setError(
             'This investment has portfolio history. Delete the price snapshots first.',
           );
         } else {
-          _showSnackbar('Error', 'Failed to delete investment');
+          _setError('Failed to delete investment');
         }
       }
     }
@@ -351,7 +342,6 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
 
     return Dialog(
       insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
-
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       child: Container(
@@ -374,6 +364,27 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
                 ],
               ),
               18.verticalSpace,
+
+              // Inline error banner
+              if (_errorMessage != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffFFEEEE),
+                    borderRadius: BorderRadius.circular(6.r),
+                    border: Border.all(color: const Color(0xffFFAAAA)),
+                  ),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(color: Colors.red, fontSize: 13.sp),
+                  ),
+                ),
+                10.verticalSpace,
+              ],
 
               // Investment Name Field
               Row(
@@ -419,6 +430,7 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
                       ),
                       child: TextField(
                         controller: nameController,
+                        onChanged: (_) => _clearError(),
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           hintText: 'Investment Name',
@@ -485,6 +497,7 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
                         controller: tickerController,
                         maxLength: 5,
                         textCapitalization: TextCapitalization.characters,
+                        onChanged: (_) => _clearError(),
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           hintText: 'Ticker (Max 5)',
@@ -505,7 +518,6 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
                       ),
                     ),
                   ),
-                  Spacer(),
                   48.horizontalSpace,
                 ],
               ),

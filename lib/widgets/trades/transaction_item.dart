@@ -11,6 +11,7 @@ class TransactionItem extends StatefulWidget {
   final bool isSelected;
   final Function(int id)? onSelect;
   final Function(int id)? onDelete;
+  final Function(int id)? onEdit;
   final bool isSelectionMode;
 
   const TransactionItem({
@@ -20,6 +21,7 @@ class TransactionItem extends StatefulWidget {
     this.isSelected = false,
     this.onSelect,
     this.onDelete,
+    this.onEdit,
     this.isSelectionMode = false,
   });
 
@@ -46,14 +48,22 @@ class _TransactionItemState extends State<TransactionItem> {
     return value.toStringAsFixed(2);
   }
 
-  void _showPopupMenu(BuildContext context, TapDownDetails details) {
+  void _showPopupMenu(BuildContext context) {
+    final RenderBox box = context.findRenderObject() as RenderBox;
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset position = box.localToGlobal(Offset.zero);
+    final Size size = box.size;
 
     showMenu(
       context: context,
       position: RelativeRect.fromRect(
-        details.globalPosition & const Size(40, 40),
+        Rect.fromLTWH(
+          position.dx + size.width / 2,
+          position.dy + size.height / 2,
+          40,
+          40,
+        ),
         Offset.zero & overlay.size,
       ),
       items: [
@@ -64,6 +74,16 @@ class _TransactionItemState extends State<TransactionItem> {
               Icon(Icons.check_circle_outline, size: 20.sp),
               SizedBox(width: 12.w),
               Text('Select'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 20.sp),
+              SizedBox(width: 12.w),
+              Text('Edit'),
             ],
           ),
         ),
@@ -79,16 +99,14 @@ class _TransactionItemState extends State<TransactionItem> {
         ),
       ],
     ).then((value) {
-      if (!mounted) return;
-      if (value != null) {
-        switch (value) {
-          case 'select':
-            _handleSelect();
-            break;
-          case 'delete':
-            _handleDelete();
-            break;
-        }
+      if (!mounted || value == null) return;
+      switch (value) {
+        case 'select':
+          _handleSelect();
+        case 'edit':
+          _handleEdit();
+        case 'delete':
+          _handleDelete();
       }
     });
   }
@@ -96,6 +114,12 @@ class _TransactionItemState extends State<TransactionItem> {
   void _handleSelect() {
     if (widget.onSelect != null && widget.activity.id != null) {
       widget.onSelect!(widget.activity.id!);
+    }
+  }
+
+  void _handleEdit() {
+    if (widget.onEdit != null && widget.activity.id != null) {
+      widget.onEdit!(widget.activity.id!);
     }
   }
 
@@ -117,15 +141,11 @@ class _TransactionItemState extends State<TransactionItem> {
         }
       },
       onLongPress: () {
-        final RenderBox box = context.findRenderObject() as RenderBox;
-        final Offset position = box.localToGlobal(Offset.zero);
-        final Size size = box.size;
-        _showPopupMenu(
-          context,
-          TapDownDetails(
-            globalPosition: position + Offset(size.width / 2, size.height / 2),
-          ),
-        );
+        if (widget.isSelectionMode) {
+          _handleSelect();
+        } else {
+          _showPopupMenu(context);
+        }
       },
       child: Column(
         children: [

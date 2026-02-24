@@ -1425,10 +1425,18 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
             }
 
             try {
+              // If no category selected (parentId null) and no new category name,
+              // resolve to N/A group so the hashtag moves there
+              int? resolvedParentId = parentId;
+              if (parentId == null && newCategoryName == null && hashtagGroup.parentId != null) {
+                final naGroup = await _hashtagGroupService.getOrCreateNAGroup();
+                resolvedParentId = naGroup.id;
+              }
+
               await _hashtagGroupService.updateGroup(
                 hashtagGroup.id!,
                 newName,
-                newParentId: parentId,
+                newParentId: resolvedParentId,
               );
 
               // Update in recents if it exists

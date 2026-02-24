@@ -93,18 +93,16 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
       return;
     }
 
-    // If adding new category, validate and use the new category name
+    // If adding new category, use the new category name if provided, otherwise fall through to N/A
     if (isAddingNewCategory) {
       final newCategoryName = _newCategoryController.text.trim();
-      if (newCategoryName.isEmpty) {
-        setState(() {
-          _errorMessage = 'Please enter a category name';
-        });
-        return;
+      if (newCategoryName.isNotEmpty) {
+        // Create a new category with the provided name
+        widget.onSave?.call(name, null, newCategoryName: newCategoryName);
+      } else {
+        // No name entered — save under N/A
+        widget.onSave?.call(name, null);
       }
-      // For new category, we'll pass null as parentId
-      // and the caller should handle creating the new category
-      widget.onSave?.call(name, null, newCategoryName: newCategoryName);
     } else if (selectedParentGroup == _selectCategoryValue) {
       // No category selected — caller will assign to N/A
       widget.onSave?.call(name, null);

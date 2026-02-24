@@ -10,6 +10,9 @@ import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/services/currency_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -61,6 +64,7 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return GetMaterialApp(
+          scaffoldMessengerKey: rootScaffoldMessengerKey,
           title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
 

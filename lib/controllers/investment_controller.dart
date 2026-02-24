@@ -196,6 +196,36 @@ class InvestmentController extends GetxController {
     selectedPortfolioDurationTab.value = 'All';
   }
 
+  /// Extend portfolio slider range to cover any new snapshot dates
+  /// without resetting the user's selected duration tab.
+  void _extendPortfolioSliderRange() {
+    if (portfolioHistory.isEmpty) return;
+
+    DateTime earliest = portfolioHistory.first.date;
+    DateTime latest = portfolioHistory.first.date;
+    for (var snapshot in portfolioHistory) {
+      if (snapshot.date.isBefore(earliest)) earliest = snapshot.date;
+      if (snapshot.date.isAfter(latest)) latest = snapshot.date;
+    }
+
+    final newMin = DateTime(earliest.year, earliest.month, earliest.day);
+    final newMax = DateTime(
+      latest.year, latest.month, latest.day, 23, 59, 59, 999,
+    );
+
+    final minChanged = newMin.isBefore(portfolioSliderMinDate.value);
+    final maxChanged = newMax.isAfter(portfolioSliderMaxDate.value);
+
+    if (minChanged) portfolioSliderMinDate.value = newMin;
+    if (maxChanged) portfolioSliderMaxDate.value = newMax;
+
+    // If the user is on 'All', extend the selected range to match
+    if (selectedPortfolioDurationTab.value == 'All') {
+      if (minChanged) portfolioDateStart.value = newMin;
+      if (maxChanged) portfolioDateEnd.value = newMax;
+    }
+  }
+
   /// Available duration tabs — only show tabs whose duration <= data span
   List<String> get availablePortfolioDurationTabs {
     if (portfolioHistory.isEmpty) return ['All'];
@@ -630,10 +660,18 @@ class InvestmentController extends GetxController {
       return activities;
     }
 
-    debugPrint('[InvestmentController] Filtering ${activities.length} activities');
-    debugPrint('  Filters: fromDate=${filterFromDate.value}, toDate=${filterToDate.value}');
-    debugPrint('  activityType=${filterActivityType.value}, investmentIds=$filterInvestmentIds');
-    debugPrint('  minAmount=${filterMinAmount.value}, maxAmount=${filterMaxAmount.value}');
+    debugPrint(
+      '[InvestmentController] Filtering ${activities.length} activities',
+    );
+    debugPrint(
+      '  Filters: fromDate=${filterFromDate.value}, toDate=${filterToDate.value}',
+    );
+    debugPrint(
+      '  activityType=${filterActivityType.value}, investmentIds=$filterInvestmentIds',
+    );
+    debugPrint(
+      '  minAmount=${filterMinAmount.value}, maxAmount=${filterMaxAmount.value}',
+    );
 
     final filtered = activities.where((activity) {
       // Date range filter
@@ -718,7 +756,9 @@ class InvestmentController extends GetxController {
       return true;
     }).toList();
 
-    debugPrint('[InvestmentController] Filtered result: ${filtered.length} activities');
+    debugPrint(
+      '[InvestmentController] Filtered result: ${filtered.length} activities',
+    );
     return filtered;
   }
 
@@ -823,8 +863,10 @@ class InvestmentController extends GetxController {
       if (direction == TransactionDirection.withdraw) {
         final currentAmount = currentHoldings[investmentId] ?? 0.0;
         if (amount > currentAmount) {
+          final inv = getInvestmentById(investmentId);
+          final symbol = inv?.ticker ?? '';
           throw Exception(
-            'Insufficient holdings. You have $currentAmount units but trying to withdraw $amount units.',
+            'Not enough $symbol to withdraw. You have ${currentAmount.toStringAsFixed(2)} but tried to withdraw ${amount.toStringAsFixed(2)}.',
           );
         }
       }
@@ -845,6 +887,7 @@ class InvestmentController extends GetxController {
         enrichedInvestmentData.value = await _service
             .getInvestmentHoldingsWithPrices();
         _initializeExpansionState();
+        _extendPortfolioSliderRange();
       }
       return activity;
     } catch (e) {
@@ -871,9 +914,9 @@ class InvestmentController extends GetxController {
       final currentAmount = currentHoldings[soldInvestmentId] ?? 0.0;
       if (soldAmount > currentAmount) {
         final soldInvestment = getInvestmentById(soldInvestmentId);
-        final soldSymbol = soldInvestment?.ticker ?? 'Unknown';
+        final soldSymbol = soldInvestment?.ticker ?? '';
         throw Exception(
-          'Insufficient holdings of $soldSymbol. You have $currentAmount units but trying to sell $soldAmount units.',
+          'Not enough $soldSymbol to sell. You have ${currentAmount.toStringAsFixed(2)} but tried to sell ${soldAmount.toStringAsFixed(2)}.',
         );
       }
 
@@ -896,6 +939,7 @@ class InvestmentController extends GetxController {
         enrichedInvestmentData.value = await _service
             .getInvestmentHoldingsWithPrices();
         _initializeExpansionState();
+        _extendPortfolioSliderRange();
       }
       return activity;
     } catch (e) {
@@ -914,10 +958,34 @@ class InvestmentController extends GetxController {
         portfolioHistory.value = await _service.getPortfolioHistory();
         enrichedInvestmentData.value = await _service
             .getInvestmentHoldingsWithPrices();
+        _extendPortfolioSliderRange();
       }
       return success;
     } catch (e) {
       debugPrint('[InvestmentController][deleteActivities] Error: $e');
+      return false;
+    }
+  }
+
+  /// Update an existing activity and refresh its snapshot + all derived state.
+  Future<bool> updateActivity(InvestmentActivity activity) async {
+    try {
+      final success = await _service.updateActivityWithSnapshot(activity);
+      if (success) {
+        final index = activities.indexWhere((a) => a.id == activity.id);
+        if (index != -1) {
+          activities[index] = activity.copyWithUpdatedTimestamp();
+        }
+        currentHoldings.value = await _service.calculateCurrentHoldings();
+        portfolioHistory.value = await _service.getPortfolioHistory();
+        enrichedInvestmentData.value = await _service
+            .getInvestmentHoldingsWithPrices();
+        _initializeExpansionState();
+        _extendPortfolioSliderRange();
+      }
+      return success;
+    } catch (e) {
+      debugPrint('[InvestmentController][updateActivity] Error: $e');
       return false;
     }
   }

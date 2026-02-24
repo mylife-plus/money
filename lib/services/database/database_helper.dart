@@ -452,7 +452,11 @@ class DatabaseHelper {
       debugPrint('[DatabaseHelper] Clearing all data...');
       final db = await database;
 
-      await db.delete(tableHashtagGroups);
+      // Only delete user-created groups (isCustom = 1) — preserves seeded N/A group
+      await db.delete(
+        tableHashtagGroups,
+        where: '$columnHashtagGroupIsCustom = 1',
+      );
       await db.delete(tableTransactions);
       // Clear investment tables (order matters due to foreign keys)
       await db.delete(tablePortfolioSnapshots);

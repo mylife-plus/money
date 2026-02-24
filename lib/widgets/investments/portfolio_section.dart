@@ -428,7 +428,7 @@ class PortfolioSection extends StatelessWidget {
                               color: Colors.black,
                               fontWeight: FontWeight.w400,
                             ),
-                            // 60.horizontalSpace,
+                            150.verticalSpace,
                           ],
                         ),
                       )

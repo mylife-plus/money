@@ -40,9 +40,9 @@ class StepLineChartWidget extends StatelessWidget {
               tooltipRoundedRadius: 8,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
-                  final index = barSpot.x.toInt();
-                  if (index >= 0 && index < data.length) {
-                    final parts = data[index].tooltipLabel.split('\n');
+                  final point = _getDataPointByXValue(barSpot.x.toInt());
+                  if (point != null) {
+                    final parts = point.tooltipLabel.split('\n');
                     final amount = parts.isNotEmpty ? parts[0] : '';
                     final date = parts.length > 1 ? parts[1] : '';
                     return LineTooltipItem(
@@ -105,17 +105,16 @@ class StepLineChartWidget extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 24.h,
                 // Fixed: Show exactly 4 labels on X-axis
-                interval: data.length > 4
-                    ? (data.length / 3)
-                          .ceilToDouble() // Divide by 3 to get 4 ticks (0, 0.33, 0.66, 1.0)
+                interval: _getMaxX() > 3
+                    ? (_getMaxX() / 3).ceilToDouble()
                     : 1,
                 getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index >= 0 && index < data.length) {
+                  final point = _getDataPointByXValue(value.toInt());
+                  if (point != null) {
                     return Padding(
                       padding: EdgeInsets.only(top: 8.h),
                       child: Text(
-                        data[index].label,
+                        point.label,
                         style: TextStyle(
                           fontSize: 11.sp,
                           color: const Color(0xFF666666),
@@ -171,7 +170,7 @@ class StepLineChartWidget extends StatelessWidget {
 
           // Min/Max values
           minX: 0,
-          maxX: (data.length - 1).toDouble(),
+          maxX: _getMaxX(),
           minY: 0,
           maxY: _getMaxY(),
 
@@ -209,6 +208,16 @@ class StepLineChartWidget extends StatelessWidget {
     return data
         .map((point) => FlSpot(point.xValue, point.value))
         .toList();
+  }
+
+  double _getMaxX() {
+    if (data.isEmpty) return 0;
+    return data.map((e) => e.xValue).reduce((a, b) => a > b ? a : b);
+  }
+
+  ChartDataPoint? _getDataPointByXValue(int windowIndex) {
+    final matches = data.where((p) => p.xValue.toInt() == windowIndex).toList();
+    return matches.isNotEmpty ? matches.last : null;
   }
 
   double _getMaxY() {

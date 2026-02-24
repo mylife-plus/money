@@ -14,7 +14,10 @@ import 'package:moneyapp/widgets/investments/investment_selector_button.dart';
 import 'package:moneyapp/widgets/trades/trade_transaction_toggle_switch_.dart';
 
 class NewPortfolioChangeScreen extends StatefulWidget {
-  const NewPortfolioChangeScreen({super.key});
+  /// Pass an existing activity to open in edit mode; null = add mode.
+  final InvestmentActivity? editingActivity;
+
+  const NewPortfolioChangeScreen({super.key, this.editingActivity});
 
   @override
   State<NewPortfolioChangeScreen> createState() =>
@@ -57,6 +60,8 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
 
   final InvestmentController _controller = Get.find<InvestmentController>();
 
+  bool get _isEditMode => widget.editingActivity != null;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +72,67 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
     ever(_controller.investments, (_) {
       _updateInvestmentReferences();
     });
+
+    // Pre-fill fields when editing an existing activity
+    if (widget.editingActivity != null) {
+      _prefillForEdit(widget.editingActivity!);
+    }
+  }
+
+  /// Pre-fill all form fields from an existing activity.
+  void _prefillForEdit(InvestmentActivity activity) {
+    selectedDate = activity.date;
+
+    if (activity.isTrade) {
+      selectedOption = 1;
+      _soldAmountController.text = activity.tradeSoldAmount?.toString() ?? '';
+      _soldPriceController.text =
+          activity.tradeSoldPrice?.toStringAsFixed(2) ?? '';
+      _soldTotalController.text =
+          activity.tradeSoldTotal?.toStringAsFixed(2) ?? '';
+      _boughtAmountController.text =
+          activity.tradeBoughtAmount?.toString() ?? '';
+      _boughtPriceController.text =
+          activity.tradeBoughtPrice?.toStringAsFixed(2) ?? '';
+      _boughtTotalController.text =
+          activity.tradeBoughtTotal?.toStringAsFixed(2) ?? '';
+
+      if (activity.tradeSoldInvestmentId != null) {
+        final inv =
+            _controller.getInvestmentById(activity.tradeSoldInvestmentId!);
+        if (inv != null) {
+          _soldInvestment = inv;
+          _soldInvestmentController.text = inv.ticker;
+        }
+      }
+      if (activity.tradeBoughtInvestmentId != null) {
+        final inv =
+            _controller.getInvestmentById(activity.tradeBoughtInvestmentId!);
+        if (inv != null) {
+          _boughtInvestment = inv;
+          _boughtInvestmentController.text = inv.ticker;
+        }
+      }
+    } else if (activity.isTransaction) {
+      selectedOption = 2;
+      _hasPortfolioCurrency = true; // currency already set
+      _descriptionController.text = activity.description ?? '';
+      _amountController.text = activity.transactionAmount?.toString() ?? '';
+      _priceController.text =
+          activity.transactionPrice?.toStringAsFixed(2) ?? '';
+      _totalController.text =
+          activity.transactionTotal?.toStringAsFixed(2) ?? '';
+      isAddingInvestment = activity.isDeposit;
+
+      if (activity.transactionInvestmentId != null) {
+        final inv = _controller
+            .getInvestmentById(activity.transactionInvestmentId!);
+        if (inv != null) {
+          _transactionInvestment = inv;
+          _transactionInvestmentController.text = inv.ticker;
+        }
+      }
+    }
   }
 
   Future<void> _loadPortfolioCurrency() async {
@@ -229,6 +295,112 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
     );
   }
 
+  Future<void> _updateTrade() async {
+    if (_soldInvestment == null || _boughtInvestment == null) {
+      _showSnackbar('Error', 'Please select both sold and bought investments');
+      return;
+    }
+
+    final soldAmount = double.tryParse(_soldAmountController.text);
+    final soldPrice = double.tryParse(_soldPriceController.text);
+    final soldTotal = double.tryParse(_soldTotalController.text);
+    final boughtAmount = double.tryParse(_boughtAmountController.text);
+    final boughtPrice = double.tryParse(_boughtPriceController.text);
+    final boughtTotal = double.tryParse(_boughtTotalController.text);
+
+    if (soldAmount == null ||
+        soldPrice == null ||
+        soldTotal == null ||
+        boughtAmount == null ||
+        boughtPrice == null ||
+        boughtTotal == null) {
+      _showSnackbar('Error', 'Please enter valid numbers for all fields');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final updated = widget.editingActivity!.copyWith(
+        tradeSoldInvestmentId: _soldInvestment!.id,
+        tradeSoldAmount: soldAmount,
+        tradeSoldPrice: soldPrice,
+        tradeSoldTotal: soldTotal,
+        tradeBoughtInvestmentId: _boughtInvestment!.id,
+        tradeBoughtAmount: boughtAmount,
+        tradeBoughtPrice: boughtPrice,
+        tradeBoughtTotal: boughtTotal,
+        date: selectedDate ?? DateTime.now(),
+        description:
+            'Traded ${_soldInvestment!.ticker} for ${_boughtInvestment!.ticker}',
+      );
+
+      final success = await _controller.updateActivity(updated);
+      if (success) {
+        _showSnackbar('Success', 'Trade updated successfully', isError: false);
+        if (mounted) Navigator.of(context).pop();
+      } else {
+        _showSnackbar('Error', 'Failed to update trade');
+      }
+    } catch (e) {
+      _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _updateTransaction() async {
+    if (_transactionInvestment == null) {
+      _showSnackbar('Error', 'Please select an investment');
+      return;
+    }
+
+    final amount = double.tryParse(_amountController.text);
+    final price = double.tryParse(_priceController.text);
+    final total = double.tryParse(_totalController.text);
+
+    if (amount == null || price == null || total == null) {
+      _showSnackbar('Error', 'Please enter valid numbers for all fields');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final direction = isAddingInvestment
+          ? TransactionDirection.deposit
+          : TransactionDirection.withdraw;
+
+      final updated = widget.editingActivity!.copyWith(
+        transactionInvestmentId: _transactionInvestment!.id,
+        transactionDirection: direction,
+        transactionAmount: amount,
+        transactionPrice: price,
+        transactionTotal: total,
+        date: selectedDate ?? DateTime.now(),
+        description: _descriptionController.text.isNotEmpty
+            ? _descriptionController.text
+            : '${isAddingInvestment ? "Bought" : "Sold"} ${_transactionInvestment!.ticker}',
+      );
+
+      final success = await _controller.updateActivity(updated);
+      if (success) {
+        _showSnackbar(
+          'Success',
+          'Transaction updated successfully',
+          isError: false,
+        );
+        if (mounted) Navigator.of(context).pop();
+      } else {
+        _showSnackbar('Error', 'Failed to update transaction');
+      }
+    } catch (e) {
+      _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   Future<void> _saveTrade() async {
     if (_soldInvestment == null || _boughtInvestment == null) {
       _showSnackbar('Error', 'Please select both sold and bought investments');
@@ -276,7 +448,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
         _showSnackbar('Error', 'Failed to add trade');
       }
     } catch (e) {
-      _showSnackbar('Error', 'An error occurred: $e');
+      _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -327,7 +499,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
         _showSnackbar('Error', 'Failed to add transaction');
       }
     } catch (e) {
-      _showSnackbar('Error', 'An error occurred: $e');
+      _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -418,7 +590,11 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                     ),
                   ),
                   CustomText(
-                    selectedOption == 1 ? 'New Trade' : 'Transaction',
+                    _isEditMode
+                        ? (selectedOption == 1
+                            ? 'Edit Trade'
+                            : 'Edit Transaction')
+                        : (selectedOption == 1 ? 'New Trade' : 'Transaction'),
                     size: 16.sp,
                     fontWeight: FontWeight.w500,
                     color: Colors.black,
@@ -427,23 +603,24 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                 ],
               ),
             ),
-            // Toggle Switch
-            TradeTransactionToggleSwitch(
-              option1Text: 'Trade',
-              option2Text: 'Transaction',
-              selectedOption: selectedOption,
-              onOption1Tap: () {
-                setState(() {
-                  selectedOption = 1;
-                });
-              },
-              onOption2Tap: () {
-                setState(() {
-                  selectedOption = 2;
-                });
-              },
-              backgroundColor: AppColors.primary,
-            ),
+            // Toggle Switch — hidden in edit mode (type cannot change)
+            if (!_isEditMode)
+              TradeTransactionToggleSwitch(
+                option1Text: 'Trade',
+                option2Text: 'Transaction',
+                selectedOption: selectedOption,
+                onOption1Tap: () {
+                  setState(() {
+                    selectedOption = 1;
+                  });
+                },
+                onOption2Tap: () {
+                  setState(() {
+                    selectedOption = 2;
+                  });
+                },
+                backgroundColor: AppColors.primary,
+              ),
             27.verticalSpace,
             // Content
             Expanded(
@@ -535,7 +712,8 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                         16.verticalSpace,
                         if (selectedOption == 1) ...[
                           // Trade Section
-                          if (_controller.transactionsOnly.isEmpty) ...[
+                          if (!_isEditMode &&
+                              _controller.transactionsOnly.isEmpty) ...[
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: 20.w,
@@ -1091,6 +1269,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                             ),
                         ],
                         if (!(selectedOption == 1 &&
+                                !_isEditMode &&
                                 _controller.transactionsOnly.isEmpty) &&
                             !(selectedOption == 2 &&
                                 !_hasPortfolioCurrency)) ...[
@@ -1099,10 +1278,18 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                             onTap: _isSaving
                                 ? null
                                 : () {
-                                    if (selectedOption == 1) {
-                                      _saveTrade();
+                                    if (_isEditMode) {
+                                      if (selectedOption == 1) {
+                                        _updateTrade();
+                                      } else {
+                                        _updateTransaction();
+                                      }
                                     } else {
-                                      _saveTransaction();
+                                      if (selectedOption == 1) {
+                                        _saveTrade();
+                                      } else {
+                                        _saveTransaction();
+                                      }
                                     }
                                   },
                             child: Container(
@@ -1130,7 +1317,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         ),
                                       )
                                     : CustomText(
-                                        'add',
+                                        _isEditMode ? 'save' : 'add',
                                         size: 16.sp,
                                         color: Color(0xff0071FF),
                                         fontWeight: FontWeight.w400,
