@@ -50,22 +50,23 @@ class CustomToggleSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        91.horizontalSpace,
-        // Option 1
         InkWell(
           onTap: onOption1Tap,
           child: Container(
-            width: selectedOption == 1 ? 118.w : 59.w,
+            constraints: BoxConstraints(minWidth: 59.w, maxWidth: 140.w),
             height: 35.h,
+            padding: EdgeInsets.symmetric(horizontal: 8.w),
             decoration: BoxDecoration(
               color: selectedOption == 1
-                  ? Color(0xffFFE374)
+                  ? const Color(0xffFFE374)
                   : AppColors.background,
               border: Border.all(color: AppColors.greyBorder, width: 1.r),
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(9.r)),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
@@ -81,12 +82,8 @@ class CustomToggleSwitch extends StatelessWidget {
                   CustomText(
                     option1Text,
                     size: 16.sp,
-                    fontWeight: selectedOption == 1
-                        ? FontWeight.w500
-                        : FontWeight.w500,
-                    color: selectedOption == 1
-                        ? option1Color ?? Colors.black
-                        : const Color(0xff6E6E6E),
+                    fontWeight: FontWeight.w500,
+                    color: option1Color ?? Colors.black,
                   ),
                 ],
               ],
@@ -96,16 +93,18 @@ class CustomToggleSwitch extends StatelessWidget {
         InkWell(
           onTap: onOption2Tap,
           child: Container(
-            width: selectedOption == 2 ? 118.w : 59.w,
+            constraints: BoxConstraints(minWidth: 59.w, maxWidth: 140.w),
             height: 35.h,
+            padding: EdgeInsets.symmetric(horizontal: 8.w),
             decoration: BoxDecoration(
               color: selectedOption == 2
-                  ? Color(0xffFFE374)
+                  ? const Color(0xffFFE374)
                   : AppColors.background,
               border: Border.all(color: AppColors.greyBorder, width: 2.r),
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(9.r)),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
@@ -121,12 +120,8 @@ class CustomToggleSwitch extends StatelessWidget {
                   CustomText(
                     option2Text,
                     size: 16.sp,
-                    fontWeight: selectedOption == 2
-                        ? FontWeight.w500
-                        : FontWeight.w500,
-                    color: selectedOption == 2
-                        ? option2Color ?? Colors.black
-                        : const Color(0xff6E6E6E),
+                    fontWeight: FontWeight.w500,
+                    color: option2Color ?? Colors.black,
                   ),
                 ],
               ],
