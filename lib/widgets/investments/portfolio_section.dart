@@ -70,6 +70,11 @@ class PortfolioSection extends StatelessWidget {
 
           double percentChange = 0;
 
+          final filteredInvestmentIds = enrichedData
+              .map((d) => (d['investment'] as Investment).id)
+              .whereType<int>()
+              .toSet();
+
           // Build chart data from all price points (manual snapshots + activities)
           List<ChartDataPoint> chartData = [];
 
@@ -133,6 +138,10 @@ class PortfolioSection extends StatelessWidget {
               final holdingsAtSlot = holdingsTimeline[midpoint] ?? {};
               double totalValue = 0;
               for (var entry in carryPrices.entries) {
+                if (filteredInvestmentIds.isNotEmpty &&
+                    !filteredInvestmentIds.contains(entry.key)) {
+                  continue;
+                }
                 final holdings = holdingsAtSlot[entry.key] ?? 0;
                 if (holdings > 0) totalValue += holdings * entry.value;
               }
@@ -147,81 +156,105 @@ class PortfolioSection extends StatelessWidget {
               ));
             }
           } else {
-            // Group prices by day for > 2 days, keeping latest datetime per investment
-            if (dateInvestmentPrices.isNotEmpty) {
-              Map<DateTime, Map<int, double>> groupedPrices = {};
-              Map<DateTime, Map<int, DateTime>> groupedPriceDates = {};
-              dateInvestmentPrices.forEach((date, prices) {
-                final dayKey = DateTime(date.year, date.month, date.day);
-                groupedPrices[dayKey] ??= {};
-                groupedPriceDates[dayKey] ??= {};
-                prices.forEach((investmentId, price) {
-                  final existingDate =
-                      groupedPriceDates[dayKey]![investmentId];
-                  if (existingDate == null || date.isAfter(existingDate)) {
-                    groupedPrices[dayKey]![investmentId] = price;
-                    groupedPriceDates[dayKey]![investmentId] = date;
-                  }
-                });
-              });
-              dateInvestmentPrices = groupedPrices;
+            int targetPoints;
+            if (durationInDays < 90) {
+              targetPoints = durationInDays.ceil();
+            } else {
+              targetPoints = 90;
             }
 
-            if (dateInvestmentPrices.isNotEmpty) {
-              final holdingsTimeline = controller.buildHoldingsTimeline(
-                dateInvestmentPrices.keys.toList(),
-              );
+            final startMs =
+                controller.portfolioDateStart.value.millisecondsSinceEpoch;
+            final endMs =
+                controller.portfolioDateEnd.value.millisecondsSinceEpoch;
+            final windowSizeMs = (endMs - startMs) / targetPoints;
 
-              final sortedDates = dateInvestmentPrices.keys.toList()
-                ..sort();
+            final slotMidpoints = List.generate(targetPoints, (i) {
+              final ms = (startMs + (i + 0.5) * windowSizeMs).round();
+              return DateTime.fromMillisecondsSinceEpoch(ms);
+            });
 
-              Map<int, double> carryPrices = Map.of(
-                controller.getLatestPricesBeforeDate(sortedDates.first),
-              );
+            final holdingsTimeline =
+                controller.buildHoldingsTimeline(slotMidpoints);
 
-              Map<DateTime, double> dateValues = {};
-              for (final date in sortedDates) {
-                carryPrices.addAll(dateInvestmentPrices[date]!);
-                double totalValue = 0;
-                final holdingsAtDate = holdingsTimeline[date] ?? {};
-                for (var entry in carryPrices.entries) {
-                  final holdings = holdingsAtDate[entry.key] ?? 0;
-                  if (holdings > 0) totalValue += holdings * entry.value;
-                }
-                dateValues[date] = totalValue;
+            final sortedPricePoints = dateInvestmentPrices.entries.toList()
+              ..sort((a, b) => a.key.compareTo(b.key));
+
+            Map<int, double> carryPrices = Map.of(
+              controller.getLatestPricesBeforeDate(
+                controller.portfolioDateStart.value,
+              ),
+            );
+
+            int priceIdx = 0;
+
+            for (int i = 0; i < targetPoints; i++) {
+              final windowEndMs =
+                  (startMs + (i + 1) * windowSizeMs).round();
+              final midpoint = slotMidpoints[i];
+
+              bool hadNewPrice = false;
+              Map<int, double> windowPrices = {};
+              Map<int, DateTime> windowPriceDates = {};
+
+              while (priceIdx < sortedPricePoints.length &&
+                  sortedPricePoints[priceIdx].key.millisecondsSinceEpoch <=
+                      windowEndMs) {
+                final pointDate = sortedPricePoints[priceIdx].key;
+                sortedPricePoints[priceIdx].value.forEach((investmentId, price) {
+                  final existing = windowPriceDates[investmentId];
+                  if (existing == null || pointDate.isAfter(existing)) {
+                    windowPrices[investmentId] = price;
+                    windowPriceDates[investmentId] = pointDate;
+                  }
+                });
+                priceIdx++;
+                hadNewPrice = true;
               }
 
-              var sortedEntries = dateValues.entries.toList()
-                ..sort((a, b) => a.key.compareTo(b.key));
-
-              for (var entry in sortedEntries) {
-                final date = entry.key;
-                final value = entry.value;
-                String label;
-                String tooltipLabel;
-                if (durationInDays <= 90) {
-                  label = DateFormat('dd.MM.yyyy').format(date);
-                  tooltipLabel =
-                      '$currencySymbol${_formatCurrency(value)}\n'
-                      '${DateFormat('dd.MM.yyyy').format(date)}';
-                } else if (durationInDays <= 365 * 2 + 10) {
-                  label = DateFormat('MMM yyyy').format(date);
-                  tooltipLabel =
-                      '$currencySymbol${_formatCurrency(value)}\n'
-                      '${DateFormat('dd.MM.yyyy').format(date)}';
-                } else {
-                  label = DateFormat('yyyy').format(date);
-                  tooltipLabel =
-                      '$currencySymbol${_formatCurrency(value)}\n'
-                      '${DateFormat('dd.MM.yyyy').format(date)}';
-                }
-                chartData.add(ChartDataPoint(
-                  label: label,
-                  value: value,
-                  tooltipLabel: tooltipLabel,
-                  xValue: date.millisecondsSinceEpoch.toDouble(),
-                ));
+              if (hadNewPrice) {
+                carryPrices.addAll(windowPrices);
               }
+
+              if (carryPrices.isEmpty) continue;
+              if (!hadNewPrice && priceIdx >= sortedPricePoints.length) break;
+
+              final holdingsAtSlot = holdingsTimeline[midpoint] ?? {};
+              double totalValue = 0;
+              for (var entry in carryPrices.entries) {
+                if (filteredInvestmentIds.isNotEmpty &&
+                    !filteredInvestmentIds.contains(entry.key)) {
+                  continue;
+                }
+                final holdings = holdingsAtSlot[entry.key] ?? 0;
+                if (holdings > 0) totalValue += holdings * entry.value;
+              }
+
+              String label;
+              String tooltipLabel;
+              if (durationInDays < 90) {
+                label = DateFormat('dd.MM.yyyy').format(midpoint);
+                tooltipLabel =
+                    '$currencySymbol${_formatCurrency(totalValue)}\n'
+                    '${DateFormat('dd.MM.yyyy').format(midpoint)}';
+              } else if (durationInDays <= 365 * 2 + 10) {
+                label = DateFormat('MMM yyyy').format(midpoint);
+                tooltipLabel =
+                    '$currencySymbol${_formatCurrency(totalValue)}\n'
+                    '${DateFormat('dd.MM.yyyy').format(midpoint)}';
+              } else {
+                label = DateFormat('yyyy').format(midpoint);
+                tooltipLabel =
+                    '$currencySymbol${_formatCurrency(totalValue)}\n'
+                    '${DateFormat('dd.MM.yyyy').format(midpoint)}';
+              }
+
+              chartData.add(ChartDataPoint(
+                label: label,
+                value: totalValue,
+                tooltipLabel: tooltipLabel,
+                xValue: i.toDouble(),
+              ));
             }
           }
 

@@ -501,82 +501,43 @@ class InvestmentController extends GetxController {
       }
     }
 
-    // Build result for investments with net changes
-    for (var entry in investmentChanges.entries) {
-      final investmentId = entry.key;
-      final data = entry.value;
-      final netChange = data['netChange'] as double;
+    final endDate = portfolioDateEnd.value;
+    final holdingsAtEnd = buildHoldingsTimeline([endDate])[endDate] ?? {};
+    final pricesAtEnd = getLatestPricesBeforeDate(
+      endDate.add(Duration(days: 1)),
+    );
 
-      if (netChange > 0.0001) {
-        final investment = investments.firstWhereOrNull(
-          (inv) => inv.id == investmentId,
-        );
+    final filteredPortfolioHistory = portfolioHistory.where((s) {
+      return s.date.isAfter(
+            portfolioDateStart.value.subtract(Duration(days: 1)),
+          ) &&
+          s.date.isBefore(portfolioDateEnd.value.add(Duration(days: 1)));
+    }).toList();
 
-        if (investment == null) continue;
+    final relevantIds = <int>{};
+    relevantIds.addAll(investmentChanges.keys);
+    relevantIds.addAll(filteredPortfolioHistory.map((s) => s.investmentId));
 
-        var latestPrice = data['latestPrice'] as double?;
-        var latestPriceDate = data['latestPriceDate'] as DateTime?;
-
-        // Check for latest manual price snapshot (regardless of date range)
-        final latestSnapshot = portfolioHistory
-            .where((s) => s.investmentId == investmentId)
-            .fold<PortfolioSnapshot?>(null, (prev, current) {
-          if (prev == null) return current;
-          return current.date.isAfter(prev.date) ? current : prev;
-        });
-
-        if (latestSnapshot != null) {
-          if (latestPriceDate == null ||
-              latestSnapshot.date.isAfter(latestPriceDate)) {
-            latestPrice = latestSnapshot.unitPrice;
-            latestPriceDate = latestSnapshot.date;
-          }
-        }
-
-        final hasPrice = latestPrice != null;
-        final totalValue = hasPrice ? netChange * latestPrice : 0.0;
-
-        result.add({
-          'investment': investment,
-          'amount': netChange.abs(),
-          'holdings': netChange,
-          'latestPrice': latestPrice ?? 0.0,
-          'hasPrice': hasPrice,
-          'totalValue': totalValue,
-        });
-      }
-    }
-
-    // Also include investments that have manual price snapshots in the filter
-    // range but no activity — as long as they are not closed (holdings > 0).
-    final snapshotInvestmentIds =
-        filteredPortfolioHistory.map((s) => s.investmentId).toSet();
-
-    for (final investmentId in snapshotInvestmentIds) {
-      if (investmentChanges.containsKey(investmentId)) continue;
-
-      final cumulativeHoldings = currentHoldings[investmentId] ?? 0.0;
-      if (cumulativeHoldings <= 0) continue;
+    for (final investmentId in relevantIds) {
+      final holdings = holdingsAtEnd[investmentId] ?? 0.0;
+      if (holdings <= 0) continue;
 
       final investment = investments.firstWhereOrNull(
         (inv) => inv.id == investmentId,
       );
       if (investment == null) continue;
 
-      final snapshots = filteredPortfolioHistory
-          .where((s) => s.investmentId == investmentId)
-          .toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
-
-      final latestSnapshot = snapshots.first;
+      final latestPrice = pricesAtEnd[investmentId];
+      final hasPrice = latestPrice != null;
+      final totalValue = hasPrice ? holdings * latestPrice : 0.0;
 
       result.add({
         'investment': investment,
-        'amount': cumulativeHoldings,
-        'holdings': cumulativeHoldings,
-        'latestPrice': latestSnapshot.unitPrice,
-        'hasPrice': true,
-        'totalValue': cumulativeHoldings * latestSnapshot.unitPrice,
+        'amount': holdings,
+        'holdings': holdings,
+        'latestPrice': latestPrice ?? 0.0,
+        'hasPrice': hasPrice,
+        'totalValue': totalValue,
       });
     }
 
