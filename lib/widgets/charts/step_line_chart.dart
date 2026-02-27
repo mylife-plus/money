@@ -25,7 +25,12 @@ class StepLineChartWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 300.h,
-      padding: EdgeInsets.all(5.w),
+      padding: EdgeInsets.only(
+        left: 5.w,
+        top: 5.w,
+        bottom: 5.w,
+        right: 20.w,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
@@ -103,7 +108,7 @@ class StepLineChartWidget extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 24.h,
+                reservedSize: 30.h,
                 // Fixed: Show exactly 4 labels on X-axis
                 interval: _getMaxX() > 3
                     ? (_getMaxX() / 3).ceilToDouble()
@@ -112,7 +117,7 @@ class StepLineChartWidget extends StatelessWidget {
                   final point = _getDataPointByXValue(value.toInt());
                   if (point != null) {
                     return Padding(
-                      padding: EdgeInsets.only(top: 8.h),
+                      padding: EdgeInsets.only(top: 14.h),
                       child: Text(
                         point.label,
                         style: TextStyle(

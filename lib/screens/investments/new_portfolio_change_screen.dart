@@ -684,8 +684,16 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                     },
                                   );
                                   if (picked != null) {
+                                    final now = DateTime.now();
                                     setState(() {
-                                      selectedDate = picked;
+                                      selectedDate = DateTime(
+                                        picked.year,
+                                        picked.month,
+                                        picked.day,
+                                        now.hour,
+                                        now.minute,
+                                        now.second,
+                                      );
                                     });
                                   }
                                 },

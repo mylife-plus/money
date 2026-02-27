@@ -70,87 +70,149 @@ class PortfolioSection extends StatelessWidget {
 
           double percentChange = 0;
 
-          // Build chart data from filtered portfolio snapshots
-          final filteredSnapshots = controller.filteredPortfolioHistory;
+          // Build chart data from all price points (manual snapshots + activities)
           List<ChartDataPoint> chartData = [];
 
-          if (filteredSnapshots.isNotEmpty) {
-            // Group snapshots by date and investment, then calculate total portfolio value per date
-            Map<DateTime, Map<int, double>> dateInvestmentPrices = {};
+          int durationInDays = controller.portfolioDateEnd.value
+              .difference(controller.portfolioDateStart.value)
+              .inDays;
+          if (durationInDays < 1) durationInDays = 1;
 
-            for (var snapshot in filteredSnapshots) {
-              DateTime dateOnly = DateTime(
-                snapshot.date.year,
-                snapshot.date.month,
-                snapshot.date.day,
-              );
-              dateInvestmentPrices[dateOnly] ??= {};
-              dateInvestmentPrices[dateOnly]![snapshot.investmentId] =
-                  snapshot.unitPrice;
-            }
+          Map<DateTime, Map<int, double>> dateInvestmentPrices =
+              controller.getAllPricePointsForGraph();
 
-            // For each date, calculate total portfolio value
-            // We need to multiply unit prices by holdings at that date
-            // For now, we'll show the sum of latest unit prices (simplified)
-            Map<String, double> dateValues = {};
+          final currencySymbol = CurrencyService.instance.portfolioSymbol;
 
-            dateInvestmentPrices.forEach((date, investmentPrices) {
-              double totalValue = 0;
-              // Get holdings for each investment and multiply by price
-              for (var entry in investmentPrices.entries) {
-                int investmentId = entry.key;
-                double unitPrice = entry.value;
+          if (durationInDays <= 2) {
+            // Time-based hourly slots (like spending graph)
+            final int targetPoints = 24 * durationInDays;
+            final startMs =
+                controller.portfolioDateStart.value.millisecondsSinceEpoch;
+            final endMs =
+                controller.portfolioDateEnd.value.millisecondsSinceEpoch;
+            final windowSizeMs = (endMs - startMs) / targetPoints;
 
-                // Find holdings at this date from enriched data
-                final investmentData = enrichedData.firstWhere(
-                  (data) => data['investment'].id == investmentId,
-                  orElse: () => <String, dynamic>{},
-                );
+            final sortedPricePoints = dateInvestmentPrices.entries.toList()
+              ..sort((a, b) => a.key.compareTo(b.key));
 
-                if (investmentData.isNotEmpty) {
-                  double holdings =
-                      (investmentData['holdings'] as double?) ?? 0;
-                  totalValue += holdings * unitPrice;
-                }
-              }
+            Map<int, double> carryPrices = {};
+            int priceIdx = 0;
 
-              String dateKey = DateFormat('dd.MM.yyyy').format(date);
-              dateValues[dateKey] = totalValue;
+            final slotMidpoints = List.generate(targetPoints, (i) {
+              final ms = (startMs + (i + 0.5) * windowSizeMs).round();
+              return DateTime.fromMillisecondsSinceEpoch(ms);
             });
 
-            // Convert to chart data points
-            var sortedEntries = dateValues.entries.toList()
-              ..sort((a, b) {
-                var dateA = DateFormat('dd.MM.yyyy').parse(a.key);
-                var dateB = DateFormat('dd.MM.yyyy').parse(b.key);
-                return dateA.compareTo(dateB);
+            final holdingsTimeline =
+                controller.buildHoldingsTimeline(slotMidpoints);
+
+            for (int i = 0; i < targetPoints; i++) {
+              final windowEndMs =
+                  (startMs + (i + 1) * windowSizeMs).round();
+              final midpoint = slotMidpoints[i];
+
+              bool hadNewPrice = false;
+              while (priceIdx < sortedPricePoints.length &&
+                  sortedPricePoints[priceIdx].key.millisecondsSinceEpoch <=
+                      windowEndMs) {
+                carryPrices.addAll(sortedPricePoints[priceIdx].value);
+                priceIdx++;
+                hadNewPrice = true;
+              }
+
+              if (carryPrices.isEmpty) continue;
+
+              // Stop after the last slot that had actual price data —
+              // no data should be shown beyond the last entry.
+              if (!hadNewPrice && priceIdx >= sortedPricePoints.length) break;
+
+              final holdingsAtSlot = holdingsTimeline[midpoint] ?? {};
+              double totalValue = 0;
+              for (var entry in carryPrices.entries) {
+                final holdings = holdingsAtSlot[entry.key] ?? 0;
+                if (holdings > 0) totalValue += holdings * entry.value;
+              }
+
+              chartData.add(ChartDataPoint(
+                label: DateFormat('HH:mm').format(midpoint),
+                value: totalValue,
+                tooltipLabel:
+                    '$currencySymbol${_formatCurrency(totalValue)}\n'
+                    '${DateFormat('HH:mm dd.MM.yyyy').format(midpoint)}',
+                xValue: i.toDouble(),
+              ));
+            }
+          } else {
+            // Group prices by day for > 2 days
+            if (dateInvestmentPrices.isNotEmpty) {
+              Map<DateTime, Map<int, double>> groupedPrices = {};
+              dateInvestmentPrices.forEach((date, prices) {
+                DateTime key = DateTime(date.year, date.month, date.day);
+                groupedPrices[key] ??= {};
+                groupedPrices[key]!.addAll(prices);
+              });
+              dateInvestmentPrices = groupedPrices;
+            }
+
+            if (dateInvestmentPrices.isNotEmpty) {
+              final holdingsTimeline = controller.buildHoldingsTimeline(
+                dateInvestmentPrices.keys.toList(),
+              );
+
+              Map<DateTime, double> dateValues = {};
+              dateInvestmentPrices.forEach((date, investmentPrices) {
+                double totalValue = 0;
+                final holdingsAtDate = holdingsTimeline[date] ?? {};
+                for (var entry in investmentPrices.entries) {
+                  final holdings = holdingsAtDate[entry.key] ?? 0;
+                  if (holdings > 0) totalValue += holdings * entry.value;
+                }
+                dateValues[date] = totalValue;
               });
 
-            for (var entry in sortedEntries) {
-              chartData.add(
-                ChartDataPoint(
-                  label: entry.key,
-                  value: entry.value,
-                  tooltipLabel:
-                      '${CurrencyService.instance.portfolioSymbol}${_formatCurrency(entry.value)}\n${entry.key}',
-                  xValue: DateFormat(
-                    'dd.MM.yyyy',
-                  ).parse(entry.key).millisecondsSinceEpoch.toDouble(),
-                ),
-              );
-            }
+              var sortedEntries = dateValues.entries.toList()
+                ..sort((a, b) => a.key.compareTo(b.key));
 
-            // Calculate percent change from filtered data
-            if (chartData.length >= 2) {
-              double firstValue = chartData.first.value;
-              double lastValue = chartData.last.value;
-              if (firstValue > 0) {
-                percentChange = ((lastValue - firstValue) / firstValue) * 100;
+              for (var entry in sortedEntries) {
+                final date = entry.key;
+                final value = entry.value;
+                String label;
+                String tooltipLabel;
+                if (durationInDays <= 90) {
+                  label = DateFormat('dd.MM.yyyy').format(date);
+                  tooltipLabel =
+                      '$currencySymbol${_formatCurrency(value)}\n'
+                      '${DateFormat('dd.MM.yyyy').format(date)}';
+                } else if (durationInDays <= 365 * 2 + 10) {
+                  label = DateFormat('MMM yyyy').format(date);
+                  tooltipLabel =
+                      '$currencySymbol${_formatCurrency(value)}\n'
+                      '${DateFormat('dd.MM.yyyy').format(date)}';
+                } else {
+                  label = DateFormat('yyyy').format(date);
+                  tooltipLabel =
+                      '$currencySymbol${_formatCurrency(value)}\n'
+                      '${DateFormat('dd.MM.yyyy').format(date)}';
+                }
+                chartData.add(ChartDataPoint(
+                  label: label,
+                  value: value,
+                  tooltipLabel: tooltipLabel,
+                  xValue: date.millisecondsSinceEpoch.toDouble(),
+                ));
               }
-              currentValue = lastValue;
-            } else if (chartData.length == 1) {
-              currentValue = chartData.first.value;
             }
+          }
+
+          if (chartData.length >= 2) {
+            double firstValue = chartData.first.value;
+            double lastValue = chartData.last.value;
+            if (firstValue > 0) {
+              percentChange = ((lastValue - firstValue) / firstValue) * 100;
+            }
+            currentValue = lastValue;
+          } else if (chartData.length == 1) {
+            currentValue = chartData.first.value;
           }
 
           // If no chart data, show placeholder
@@ -178,8 +240,8 @@ class PortfolioSection extends StatelessWidget {
             children: [
               16.verticalSpace,
               Container(
-                margin: EdgeInsets.symmetric(horizontal: 7.w),
-                padding: EdgeInsets.fromLTRB(5.w, 8.h, 20.w, 5.h),
+                margin: EdgeInsets.symmetric(horizontal: 12.w),
+                padding: EdgeInsets.fromLTRB(5.w, 8.h, 10.w, 5.h),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: Color(0xffE3E3E3)),
@@ -232,9 +294,12 @@ class PortfolioSection extends StatelessWidget {
                         ),
                       ),
                     Expanded(
-                      child: SmoothLineChartWidget(
-                        data: chartData,
-                        lineColor: const Color(0xff0088FF),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 35.0),
+                        child: SmoothLineChartWidget(
+                          data: chartData,
+                          lineColor: const Color(0xff0088FF),
+                        ),
                       ),
                     ),
                   ],

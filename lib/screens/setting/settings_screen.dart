@@ -211,6 +211,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Load Investment Test Data (Dev)',
                     onTap: () => _showLoadInvestmentTestDataDialog(context),
                   ),
+                  SettingsTile(
+                    icon: Icon(Icons.auto_graph_outlined, size: 24.r),
+                    title: 'Load Correct Investment Data (5yr)',
+                    onTap: () => _showLoadCorrectInvestmentDataDialog(context),
+                  ),
                 ],
               ),
             ],
@@ -381,6 +386,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } catch (e) {
         if (context.mounted) {
           Navigator.pop(context); // close progress
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showLoadCorrectInvestmentDataDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Load Correct Investment Data'),
+        content: const Text(
+          '⚠️ WARNING: This will DELETE all existing investments, activities, and portfolio snapshots.\n\n'
+          'It will create 6 new investments (MSFT, AMZN, NVDA, SLVR, SOL, JPM) with 5 years of realistic data including deposits, withdrawals, and monthly price snapshots.\n\n'
+          'Are you sure?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Load Data'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text("Generating 5yr investment data..."),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      try {
+        InvestmentController controller;
+        if (Get.isRegistered<InvestmentController>()) {
+          controller = Get.find<InvestmentController>();
+        } else {
+          controller = Get.put(InvestmentController());
+        }
+
+        await TestDataService().generateCorrectInvestmentDummyData();
+        await controller.loadData();
+
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Correct investment data loaded successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
           );

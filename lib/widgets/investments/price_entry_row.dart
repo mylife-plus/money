@@ -70,8 +70,16 @@ class _PriceEntryRowState extends State<PriceEntryRow> {
                         initialDate: selectedDate,
                       );
                       if (pickedDate != null) {
+                        final now = DateTime.now();
                         setState(() {
-                          selectedDate = pickedDate;
+                          selectedDate = DateTime(
+                            pickedDate.year,
+                            pickedDate.month,
+                            pickedDate.day,
+                            now.hour,
+                            now.minute,
+                            now.second,
+                          );
                         });
                       }
                     },

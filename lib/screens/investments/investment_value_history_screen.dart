@@ -73,12 +73,12 @@ class _InvestmentValueHistoryScreenState
     showDialog(
       context: context,
       builder: (context) => PriceEntryDialog(
-        onSave: (date, unitPrice, note) async {
+        onSave: (date, unitPrice) async {
           await controller.addManualPriceSnapshot(
             investmentId: investment.id!,
             unitPrice: unitPrice,
             date: date,
-            note: note,
+            note: null,
           );
           await _loadSnapshots();
           _showSnackbar('Success', 'Price added successfully', isError: false);
@@ -94,20 +94,18 @@ class _InvestmentValueHistoryScreenState
       builder: (context) => PriceEntryDialog(
         initialDate: snapshot.date,
         initialUnitPrice: snapshot.unitPrice,
-        initialNote: snapshot.note,
-        onDelete: () {
-          Navigator.pop(context);
-          _deleteEntry(index);
+        onDelete: () async {
+          await controller.deleteSnapshot(snapshots[index].id!);
+          await _loadSnapshots();
+          _showSnackbar('Success', 'Price deleted successfully', isError: false);
         },
-        onSave: (date, unitPrice, note) async {
-          // Update snapshot (would need updateSnapshot method in controller)
-          // For now, delete and recreate
+        onSave: (date, unitPrice) async {
           await controller.deleteSnapshot(snapshot.id!);
           await controller.addManualPriceSnapshot(
             investmentId: investment.id!,
             unitPrice: unitPrice,
             date: date,
-            note: note,
+            note: null,
           );
           await _loadSnapshots();
           _showSnackbar(

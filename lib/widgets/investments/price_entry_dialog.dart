@@ -10,15 +10,13 @@ import 'package:moneyapp/widgets/common/custom_text.dart';
 class PriceEntryDialog extends StatefulWidget {
   final DateTime? initialDate;
   final double? initialUnitPrice;
-  final String? initialNote;
-  final Function(DateTime date, double unitPrice, String? note) onSave;
+  final Function(DateTime date, double unitPrice) onSave;
   final VoidCallback? onDelete;
 
   const PriceEntryDialog({
     super.key,
     this.initialDate,
     this.initialUnitPrice,
-    this.initialNote,
     required this.onSave,
     this.onDelete,
   });
@@ -29,7 +27,6 @@ class PriceEntryDialog extends StatefulWidget {
 
 class _PriceEntryDialogState extends State<PriceEntryDialog> {
   late TextEditingController priceController;
-  late TextEditingController noteController;
   DateTime? selectedDate;
 
   @override
@@ -38,14 +35,12 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
     priceController = TextEditingController(
       text: widget.initialUnitPrice?.toString() ?? '',
     );
-    noteController = TextEditingController(text: widget.initialNote ?? '');
     selectedDate = widget.initialDate;
   }
 
   @override
   void dispose() {
     priceController.dispose();
-    noteController.dispose();
     super.dispose();
   }
 
@@ -97,9 +92,39 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
       },
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
+      final timePicked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(selectedDate ?? DateTime.now()),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: Colors.black,
+                surface: AppColors.background,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(foregroundColor: Colors.black),
+              ),
+            ),
+            child: child!,
+          );
+        },
+      );
+
       setState(() {
-        selectedDate = picked;
+        if (timePicked != null) {
+          selectedDate = DateTime(
+            picked.year,
+            picked.month,
+            picked.day,
+            timePicked.hour,
+            timePicked.minute,
+          );
+        } else {
+          selectedDate = picked;
+        }
       });
     }
   }
@@ -122,11 +147,7 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
     }
 
     Navigator.of(context).pop();
-    widget.onSave(
-      selectedDate!,
-      unitPrice,
-      noteController.text.trim().isEmpty ? null : noteController.text.trim(),
-    );
+    widget.onSave(selectedDate!, unitPrice);
   }
 
   Future<void> _delete() async {
@@ -280,38 +301,6 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
                 textAlign: TextAlign.end,
               ),
             ),
-            7.verticalSpace,
-
-            // Note Field
-            Container(
-              height: 41.h,
-              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: AppColors.greyBorder),
-                borderRadius: BorderRadius.circular(4.r),
-              ),
-              child: TextField(
-                controller: noteController,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: '',
-                  labelText: 'Note (optional)',
-                  labelStyle: TextStyle(
-                    color: AppColors.greyColor,
-                    fontSize: 16.sp,
-                  ),
-                  hintStyle: TextStyle(
-                    color: AppColors.greyColor,
-                    fontSize: 16.sp,
-                  ),
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                style: TextStyle(fontSize: 16.sp),
-              ),
-            ),
-
             23.verticalSpace,
 
             // Buttons

@@ -327,6 +327,59 @@ class InvestmentController extends GetxController {
     }).toList();
   }
 
+  /// Get all price points (from manual snapshots and activities) for graph building
+  /// Returns a map of DateTime to Map of investmentId to unitPrice
+  /// Uses the latest price from any source (manual snapshot, transaction, or trade)
+  Map<DateTime, Map<int, double>> getAllPricePointsForGraph() {
+    Map<DateTime, Map<int, double>> dateInvestmentPrices = {};
+
+    // Add prices from manual snapshots
+    for (var snapshot in filteredPortfolioHistory) {
+      DateTime key = snapshot.date;
+      dateInvestmentPrices[key] ??= {};
+      dateInvestmentPrices[key]![snapshot.investmentId] = snapshot.unitPrice;
+    }
+
+    // Add prices from activities (transactions and trades)
+    final filteredActivities = activities.where((activity) {
+      return activity.date.isAfter(
+            portfolioDateStart.value.subtract(Duration(days: 1)),
+          ) &&
+          activity.date.isBefore(portfolioDateEnd.value.add(Duration(days: 1)));
+    }).toList();
+
+    for (var activity in filteredActivities) {
+      if (activity.isTransaction) {
+        final investmentId = activity.transactionInvestmentId;
+        if (investmentId != null && activity.transactionPrice != null) {
+          DateTime key = activity.date;
+          dateInvestmentPrices[key] ??= {};
+          dateInvestmentPrices[key]![investmentId] = activity.transactionPrice!;
+        }
+      } else if (activity.isTrade) {
+        // Add sold investment price
+        if (activity.tradeSoldInvestmentId != null &&
+            activity.tradeSoldPrice != null) {
+          DateTime key = activity.date;
+          dateInvestmentPrices[key] ??= {};
+          dateInvestmentPrices[key]![activity.tradeSoldInvestmentId!] =
+              activity.tradeSoldPrice!;
+        }
+
+        // Add bought investment price
+        if (activity.tradeBoughtInvestmentId != null &&
+            activity.tradeBoughtPrice != null) {
+          DateTime key = activity.date;
+          dateInvestmentPrices[key] ??= {};
+          dateInvestmentPrices[key]![activity.tradeBoughtInvestmentId!] =
+              activity.tradeBoughtPrice!;
+        }
+      }
+    }
+
+    return dateInvestmentPrices;
+  }
+
   /// Get enriched investment data filtered by portfolio date range
   /// Shows only investments with activity during the selected period
   /// with net change in holdings during that period
@@ -340,10 +393,6 @@ class InvestmentController extends GetxController {
           ) &&
           activity.date.isBefore(portfolioDateEnd.value.add(Duration(days: 1)));
     }).toList();
-
-    if (filteredActivities.isEmpty) {
-      return result;
-    }
 
     // Track net change and latest price per investment
     final investmentChanges = <int, Map<String, dynamic>>{};
@@ -430,15 +479,32 @@ class InvestmentController extends GetxController {
       final data = entry.value;
       final netChange = data['netChange'] as double;
 
-      // Only show if there was net change
-      if (netChange.abs() > 0.0001) {
+      if (netChange > 0.0001) {
         final investment = investments.firstWhereOrNull(
           (inv) => inv.id == investmentId,
         );
 
         if (investment == null) continue;
 
-        final latestPrice = data['latestPrice'] as double?;
+        var latestPrice = data['latestPrice'] as double?;
+        var latestPriceDate = data['latestPriceDate'] as DateTime?;
+
+        // Check for latest manual price snapshot (regardless of date range)
+        final latestSnapshot = portfolioHistory
+            .where((s) => s.investmentId == investmentId)
+            .fold<PortfolioSnapshot?>(null, (prev, current) {
+          if (prev == null) return current;
+          return current.date.isAfter(prev.date) ? current : prev;
+        });
+
+        if (latestSnapshot != null) {
+          if (latestPriceDate == null ||
+              latestSnapshot.date.isAfter(latestPriceDate)) {
+            latestPrice = latestSnapshot.unitPrice;
+            latestPriceDate = latestSnapshot.date;
+          }
+        }
+
         final hasPrice = latestPrice != null;
         final totalValue = hasPrice ? netChange * latestPrice : 0.0;
 
@@ -451,6 +517,88 @@ class InvestmentController extends GetxController {
           'totalValue': totalValue,
         });
       }
+    }
+
+    // Also include investments that have manual price snapshots in the filter
+    // range but no activity — as long as they are not closed (holdings > 0).
+    final snapshotInvestmentIds =
+        filteredPortfolioHistory.map((s) => s.investmentId).toSet();
+
+    for (final investmentId in snapshotInvestmentIds) {
+      if (investmentChanges.containsKey(investmentId)) continue;
+
+      final cumulativeHoldings = currentHoldings[investmentId] ?? 0.0;
+      if (cumulativeHoldings <= 0) continue;
+
+      final investment = investments.firstWhereOrNull(
+        (inv) => inv.id == investmentId,
+      );
+      if (investment == null) continue;
+
+      final snapshots = filteredPortfolioHistory
+          .where((s) => s.investmentId == investmentId)
+          .toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
+      final latestSnapshot = snapshots.first;
+
+      result.add({
+        'investment': investment,
+        'amount': cumulativeHoldings,
+        'holdings': cumulativeHoldings,
+        'latestPrice': latestSnapshot.unitPrice,
+        'hasPrice': true,
+        'totalValue': cumulativeHoldings * latestSnapshot.unitPrice,
+      });
+    }
+
+    return result;
+  }
+
+  /// Computes cumulative holdings for each investment at each given date.
+  /// Uses all activities (not filtered by date range) so the graph reflects
+  /// the true portfolio value at each point in time.
+  Map<DateTime, Map<int, double>> buildHoldingsTimeline(List<DateTime> dates) {
+    final sortedDates = [...dates]..sort();
+    final sortedActivities = [...activities]
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    final Map<int, double> running = {};
+    final Map<DateTime, Map<int, double>> result = {};
+    int idx = 0;
+
+    for (final date in sortedDates) {
+      final dateDay = DateTime(date.year, date.month, date.day);
+      while (idx < sortedActivities.length) {
+        final activity = sortedActivities[idx];
+        final activityDay = DateTime(
+          activity.date.year,
+          activity.date.month,
+          activity.date.day,
+        );
+        if (activityDay.isAfter(dateDay)) break;
+
+        if (activity.isTransaction) {
+          final id = activity.transactionInvestmentId!;
+          running.putIfAbsent(id, () => 0);
+          if (activity.isDeposit) {
+            running[id] = running[id]! + (activity.transactionAmount ?? 0);
+          } else {
+            running[id] = running[id]! - (activity.transactionAmount ?? 0);
+          }
+        } else if (activity.isTrade) {
+          final soldId = activity.tradeSoldInvestmentId!;
+          running.putIfAbsent(soldId, () => 0);
+          running[soldId] = running[soldId]! - (activity.tradeSoldAmount ?? 0);
+
+          final boughtId = activity.tradeBoughtInvestmentId!;
+          running.putIfAbsent(boughtId, () => 0);
+          running[boughtId] =
+              running[boughtId]! + (activity.tradeBoughtAmount ?? 0);
+        }
+        idx++;
+      }
+      result[date] = Map.from(running);
     }
 
     return result;
@@ -1018,6 +1166,7 @@ class InvestmentController extends GetxController {
       );
       if (snapshot != null) {
         portfolioHistory.insert(0, snapshot);
+        _extendPortfolioSliderRange();
       }
       return snapshot;
     } catch (e) {
@@ -1032,6 +1181,9 @@ class InvestmentController extends GetxController {
       final success = await _service.deleteSnapshot(id);
       if (success) {
         portfolioHistory.removeWhere((s) => s.id == id);
+        enrichedInvestmentData.value = await _service
+            .getInvestmentHoldingsWithPrices();
+        _extendPortfolioSliderRange();
       }
       return success;
     } catch (e) {

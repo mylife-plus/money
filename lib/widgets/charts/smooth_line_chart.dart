@@ -75,6 +75,9 @@ class SmoothLineChartWidget extends StatelessWidget {
               showTitles: true,
               reservedSize: 30.w,
               getTitlesWidget: (value, meta) {
+                if (value < 0) {
+                  return const SizedBox.shrink();
+                }
                 return Text(
                   _formatYAxisLabel(value),
                   style: TextStyle(color: Colors.grey, fontSize: 12.sp),
@@ -85,7 +88,7 @@ class SmoothLineChartWidget extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 24.h,
+              reservedSize: 30.h,
               // Show exactly 4 labels on X-axis (same as step_line_chart)
               interval: data.length > 4
                   ? (data.length / 3).ceilToDouble()
@@ -94,7 +97,7 @@ class SmoothLineChartWidget extends StatelessWidget {
                 final index = value.toInt();
                 if (index >= 0 && index < data.length) {
                   return Padding(
-                    padding: EdgeInsets.only(top: 8.h),
+                    padding: EdgeInsets.only(top: 14.h),
                     child: Text(
                       data[index].label,
                       style: TextStyle(color: Colors.grey, fontSize: 12.sp),

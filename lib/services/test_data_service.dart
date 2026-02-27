@@ -504,7 +504,14 @@ class TestDataService {
     for (int i = 0; i < 40; i++) {
       // First 40 are historical (older than 30 days ago)
       final randomDays = random.nextInt(totalDays - 30); // Exclude last 30 days
-      final date = startDate.add(Duration(days: randomDays));
+      final baseDate = startDate.add(Duration(days: randomDays));
+      final date = DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        random.nextInt(24),
+        random.nextInt(60),
+      );
 
       final investment = investments[random.nextInt(investments.length)];
       final isDeposit = random.nextDouble() < 0.7; // 70% deposits
@@ -587,7 +594,14 @@ class TestDataService {
     // Generate 20 historical trades (swaps between investments) - older data
     for (int i = 0; i < 20; i++) {
       final randomDays = random.nextInt(totalDays - 30); // Exclude last 30 days
-      final date = startDate.add(Duration(days: randomDays));
+      final baseDate = startDate.add(Duration(days: randomDays));
+      final date = DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        random.nextInt(24),
+        random.nextInt(60),
+      );
 
       // Pick two different investments
       final soldInvestment = investments[random.nextInt(investments.length)];
@@ -710,6 +724,161 @@ class TestDataService {
     }
   }
 
+  Future<void> generateCorrectInvestmentDummyData({Function(String)? onProgress}) async {
+    try {
+      if (onProgress != null) onProgress('Clearing old investment data...');
+      await _snapshotRepo.deleteAll();
+      await _activityRepo.deleteAll();
+      await _investmentRepo.deleteAll();
+
+      if (onProgress != null) onProgress('Creating investments...');
+      final investments = await _createCorrectInvestments();
+
+      final controller = Get.isRegistered<InvestmentController>() ? Get.find<InvestmentController>() : null;
+      if (controller == null) return;
+
+      final random = Random(42);
+      final now = DateTime.now();
+      final startDate = DateTime(now.year - 5, 1, 1);
+
+      final Map<String, double> basePrices = {'MSFT': 180.0, 'AMZN': 95.0, 'NVDA': 30.0, 'SLVR': 18.0, 'SOL': 1.5, 'JPM': 115.0};
+      final Map<String, double> volatility = {'MSFT': 0.07, 'AMZN': 0.10, 'NVDA': 0.18, 'SLVR': 0.06, 'SOL': 0.25, 'JPM': 0.06};
+
+      final Map<int, List<_PricePoint>> priceTimelines = {};
+      for (final inv in investments) {
+        final points = <_PricePoint>[];
+        double price = basePrices[inv.ticker] ?? 100.0;
+        final vol = volatility[inv.ticker] ?? 0.08;
+        var cur = DateTime(startDate.year, startDate.month, 1);
+        while (!cur.isAfter(now)) {
+          price = (price * (1 + (random.nextDouble() - 0.45) * vol)).clamp(0.01, double.infinity);
+          points.add(_PricePoint(date: cur, price: price));
+          cur = _nextMonth(cur);
+        }
+        priceTimelines[inv.id!] = points;
+      }
+
+      final Map<int, double> holdings = {for (final inv in investments) inv.id!: 0.0};
+
+      if (onProgress != null) onProgress('Generating deposits...');
+      var eventDate = startDate;
+      int batch = 0;
+      while (eventDate.isBefore(now)) {
+        for (final inv in investments) {
+          if (random.nextDouble() < 0.6) {
+            final price = _priceAtDate(priceTimelines[inv.id!]!, eventDate);
+            final units = double.parse((random.nextDouble() * 15 + 1).toStringAsFixed(4));
+            final total = double.parse((units * price).toStringAsFixed(2));
+            final time = DateTime(eventDate.year, eventDate.month, eventDate.day, random.nextInt(23) + 1, random.nextInt(60));
+            try {
+              await controller.addTransaction(
+                investmentId: inv.id!, direction: TransactionDirection.deposit,
+                amount: units, price: double.parse(price.toStringAsFixed(2)), total: total, date: time,
+                description: 'Buy ${inv.ticker}',
+              );
+              holdings[inv.id!] = (holdings[inv.id!] ?? 0) + units;
+            } catch (e) {
+              debugPrint('[TestDataService] Skip deposit: $e');
+            }
+          }
+        }
+        eventDate = eventDate.add(Duration(days: 14 + random.nextInt(14)));
+        batch++;
+        if (onProgress != null && batch % 20 == 0) onProgress('Processed $batch deposit batches...');
+      }
+
+      if (onProgress != null) onProgress('Generating withdrawals...');
+      var qDate = DateTime(startDate.year, startDate.month + 2, 15);
+      while (qDate.isBefore(now)) {
+        for (final inv in investments) {
+          final h = holdings[inv.id!] ?? 0;
+          if (h > 1.0 && random.nextDouble() < 0.4) {
+            final units = double.parse(((h * 0.05) + random.nextDouble() * h * 0.10).toStringAsFixed(4));
+            if (units <= 0 || units > h) continue;
+            final price = _priceAtDate(priceTimelines[inv.id!]!, qDate);
+            final total = double.parse((units * price).toStringAsFixed(2));
+            final time = DateTime(qDate.year, qDate.month, qDate.day, random.nextInt(23) + 1, random.nextInt(60));
+            try {
+              await controller.addTransaction(
+                investmentId: inv.id!, direction: TransactionDirection.withdraw,
+                amount: units, price: double.parse(price.toStringAsFixed(2)), total: total, date: time,
+                description: 'Sell ${inv.ticker}',
+              );
+              holdings[inv.id!] = (holdings[inv.id!] ?? 0) - units;
+            } catch (e) {
+              debugPrint('[TestDataService] Skip withdrawal: $e');
+            }
+          }
+        }
+        qDate = DateTime(qDate.year, qDate.month + 3, 15);
+      }
+
+      if (onProgress != null) onProgress('Generating price snapshots...');
+      for (final inv in investments) {
+        for (final point in priceTimelines[inv.id!]!) {
+          if (point.date.isAfter(now)) continue;
+          final time = DateTime(point.date.year, point.date.month, random.nextInt(28) + 1, random.nextInt(23) + 1, random.nextInt(60));
+          try {
+            await controller.addManualPriceSnapshot(investmentId: inv.id!, unitPrice: double.parse(point.price.toStringAsFixed(2)), date: time);
+          } catch (e) {
+            debugPrint('[TestDataService] Skip snapshot: $e');
+          }
+        }
+      }
+
+      if (onProgress != null) onProgress('Done!');
+    } catch (e) {
+      debugPrint('[TestDataService] Error generating correct investment data: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Investment>> _createCorrectInvestments() async {
+    final configs = [
+      {'name': 'Microsoft', 'ticker': 'MSFT', 'color': const Color(0xff0078D4), 'asset': 'assets/icons/chart_square.png'},
+      {'name': 'Amazon', 'ticker': 'AMZN', 'color': const Color(0xffFF9900), 'asset': 'assets/icons/investment_icon.png'},
+      {'name': 'Nvidia', 'ticker': 'NVDA', 'color': const Color(0xff76B900), 'asset': 'assets/icons/digital_currency_icon.png'},
+      {'name': 'Silver', 'ticker': 'SLVR', 'color': const Color(0xffA2AAAD), 'asset': 'assets/icons/atm_icon.png'},
+      {'name': 'Solana', 'ticker': 'SOL', 'color': const Color(0xff9945FF), 'asset': 'assets/icons/bitcoin-convert.png'},
+      {'name': 'JP Morgan', 'ticker': 'JPM', 'color': const Color(0xff003366), 'asset': 'assets/icons/transaction_icon.png'},
+    ];
+    final appDir = await getApplicationDocumentsDirectory();
+    final investmentsDir = Directory(p.join(appDir.path, 'investments'));
+    if (!await investmentsDir.exists()) await investmentsDir.create(recursive: true);
+    final List<Investment> created = [];
+    for (final cfg in configs) {
+      final temp = Investment(name: cfg['name'] as String, ticker: cfg['ticker'] as String, colorValue: (cfg['color'] as Color).toARGB32(), imagePath: '');
+      final id = await _investmentRepo.insert(temp);
+      final assetPath = cfg['asset'] as String;
+      final ext = p.extension(assetPath);
+      final localPath = p.join(investmentsDir.path, '$id$ext');
+      try {
+        final byteData = await rootBundle.load(assetPath);
+        await File(localPath).writeAsBytes(byteData.buffer.asUint8List());
+      } catch (e) {
+        debugPrint('[TestDataService] Asset copy failed: $e');
+      }
+      final investment = temp.copyWith(id: id, imagePath: localPath);
+      await _investmentRepo.update(investment);
+      created.add(investment);
+    }
+    return created;
+  }
+
+  double _priceAtDate(List<_PricePoint> points, DateTime date) {
+    _PricePoint? best;
+    for (final pt in points) {
+      if (!pt.date.isAfter(date)) best = pt;
+      else break;
+    }
+    return best?.price ?? points.first.price;
+  }
+
+  DateTime _nextMonth(DateTime date) {
+    if (date.month == 12) return DateTime(date.year + 1, 1, 1);
+    return DateTime(date.year, date.month + 1, 1);
+  }
+
   Future<void> _generatePortfolioSnapshots(Function(String)? onProgress) async {
     final random = Random();
     final startDate = DateTime(2020, 1, 1);
@@ -741,4 +910,10 @@ class TestDataService {
       }
     }
   }
+}
+
+class _PricePoint {
+  final DateTime date;
+  final double price;
+  const _PricePoint({required this.date, required this.price});
 }
