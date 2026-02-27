@@ -144,53 +144,39 @@ class InvestmentController extends GetxController {
     _updateVisibleActivities();
   }
 
+  /// Returns end-of-day or now, depending on whether [date] is today.
+  DateTime _endDateTime(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final d = DateTime(date.year, date.month, date.day);
+    if (d.isAtSameMomentAs(today)) return now;
+    return DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+  }
+
   /// Initialize portfolio date range from snapshot data
   void _initializePortfolioDates() {
     if (portfolioHistory.isEmpty) {
-      // No data, set to today
       final now = DateTime.now();
       portfolioSliderMinDate.value = DateTime(now.year, now.month, now.day);
-      portfolioSliderMaxDate.value = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        23,
-        59,
-        59,
-        999,
-      );
+      portfolioSliderMaxDate.value = now;
       portfolioDateStart.value = portfolioSliderMinDate.value;
       portfolioDateEnd.value = portfolioSliderMaxDate.value;
       selectedPortfolioDurationTab.value = 'All';
       return;
     }
 
-    // Find earliest and latest snapshot dates
     DateTime earliest = portfolioHistory.first.date;
     DateTime latest = portfolioHistory.first.date;
-
     for (var snapshot in portfolioHistory) {
       if (snapshot.date.isBefore(earliest)) earliest = snapshot.date;
       if (snapshot.date.isAfter(latest)) latest = snapshot.date;
     }
 
-    // Set slider range
     portfolioSliderMinDate.value = DateTime(
-      earliest.year,
-      earliest.month,
-      earliest.day,
+      earliest.year, earliest.month, earliest.day,
     );
-    portfolioSliderMaxDate.value = DateTime(
-      latest.year,
-      latest.month,
-      latest.day,
-      23,
-      59,
-      59,
-      999,
-    );
+    portfolioSliderMaxDate.value = _endDateTime(latest);
 
-    // Default to 'All'
     portfolioDateStart.value = portfolioSliderMinDate.value;
     portfolioDateEnd.value = portfolioSliderMaxDate.value;
     selectedPortfolioDurationTab.value = 'All';
@@ -209,9 +195,7 @@ class InvestmentController extends GetxController {
     }
 
     final newMin = DateTime(earliest.year, earliest.month, earliest.day);
-    final newMax = DateTime(
-      latest.year, latest.month, latest.day, 23, 59, 59, 999,
-    );
+    final newMax = _endDateTime(latest);
 
     final minChanged = newMin.isBefore(portfolioSliderMinDate.value);
     final maxChanged = newMax.isAfter(portfolioSliderMaxDate.value);
@@ -219,7 +203,6 @@ class InvestmentController extends GetxController {
     if (minChanged) portfolioSliderMinDate.value = newMin;
     if (maxChanged) portfolioSliderMaxDate.value = newMax;
 
-    // If the user is on 'All', extend the selected range to match
     if (selectedPortfolioDurationTab.value == 'All') {
       if (minChanged) portfolioDateStart.value = newMin;
       if (maxChanged) portfolioDateEnd.value = newMax;
@@ -252,7 +235,6 @@ class InvestmentController extends GetxController {
     selectedPortfolioDurationTab.value = tab;
 
     final now = DateTime.now();
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
     DateTime start = portfolioSliderMinDate.value;
 
     switch (tab) {
@@ -297,20 +279,16 @@ class InvestmentController extends GetxController {
     }
 
     portfolioDateStart.value = start;
-    portfolioDateEnd.value = endOfDay;
+    portfolioDateEnd.value = _endDateTime(now);
   }
 
   /// Update portfolio date range from slider
   void updatePortfolioDateRange(DateTime start, DateTime end) {
-    portfolioDateStart.value = start;
-    portfolioDateEnd.value = end;
-
-    // Check if matches a preset duration
-    final now = DateTime.now();
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    portfolioDateStart.value = DateTime(start.year, start.month, start.day);
+    portfolioDateEnd.value = _endDateTime(end);
 
     if (start == portfolioSliderMinDate.value &&
-        end.isAtSameMomentAs(endOfDay)) {
+        portfolioDateEnd.value == portfolioSliderMaxDate.value) {
       selectedPortfolioDurationTab.value = 'All';
     } else {
       selectedPortfolioDurationTab.value = '';
@@ -378,6 +356,56 @@ class InvestmentController extends GetxController {
     }
 
     return dateInvestmentPrices;
+  }
+
+  /// Returns the latest known unit price for each investment strictly before [beforeDate].
+  /// Considers both manual snapshots and activity prices.
+  Map<int, double> getLatestPricesBeforeDate(DateTime beforeDate) {
+    final Map<int, MapEntry<DateTime, double>> latestEntries = {};
+
+    void update(int investmentId, DateTime date, double price) {
+      if (date.isBefore(beforeDate)) {
+        final existing = latestEntries[investmentId];
+        if (existing == null || date.isAfter(existing.key)) {
+          latestEntries[investmentId] = MapEntry(date, price);
+        }
+      }
+    }
+
+    for (var snapshot in portfolioHistory) {
+      update(snapshot.investmentId, snapshot.date, snapshot.unitPrice);
+    }
+
+    for (var activity in activities) {
+      if (activity.isTransaction &&
+          activity.transactionInvestmentId != null &&
+          activity.transactionPrice != null) {
+        update(
+          activity.transactionInvestmentId!,
+          activity.date,
+          activity.transactionPrice!,
+        );
+      } else if (activity.isTrade) {
+        if (activity.tradeSoldInvestmentId != null &&
+            activity.tradeSoldPrice != null) {
+          update(
+            activity.tradeSoldInvestmentId!,
+            activity.date,
+            activity.tradeSoldPrice!,
+          );
+        }
+        if (activity.tradeBoughtInvestmentId != null &&
+            activity.tradeBoughtPrice != null) {
+          update(
+            activity.tradeBoughtInvestmentId!,
+            activity.date,
+            activity.tradeBoughtPrice!,
+          );
+        }
+      }
+    }
+
+    return latestEntries.map((id, entry) => MapEntry(id, entry.value));
   }
 
   /// Get enriched investment data filtered by portfolio date range

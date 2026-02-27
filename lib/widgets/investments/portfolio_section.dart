@@ -95,7 +95,11 @@ class PortfolioSection extends StatelessWidget {
             final sortedPricePoints = dateInvestmentPrices.entries.toList()
               ..sort((a, b) => a.key.compareTo(b.key));
 
-            Map<int, double> carryPrices = {};
+            Map<int, double> carryPrices = Map.of(
+              controller.getLatestPricesBeforeDate(
+                controller.portfolioDateStart.value,
+              ),
+            );
             int priceIdx = 0;
 
             final slotMidpoints = List.generate(targetPoints, (i) {
@@ -143,13 +147,22 @@ class PortfolioSection extends StatelessWidget {
               ));
             }
           } else {
-            // Group prices by day for > 2 days
+            // Group prices by day for > 2 days, keeping latest datetime per investment
             if (dateInvestmentPrices.isNotEmpty) {
               Map<DateTime, Map<int, double>> groupedPrices = {};
+              Map<DateTime, Map<int, DateTime>> groupedPriceDates = {};
               dateInvestmentPrices.forEach((date, prices) {
-                DateTime key = DateTime(date.year, date.month, date.day);
-                groupedPrices[key] ??= {};
-                groupedPrices[key]!.addAll(prices);
+                final dayKey = DateTime(date.year, date.month, date.day);
+                groupedPrices[dayKey] ??= {};
+                groupedPriceDates[dayKey] ??= {};
+                prices.forEach((investmentId, price) {
+                  final existingDate =
+                      groupedPriceDates[dayKey]![investmentId];
+                  if (existingDate == null || date.isAfter(existingDate)) {
+                    groupedPrices[dayKey]![investmentId] = price;
+                    groupedPriceDates[dayKey]![investmentId] = date;
+                  }
+                });
               });
               dateInvestmentPrices = groupedPrices;
             }
@@ -159,16 +172,24 @@ class PortfolioSection extends StatelessWidget {
                 dateInvestmentPrices.keys.toList(),
               );
 
+              final sortedDates = dateInvestmentPrices.keys.toList()
+                ..sort();
+
+              Map<int, double> carryPrices = Map.of(
+                controller.getLatestPricesBeforeDate(sortedDates.first),
+              );
+
               Map<DateTime, double> dateValues = {};
-              dateInvestmentPrices.forEach((date, investmentPrices) {
+              for (final date in sortedDates) {
+                carryPrices.addAll(dateInvestmentPrices[date]!);
                 double totalValue = 0;
                 final holdingsAtDate = holdingsTimeline[date] ?? {};
-                for (var entry in investmentPrices.entries) {
+                for (var entry in carryPrices.entries) {
                   final holdings = holdingsAtDate[entry.key] ?? 0;
                   if (holdings > 0) totalValue += holdings * entry.value;
                 }
                 dateValues[date] = totalValue;
-              });
+              }
 
               var sortedEntries = dateValues.entries.toList()
                 ..sort((a, b) => a.key.compareTo(b.key));
