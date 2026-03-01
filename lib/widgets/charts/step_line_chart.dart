@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:moneyapp/models/chart_data_point.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 
 /// Step Line Chart Widget
 /// Creates a beautiful step line chart matching the design
@@ -11,6 +12,7 @@ class StepLineChartWidget extends StatelessWidget {
   final double lineWidth;
   final bool showDot;
   final Color? tooltipAmountColor;
+  final String? locale;
 
   const StepLineChartWidget({
     super.key,
@@ -19,18 +21,14 @@ class StepLineChartWidget extends StatelessWidget {
     this.lineWidth = 3,
     this.showDot = true,
     this.tooltipAmountColor,
+    this.locale,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 300.h,
-      padding: EdgeInsets.only(
-        left: 5.w,
-        top: 5.w,
-        bottom: 5.w,
-        right: 20.w,
-      ),
+      padding: EdgeInsets.only(left: 5.w, top: 5.w, bottom: 5.w, right: 20.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
@@ -73,7 +71,10 @@ class StepLineChartWidget extends StatelessWidget {
                   }
                   // Fallback (should not happen)
                   return LineTooltipItem(
-                    barSpot.y.toStringAsFixed(2).replaceAll('.', ','),
+                    NumberFormatHelper.formatCurrency(
+                      barSpot.y,
+                      locale: locale,
+                    ),
                     TextStyle(
                       color: tooltipAmountColor ?? lineColor,
                       fontWeight: FontWeight.bold,
@@ -110,9 +111,7 @@ class StepLineChartWidget extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 30.h,
                 // Fixed: Show exactly 4 labels on X-axis
-                interval: _getMaxX() > 3
-                    ? (_getMaxX() / 3).ceilToDouble()
-                    : 1,
+                interval: _getMaxX() > 3 ? (_getMaxX() / 3).ceilToDouble() : 1,
                 getTitlesWidget: (value, meta) {
                   final point = _getDataPointByXValue(value.toInt());
                   if (point != null) {
@@ -184,14 +183,15 @@ class StepLineChartWidget extends StatelessWidget {
             LineChartBarData(
               spots: _getSpots(),
 
-              // Enable smooth curve
-              isCurved: true,
-              curveSmoothness: 1.0, // 0.0 = sharp corners, 1.0 = very smooth
-              preventCurveOverShooting: true, // Prevents curve from going too far
+              // Step line chart
+              isCurved: false,
+              isStepLineChart: true,
+              lineChartStepData: LineChartStepData(
+                stepDirection: LineChartStepData.stepDirectionForward,
+              ),
               // Line styling
               color: lineColor,
               barWidth: lineWidth,
-              // isStrokeCapRound: true, // Rounded line caps
               dotData: FlDotData(
                 show: showDot,
                 getDotPainter: (spot, percent, barData, index) {
@@ -210,9 +210,15 @@ class StepLineChartWidget extends StatelessWidget {
   }
 
   List<FlSpot> _getSpots() {
-    return data
-        .map((point) => FlSpot(point.xValue, point.value))
-        .toList();
+    // Deduplicate: keep only the last point per xValue
+    // (step-line data may have duplicate x positions for transitions)
+    final Map<int, FlSpot> uniqueSpots = {};
+    for (final point in data) {
+      uniqueSpots[point.xValue.toInt()] = FlSpot(point.xValue, point.value);
+    }
+    final spots = uniqueSpots.values.toList()
+      ..sort((a, b) => a.x.compareTo(b.x));
+    return spots;
   }
 
   double _getMaxX() {
@@ -251,14 +257,6 @@ class StepLineChartWidget extends StatelessWidget {
   }
 
   String _formatYAxisLabel(double value) {
-    if (value >= 1000) {
-      final kValue = value / 1000;
-      if (kValue % 1 == 0) {
-        return '${kValue.toInt()}k';
-      } else {
-        return '${kValue.toStringAsFixed(1).replaceAll('.', ',')}k';
-      }
-    }
-    return value.toInt().toString();
+    return NumberFormatHelper.formatYAxisLabel(value, locale: locale);
   }
 }

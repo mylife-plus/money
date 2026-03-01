@@ -54,10 +54,10 @@ class CategoryChip extends StatelessWidget {
                 children: [
                   CustomText(
                     categoryGroup,
-                    size: 12.sp,
+                    size: 10.sp,
                     color: Color(0xffB4B4B4),
                   ),
-                  CustomText("# $category", size: 16.sp, color: Colors.black),
+                  CustomText("# $category", size: 12.sp, color: Colors.black),
                 ],
               ),
             ),

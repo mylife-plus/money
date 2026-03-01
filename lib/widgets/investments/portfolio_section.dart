@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -6,13 +5,12 @@ import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/models/investment_model.dart';
-import 'package:moneyapp/routes/app_routes.dart';
 import 'package:moneyapp/widgets/common/custom_slider.dart';
 import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
-import 'package:moneyapp/widgets/investments/investment_item.dart';
 import 'package:moneyapp/widgets/charts/smooth_line_chart.dart';
 import 'package:moneyapp/models/chart_data_point.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 
 class PortfolioSection extends StatelessWidget {
   final bool isPortfolioSelected;
@@ -20,37 +18,9 @@ class PortfolioSection extends StatelessWidget {
   const PortfolioSection({super.key, required this.isPortfolioSelected});
 
   String _formatCurrency(double value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(2)}M';
-    } else if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}k';
-    }
-    return value.toStringAsFixed(2);
+    return NumberFormatHelper.formatCurrencyCompact(value, locale: CurrencyService.instance.portfolioLocale);
   }
 
-  String _formatAmount(double value) {
-    if (value == value.roundToDouble()) {
-      return value.toInt().toString();
-    }
-    return value
-        .toStringAsFixed(4)
-        .replaceAll(RegExp(r'0+$'), '')
-        .replaceAll(RegExp(r'\.$'), '');
-  }
-
-  Widget _buildInvestmentImage(String? imagePath) {
-    if (imagePath != null && imagePath.isNotEmpty) {
-      if (imagePath.startsWith('assets/')) {
-        return Image.asset(imagePath, height: 16.r, width: 16.r);
-      } else {
-        final file = File(imagePath);
-        if (file.existsSync()) {
-          return Image.file(file, height: 16.r, width: 16.r, fit: BoxFit.cover);
-        }
-      }
-    }
-    return Icon(Icons.image, size: 16.r, color: AppColors.greyColor);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +299,7 @@ class PortfolioSection extends StatelessWidget {
                               color: AppColors.greyColor,
                             ),
                             CustomText.span(
-                              '  ${percentChange >= 0 ? '+' : ''}${percentChange.toStringAsFixed(1)}%',
+                              '  ${percentChange >= 0 ? '+' : ''}${NumberFormat('0.0', CurrencyService.instance.portfolioLocale).format(percentChange)}%',
                               size: 14.sp,
                               color: percentChange >= 0
                                   ? Color(0xff00C00D)
@@ -353,6 +323,7 @@ class PortfolioSection extends StatelessWidget {
                         child: SmoothLineChartWidget(
                           data: chartData,
                           lineColor: const Color(0xff0088FF),
+                          locale: CurrencyService.instance.portfolioLocale,
                         ),
                       ),
                     ),
@@ -486,102 +457,6 @@ class PortfolioSection extends StatelessWidget {
                 ),
               ),
               20.verticalSpace,
-              if (enrichedData.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(left: 9.w, right: 9.w),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 140,
-                        child: CustomText(
-                          'Investment',
-                          textAlign: TextAlign.center,
-                          color: Color(0xffCCCCCC),
-                          size: 14.sp,
-                        ),
-                      ),
-                      Expanded(
-                        flex: 100,
-                        child: CustomText(
-                          textAlign: TextAlign.center,
-                          'Price',
-                          color: Color(0xffCCCCCC),
-                          size: 14.sp,
-                        ),
-                      ),
-                      10.horizontalSpace,
-                      Expanded(
-                        flex: 140,
-                        child: CustomText(
-                          'Total',
-                          textAlign: TextAlign.center,
-                          color: Color(0xffCCCCCC),
-                          size: 14.sp,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              11.verticalSpace,
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 9.0.w),
-                child: Column(
-                  spacing: 3.h,
-                  children: [
-                    if (enrichedData.isEmpty)
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 23.0.w),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CustomText(
-                              'you have no 📈Investments',
-                              size: 20.sp,
-                              color: Colors.black,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            33.verticalSpace, // Visual balance
-                            CustomText(
-                              'start by making your initial deposit by clicking ➕ or add multiple Trades/Transactions via ⚙️Settings → ⬆️ Upload 📈Investments ',
-                              size: 20.sp,
-                              color: Colors.black,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            150.verticalSpace,
-                          ],
-                        ),
-                      )
-                    else
-                      for (var data in enrichedData)
-                        InkWell(
-                          onTap: () {
-                            final investment = data['investment'] as Investment;
-                            Get.toNamed(
-                              AppRoutes.investmentValueHistory.path,
-                              arguments: investment,
-                            );
-                          },
-                          child: InvestmentItem(
-                            backgroundColor:
-                                (data['investment'] as Investment).color,
-                            imageWidget: _buildInvestmentImage(
-                              (data['investment'] as Investment).imagePath,
-                            ),
-                            name: (data['investment'] as Investment).name,
-                            amount: _formatAmount(data['amount'] as double),
-                            symbol: (data['investment'] as Investment).ticker,
-                            unitPrice: (data['hasPrice'] as bool)
-                                ? '${CurrencyService.instance.portfolioSymbol}${NumberFormat('#,##0.00').format(data['latestPrice'] as double)}'
-                                : 'No price data',
-                            totalValue: (data['hasPrice'] as bool)
-                                ? '${CurrencyService.instance.portfolioSymbol}${NumberFormat('#,##0.00').format(data['totalValue'] as double)}'
-                                : '---',
-                          ),
-                        ),
-                  ],
-                ),
-              ),
-              150.verticalSpace,
             ],
           );
         },

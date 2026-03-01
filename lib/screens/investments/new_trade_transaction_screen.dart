@@ -10,21 +10,22 @@ import 'package:moneyapp/models/investment_activity_model.dart';
 import 'package:moneyapp/constants/app_currencies.dart';
 import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/investments/investment_selector_button.dart';
-import 'package:moneyapp/widgets/trades/trade_transaction_toggle_switch_.dart';
+import 'package:moneyapp/widgets/trades/history_transaction_toggle_switch_.dart';
 
-class NewPortfolioChangeScreen extends StatefulWidget {
+class NewTradeTransactionScreen extends StatefulWidget {
   /// Pass an existing activity to open in edit mode; null = add mode.
   final InvestmentActivity? editingActivity;
 
-  const NewPortfolioChangeScreen({super.key, this.editingActivity});
+  const NewTradeTransactionScreen({super.key, this.editingActivity});
 
   @override
-  State<NewPortfolioChangeScreen> createState() =>
-      _NewPortfolioChangeScreenState();
+  State<NewTradeTransactionScreen> createState() =>
+      _NewTradeTransactionScreenState();
 }
 
-class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
+class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
   DateTime? selectedDate;
   int selectedOption = 1; // 1 = Trade, 2 = Transaction
 
@@ -59,6 +60,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
   Investment? _transactionInvestment;
 
   final InvestmentController _controller = Get.find<InvestmentController>();
+  Worker? _investmentsWorker;
 
   bool get _isEditMode => widget.editingActivity != null;
 
@@ -69,7 +71,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
     _loadPortfolioCurrency();
 
     // Listen for investment changes and update references
-    ever(_controller.investments, (_) {
+    _investmentsWorker = ever(_controller.investments, (_) {
       _updateInvestmentReferences();
     });
 
@@ -98,16 +100,18 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
           activity.tradeBoughtTotal?.toStringAsFixed(2) ?? '';
 
       if (activity.tradeSoldInvestmentId != null) {
-        final inv =
-            _controller.getInvestmentById(activity.tradeSoldInvestmentId!);
+        final inv = _controller.getInvestmentById(
+          activity.tradeSoldInvestmentId!,
+        );
         if (inv != null) {
           _soldInvestment = inv;
           _soldInvestmentController.text = inv.ticker;
         }
       }
       if (activity.tradeBoughtInvestmentId != null) {
-        final inv =
-            _controller.getInvestmentById(activity.tradeBoughtInvestmentId!);
+        final inv = _controller.getInvestmentById(
+          activity.tradeBoughtInvestmentId!,
+        );
         if (inv != null) {
           _boughtInvestment = inv;
           _boughtInvestmentController.text = inv.ticker;
@@ -125,8 +129,9 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
       isAddingInvestment = activity.isDeposit;
 
       if (activity.transactionInvestmentId != null) {
-        final inv = _controller
-            .getInvestmentById(activity.transactionInvestmentId!);
+        final inv = _controller.getInvestmentById(
+          activity.transactionInvestmentId!,
+        );
         if (inv != null) {
           _transactionInvestment = inv;
           _transactionInvestmentController.text = inv.ticker;
@@ -156,6 +161,8 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
 
   /// Update investment references when investments list changes
   void _updateInvestmentReferences() {
+    if (!mounted) return;
+
     if (_soldInvestment != null) {
       final updated = _controller.getInvestmentById(_soldInvestment!.id!);
       if (updated != null) {
@@ -191,6 +198,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
 
   @override
   void dispose() {
+    _investmentsWorker?.dispose();
     _soldInvestmentController.dispose();
     _boughtInvestmentController.dispose();
     _soldAmountController.dispose();
@@ -270,6 +278,77 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
     _isUpdating = false;
   }
 
+  /// Get the absolute latest known price for an investment from any source.
+  double? _getLatestPrice(int? investmentId) {
+    if (investmentId == null) return null;
+    // Use a far-future date to get the latest price from all sources
+    // (snapshots, trades, transactions) regardless of form date.
+    final prices = _controller.getLatestPricesBeforeDate(DateTime(2100));
+    return prices[investmentId];
+  }
+
+  /// Returns the formatted holdings for an investment, or null if none.
+  String? _amountLabel(int? investmentId) {
+    if (investmentId == null) return null;
+    final holdings = _controller.currentHoldings[investmentId];
+    if (holdings == null || holdings <= 0) return null;
+    return NumberFormatHelper.formatAmount(
+      holdings,
+      locale: CurrencyService.instance.portfolioLocale,
+    );
+  }
+
+  /// Auto-fill the price field when an investment is selected.
+  void _autoFillPrice(
+    int? investmentId,
+    TextEditingController priceController,
+  ) {
+    final price = _getLatestPrice(investmentId);
+    if (price != null) {
+      priceController.text = price.toStringAsFixed(2);
+    }
+  }
+
+  /// Sync bought total to match sold total, recalculating bought amount.
+  void _syncBoughtFromSoldTotal() {
+    if (_isUpdating) return;
+    final soldTotal = double.tryParse(_soldTotalController.text);
+    if (soldTotal == null) return;
+
+    _isUpdating = true;
+    _boughtTotalController.text = soldTotal.toStringAsFixed(2);
+
+    final boughtPrice = double.tryParse(_boughtPriceController.text);
+    if (boughtPrice != null && boughtPrice != 0) {
+      final boughtAmount = soldTotal / boughtPrice;
+      _boughtAmountController.text = boughtAmount
+          .toStringAsFixed(8)
+          .replaceAll(RegExp(r'0+$'), '')
+          .replaceAll(RegExp(r'\.$'), '');
+    }
+    _isUpdating = false;
+  }
+
+  /// Sync sold total to match bought total, recalculating sold amount.
+  void _syncSoldFromBoughtTotal() {
+    if (_isUpdating) return;
+    final boughtTotal = double.tryParse(_boughtTotalController.text);
+    if (boughtTotal == null) return;
+
+    _isUpdating = true;
+    _soldTotalController.text = boughtTotal.toStringAsFixed(2);
+
+    final soldPrice = double.tryParse(_soldPriceController.text);
+    if (soldPrice != null && soldPrice != 0) {
+      final soldAmount = boughtTotal / soldPrice;
+      _soldAmountController.text = soldAmount
+          .toStringAsFixed(8)
+          .replaceAll(RegExp(r'0+$'), '')
+          .replaceAll(RegExp(r'\.$'), '');
+    }
+    _isUpdating = false;
+  }
+
   void _showSnackbar(String title, String message, {bool isError = true}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -318,6 +397,19 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
       return;
     }
 
+    if (soldAmount <= 0 ||
+        soldPrice <= 0 ||
+        boughtAmount <= 0 ||
+        boughtPrice <= 0) {
+      _showSnackbar('Error', 'Amount and price must be greater than 0');
+      return;
+    }
+
+    if ((soldTotal - boughtTotal).abs() > 0.01) {
+      _showSnackbar('Error', 'Sold total and bought total must be equal');
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -361,6 +453,11 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
 
     if (amount == null || price == null || total == null) {
       _showSnackbar('Error', 'Please enter valid numbers for all fields');
+      return;
+    }
+
+    if (amount <= 0 || price <= 0) {
+      _showSnackbar('Error', 'Amount and price must be greater than 0');
       return;
     }
 
@@ -424,6 +521,19 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
       return;
     }
 
+    if (soldAmount <= 0 ||
+        soldPrice <= 0 ||
+        boughtAmount <= 0 ||
+        boughtPrice <= 0) {
+      _showSnackbar('Error', 'Amount and price must be greater than 0');
+      return;
+    }
+
+    if ((soldTotal - boughtTotal).abs() > 0.01) {
+      _showSnackbar('Error', 'Sold total and bought total must be equal');
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -466,6 +576,11 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
 
     if (amount == null || price == null || total == null) {
       _showSnackbar('Error', 'Please enter valid numbers for all fields');
+      return;
+    }
+
+    if (amount <= 0 || price <= 0) {
+      _showSnackbar('Error', 'Amount and price must be greater than 0');
       return;
     }
 
@@ -581,31 +696,35 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  InkWell(
+                  GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   CustomText(
                     _isEditMode
                         ? (selectedOption == 1
-                            ? 'Edit Trade'
-                            : 'Edit Transaction')
+                              ? 'Edit Trade'
+                              : 'Edit Transaction')
                         : (selectedOption == 1 ? 'New Trade' : 'Transaction'),
                     size: 16.sp,
                     fontWeight: FontWeight.w500,
                     color: Colors.black,
                   ),
-                  SizedBox(width: 21.w),
+                  SizedBox(width: 41.h),
                 ],
               ),
             ),
             // Toggle Switch — hidden in edit mode (type cannot change)
             if (!_isEditMode)
-              TradeTransactionToggleSwitch(
+              HistoryTransactionToggleSwitch(
                 option1Text: 'Trade',
                 option2Text: 'Transaction',
                 selectedOption: selectedOption,
@@ -703,16 +822,16 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                   labelText: 'Date',
                                   labelStyle: TextStyle(
                                     color: AppColors.greyColor,
-                                    fontSize: 16.sp,
+                                    fontSize: 14.sp,
                                   ),
                                   hintStyle: TextStyle(
                                     color: AppColors.greyColor,
-                                    fontSize: 16.sp,
+                                    fontSize: 14.sp,
                                   ),
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
                                 ),
-                                style: TextStyle(fontSize: 16.sp),
+                                style: TextStyle(fontSize: 14.sp),
                                 textAlign: TextAlign.end,
                               ),
                             ),
@@ -727,12 +846,31 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                 horizontal: 20.w,
                                 vertical: 40.h,
                               ),
-                              child: CustomText(
-                                'you need to make a deposit first before being able to trade',
-                                size: 20.sp,
-                                color: Colors.black,
-                                fontWeight: FontWeight.w400,
-                                textAlign: TextAlign.center,
+                              child: Column(
+                                children: [
+                                  CustomText(
+                                    'you need to make a deposit first before being able to trade',
+                                    size: 20.sp,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w400,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  20.verticalSpace,
+                                  CustomText.richText(
+                                    children: [
+                                      CustomText.span(
+                                        'Transaction → ➕ ',
+                                        color: Colors.black,
+                                        size: 20.sp,
+                                      ),
+                                      CustomText.span(
+                                        'deposit',
+                                        color: Color(0xff00C00D),
+                                        size: 20.sp,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ] else
@@ -758,11 +896,34 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       CustomText(
-                                        'sold',
+                                        'sell',
                                         color: Color(0xffFF0000),
                                         size: 16.sp,
                                       ),
                                       7.verticalSpace,
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          if (_soldInvestment != null &&
+                                              (_controller.currentHoldings[_soldInvestment!
+                                                          .id] ??
+                                                      0) >
+                                                  0)
+                                            Padding(
+                                              padding: EdgeInsets.only(
+                                                bottom: 2.h,
+                                              ),
+                                              child: CustomText(
+                                                'max: ${_amountLabel(_soldInvestment?.id)}',
+                                                size: 10.sp,
+                                                color: AppColors.greyColor,
+                                              ),
+                                            )
+                                          else
+                                            7.verticalSpace,
+                                        ],
+                                      ),
                                       Row(
                                         children: [
                                           Expanded(
@@ -771,9 +932,21 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                   _soldInvestmentController,
                                               hintText: 'select',
                                               onSelected: (investment) {
-                                                _soldInvestment = investment;
+                                                setState(() {
+                                                  _soldInvestment = investment;
+                                                });
                                                 _soldInvestmentController.text =
                                                     investment.ticker;
+                                                _autoFillPrice(
+                                                  investment.id,
+                                                  _soldPriceController,
+                                                );
+                                                _calculateTotalFromAmountPrice(
+                                                  _soldAmountController,
+                                                  _soldPriceController,
+                                                  _soldTotalController,
+                                                );
+                                                _syncBoughtFromSoldTotal();
                                               },
                                             ),
                                           ),
@@ -790,6 +963,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                   _soldPriceController,
                                                   _soldTotalController,
                                                 );
+                                                _syncBoughtFromSoldTotal();
                                               },
                                             ),
                                           ),
@@ -810,6 +984,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                   _soldPriceController,
                                                   _soldTotalController,
                                                 );
+                                                _syncBoughtFromSoldTotal();
                                               },
                                             ),
                                           ),
@@ -843,6 +1018,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                     _soldAmountController,
                                                   );
                                                 }
+                                                _syncBoughtFromSoldTotal();
                                               },
                                             ),
                                           ),
@@ -872,11 +1048,33 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       CustomText(
-                                        'bought',
+                                        'buy',
                                         color: Color(0xff00C00D),
                                         size: 16.sp,
                                       ),
-                                      7.verticalSpace,
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          if (_boughtInvestment != null &&
+                                              (_controller.currentHoldings[_boughtInvestment!
+                                                          .id] ??
+                                                      0) >
+                                                  0)
+                                            Padding(
+                                              padding: EdgeInsets.only(
+                                                bottom: 2.h,
+                                              ),
+                                              child: CustomText(
+                                                'max: ${_amountLabel(_boughtInvestment?.id)}',
+                                                size: 10.sp,
+                                                color: AppColors.greyColor,
+                                              ),
+                                            )
+                                          else
+                                            7.verticalSpace,
+                                        ],
+                                      ),
                                       Row(
                                         children: [
                                           Expanded(
@@ -885,10 +1083,23 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                   _boughtInvestmentController,
                                               hintText: 'select',
                                               onSelected: (investment) {
-                                                _boughtInvestment = investment;
+                                                setState(() {
+                                                  _boughtInvestment =
+                                                      investment;
+                                                });
                                                 _boughtInvestmentController
                                                         .text =
                                                     investment.ticker;
+                                                _autoFillPrice(
+                                                  investment.id,
+                                                  _boughtPriceController,
+                                                );
+                                                _calculateTotalFromAmountPrice(
+                                                  _boughtAmountController,
+                                                  _boughtPriceController,
+                                                  _boughtTotalController,
+                                                );
+                                                _syncSoldFromBoughtTotal();
                                               },
                                             ),
                                           ),
@@ -906,6 +1117,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                   _boughtPriceController,
                                                   _boughtTotalController,
                                                 );
+                                                _syncSoldFromBoughtTotal();
                                               },
                                             ),
                                           ),
@@ -927,6 +1139,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                   _boughtPriceController,
                                                   _boughtTotalController,
                                                 );
+                                                _syncSoldFromBoughtTotal();
                                               },
                                             ),
                                           ),
@@ -961,6 +1174,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                                     _boughtAmountController,
                                                   );
                                                 }
+                                                _syncSoldFromBoughtTotal();
                                               },
                                             ),
                                           ),
@@ -983,7 +1197,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                               child: CustomText(
                                 'select the Currency for all future Trades & Transactions',
                                 size: 20.sp,
-                                color: AppColors.greyColor,
+                                color: Colors.black,
                                 fontWeight: FontWeight.w400,
                                 textAlign: TextAlign.center,
                               ),
@@ -992,7 +1206,7 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                             Center(
                               child: IntrinsicWidth(
                                 child: Container(
-                                  height: 45.h,
+                                  height: 52.h,
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 7.w,
                                   ),
@@ -1016,7 +1230,13 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                       DropdownButtonHideUnderline(
                                         child: DropdownButton<AppCurrency>(
                                           value: _selectedPortfolioCurrency,
-                                          hint: Text('Select Currency'),
+                                          hint: Text(
+                                            'Select Currency',
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              color: Colors.black,
+                                            ),
+                                          ),
                                           isExpanded: false,
                                           isDense: true,
                                           menuMaxHeight: 400.h,
@@ -1182,7 +1402,26 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                   ),
                                   7.verticalSpace,
                                   buildDescriptionField(),
-                                  7.verticalSpace,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      if (_transactionInvestment != null &&
+                                          (_controller.currentHoldings[_transactionInvestment!
+                                                      .id] ??
+                                                  0) >
+                                              0)
+                                        Padding(
+                                          padding: EdgeInsets.only(bottom: 2.h),
+                                          child: CustomText(
+                                            'max: ${_amountLabel(_transactionInvestment?.id)}',
+                                            size: 10.sp,
+                                            color: AppColors.greyColor,
+                                          ),
+                                        )
+                                      else
+                                        7.verticalSpace,
+                                    ],
+                                  ),
                                   Row(
                                     children: [
                                       Expanded(
@@ -1191,10 +1430,22 @@ class _NewPortfolioChangeScreenState extends State<NewPortfolioChangeScreen> {
                                               _transactionInvestmentController,
                                           hintText: 'select',
                                           onSelected: (investment) {
-                                            _transactionInvestment = investment;
+                                            setState(() {
+                                              _transactionInvestment =
+                                                  investment;
+                                            });
                                             _transactionInvestmentController
                                                     .text =
                                                 investment.ticker;
+                                            _autoFillPrice(
+                                              investment.id,
+                                              _priceController,
+                                            );
+                                            _calculateTotalFromAmountPrice(
+                                              _amountController,
+                                              _priceController,
+                                              _totalController,
+                                            );
                                           },
                                         ),
                                       ),

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:moneyapp/constants/app_currencies.dart';
 import 'package:moneyapp/services/database/database_helper.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 
 /// Service to read/write currency settings from the database
 class CurrencyService {
@@ -50,6 +51,7 @@ class CurrencyService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
       _cachedCashflowCurrency = currency;
+      NumberFormatHelper.clearCache();
       debugPrint('[CurrencyService] Cashflow currency set to ${currency.code}');
     } catch (e) {
       debugPrint('[CurrencyService] Error saving cashflow currency: $e');
@@ -70,6 +72,10 @@ class CurrencyService {
   /// Get the cashflow currency code (sync, uses cache)
   String get cashflowCode =>
       _cachedCashflowCurrency?.code ?? AppCurrencies.defaultCashflow.code;
+
+  /// Get the cashflow currency locale for number formatting (sync, uses cache)
+  String get cashflowLocale =>
+      _cachedCashflowCurrency?.locale ?? AppCurrencies.defaultCashflow.locale;
 
   /// Get the portfolio currency (cached after first read)
   Future<AppCurrency?> getPortfolioCurrency() async {
@@ -107,6 +113,7 @@ class CurrencyService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
       _cachedPortfolioCurrency = currency;
+      NumberFormatHelper.clearCache();
       debugPrint(
         '[CurrencyService] Portfolio currency set to ${currency.code}',
       );
@@ -132,6 +139,10 @@ class CurrencyService {
   /// Get the portfolio currency code (sync, uses cache)
   String get portfolioCode =>
       _cachedPortfolioCurrency?.code ?? AppCurrencies.defaultCashflow.code;
+
+  /// Get the portfolio currency locale for number formatting (sync, uses cache)
+  String get portfolioLocale =>
+      _cachedPortfolioCurrency?.locale ?? cashflowLocale;
 
   /// Clear cache (for testing)
   void clearCache() {

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/models/investment_activity_model.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class TransactionItem extends StatefulWidget {
@@ -30,22 +31,18 @@ class TransactionItem extends StatefulWidget {
 }
 
 class _TransactionItemState extends State<TransactionItem> {
+  String get _locale => CurrencyService.instance.portfolioLocale;
+
   /// Format double value as string for display
   String _formatAmount(double? value) {
     if (value == null) return '0';
-    if (value == value.roundToDouble()) {
-      return value.toInt().toString();
-    }
-    return value
-        .toStringAsFixed(4)
-        .replaceAll(RegExp(r'0+$'), '')
-        .replaceAll(RegExp(r'\.$'), '');
+    return NumberFormatHelper.formatAmount(value, locale: _locale);
   }
 
   /// Format price/total value as string
   String _formatPrice(double? value) {
     if (value == null) return '0';
-    return value.toStringAsFixed(2);
+    return NumberFormatHelper.formatCurrency(value, locale: _locale);
   }
 
   void _showPopupMenu(BuildContext context) {

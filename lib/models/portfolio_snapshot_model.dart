@@ -1,4 +1,6 @@
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/services/database/database_helper.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 
 /// Entry type for portfolio snapshots
 enum SnapshotEntryType { trade, transaction }
@@ -226,7 +228,7 @@ class PortfolioSnapshot {
 
   /// Get formatted unit price with currency symbol
   String getFormattedUnitPrice({String currency = '€'}) {
-    return '$currency ${unitPrice.toStringAsFixed(2).replaceAll('.', ',')}';
+    return '$currency ${NumberFormatHelper.formatCurrency(unitPrice, locale: CurrencyService.instance.portfolioLocale)}';
   }
 
   @override

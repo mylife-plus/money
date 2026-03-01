@@ -66,7 +66,8 @@ class _CurrencySelectionScreenState extends State<CurrencySelectionScreen> {
               // Currency selector dropdown
               IntrinsicWidth(
                 child: Container(
-                  height: 45.h,
+                  height: 52.h,
+
                   padding: EdgeInsets.symmetric(horizontal: 7.w),
                   decoration: BoxDecoration(
                     color: Colors.white,

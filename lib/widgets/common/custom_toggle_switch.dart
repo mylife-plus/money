@@ -50,84 +50,103 @@ class CustomToggleSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      // mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        InkWell(
-          onTap: onOption1Tap,
-          child: Container(
-            constraints: BoxConstraints(minWidth: 59.w, maxWidth: 140.w),
-            height: 35.h,
-            padding: EdgeInsets.symmetric(horizontal: 8.w),
-            decoration: BoxDecoration(
-              color: selectedOption == 1
-                  ? const Color(0xffFFE374)
-                  : AppColors.background,
-              border: Border.all(color: AppColors.greyBorder, width: 1.r),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(9.r)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  option1IconPath,
-                  width: 33.r,
-                  height: 33.r,
-                  color: iconColorShouldEffect
-                      ? (selectedOption == 1 ? null : AppColors.greyColor)
-                      : null,
-                ),
-                if (selectedOption == 1) ...[
-                  3.horizontalSpace,
-                  CustomText(
-                    option1Text,
-                    size: 16.sp,
-                    fontWeight: FontWeight.w500,
-                    color: option1Color ?? Colors.black,
+        Spacer(flex: 88),
+        SizedBox(
+          width: 180.w,
+          child: Row(
+            children: [
+              InkWell(
+                onTap: onOption1Tap,
+                child: Container(
+                  width: selectedOption == 1 ? double.infinity : null,
+                  constraints: BoxConstraints(minWidth: 60.w, maxWidth: 120.w),
+                  height: 35.h,
+                  padding: EdgeInsets.symmetric(horizontal: 8.w),
+                  decoration: BoxDecoration(
+                    color: selectedOption == 1
+                        ? const Color(0xffFFE374)
+                        : AppColors.background,
+                    border: Border.all(color: AppColors.greyBorder, width: 1.r),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(9.r),
+                    ),
                   ),
-                ],
-              ],
-            ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        option1IconPath,
+                        width: 24.r,
+                        height: 24.r,
+                        color: iconColorShouldEffect
+                            ? (selectedOption == 1
+                                  ? option1Color ?? Colors.black
+                                  : AppColors.greyColor)
+                            : null,
+                      ),
+                      if (selectedOption == 1) ...[
+                        3.horizontalSpace,
+                        CustomText(
+                          option1Text,
+                          size: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: option1Color ?? Colors.black,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: onOption2Tap,
+                child: Container(
+                  width: selectedOption == 2 ? double.infinity : null,
+                  constraints: BoxConstraints(minWidth: 60.w, maxWidth: 120.w),
+                  height: 35.h,
+                  padding: EdgeInsets.symmetric(horizontal: 8.w),
+                  decoration: BoxDecoration(
+                    color: selectedOption == 2
+                        ? const Color(0xffFFE374)
+                        : AppColors.background,
+                    border: Border.all(color: AppColors.greyBorder, width: 2.r),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(9.r),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        option2IconPath,
+                        width: 24.r,
+                        height: 24.r,
+                        color: iconColorShouldEffect
+                            ? (selectedOption == 2
+                                  ? option2Color ?? Colors.black
+                                  : AppColors.greyColor)
+                            : null,
+                      ),
+                      if (selectedOption == 2) ...[
+                        3.horizontalSpace,
+                        CustomText(
+                          option2Text,
+                          size: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: option2Color ?? Colors.black,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        InkWell(
-          onTap: onOption2Tap,
-          child: Container(
-            constraints: BoxConstraints(minWidth: 59.w, maxWidth: 140.w),
-            height: 35.h,
-            padding: EdgeInsets.symmetric(horizontal: 8.w),
-            decoration: BoxDecoration(
-              color: selectedOption == 2
-                  ? const Color(0xffFFE374)
-                  : AppColors.background,
-              border: Border.all(color: AppColors.greyBorder, width: 2.r),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(9.r)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  option2IconPath,
-                  width: 33.r,
-                  height: 33.r,
-                  color: iconColorShouldEffect
-                      ? (selectedOption == 2 ? null : AppColors.greyColor)
-                      : null,
-                ),
-                if (selectedOption == 2) ...[
-                  3.horizontalSpace,
-                  CustomText(
-                    option2Text,
-                    size: 16.sp,
-                    fontWeight: FontWeight.w500,
-                    color: option2Color ?? Colors.black,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+        Spacer(flex: 120),
       ],
     );
   }

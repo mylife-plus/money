@@ -70,11 +70,15 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
   }
 
   Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final initial = selectedDate != null && selectedDate!.isAfter(now)
+        ? now
+        : (selectedDate ?? now);
     final picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate ?? DateTime.now(),
+      initialDate: initial,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      lastDate: now,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -197,7 +201,7 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditMode = widget.initialDate != null;
+    final isEditMode = widget.onDelete != null;
 
     return Dialog(
       insetPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),

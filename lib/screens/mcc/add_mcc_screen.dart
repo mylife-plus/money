@@ -231,10 +231,13 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                 children: [
                   InkWell(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   CustomText(
@@ -244,7 +247,7 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                     size: 16.sp,
                     color: Colors.black,
                   ),
-                  SizedBox(width: 21.w),
+                  SizedBox(width: 41.h),
                 ],
               ),
             ),

@@ -76,7 +76,7 @@ class InvestmentItem extends StatelessWidget {
                               ),
                               CustomText.span(
                                 symbol,
-                                color: Color(0xff999999),
+                                color: AppColors.greyColor,
                                 size: 12.sp,
                               ),
                             ],
@@ -98,7 +98,11 @@ class InvestmentItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    CustomText(CurrencyService.instance.portfolioCode, color: Color(0xff999999), size: 12.sp),
+                    CustomText(
+                      CurrencyService.instance.portfolioCode,
+                      color: AppColors.greyColor,
+                      size: 12.sp,
+                    ),
                     CustomText(
                       unitPrice,
                       color: Colors.black,
@@ -118,7 +122,8 @@ class InvestmentItem extends StatelessWidget {
                     CustomText(
                       CurrencyService.instance.portfolioCode,
                       textAlign: TextAlign.right,
-                      color: Color(0xff999999),
+                      color: AppColors.greyColor,
+
                       size: 10.sp,
                     ),
                     CustomText(

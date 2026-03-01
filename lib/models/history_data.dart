@@ -1,6 +1,6 @@
 import 'package:moneyapp/services/currency_service.dart';
 
-class TradeData {
+class HistoryData {
   final String type; // 'sold' or 'bought'
   final String amount;
   final String symbol;
@@ -9,7 +9,7 @@ class TradeData {
   final String total;
   final String totalSymbol;
 
-  TradeData({
+  HistoryData({
     required this.type,
     required this.amount,
     required this.symbol,
@@ -22,19 +22,16 @@ class TradeData {
 
 class TradeGroup {
   final String date;
-  final List<TradeData> trades;
+  final List<HistoryData> trades;
 
-  TradeGroup({
-    required this.date,
-    required this.trades,
-  });
+  TradeGroup({required this.date, required this.trades});
 
   static List<TradeGroup> getSampleData() {
     return [
       TradeGroup(
         date: '12. Dec.',
         trades: [
-          TradeData(
+          HistoryData(
             type: 'sold',
             amount: '1',
             symbol: 'BTC',
@@ -43,7 +40,7 @@ class TradeGroup {
             total: '120,000',
             totalSymbol: CurrencyService.instance.portfolioCode,
           ),
-          TradeData(
+          HistoryData(
             type: 'bought',
             amount: '10',
             symbol: 'ETH',
@@ -57,7 +54,7 @@ class TradeGroup {
       TradeGroup(
         date: '1. Dec.',
         trades: [
-          TradeData(
+          HistoryData(
             type: 'sold',
             amount: '30,000',
             symbol: 'EUR',
@@ -66,7 +63,7 @@ class TradeGroup {
             total: '10.100',
             totalSymbol: CurrencyService.instance.portfolioCode,
           ),
-          TradeData(
+          HistoryData(
             type: 'bought',
             amount: '1 🏠',
             symbol: '',
@@ -75,7 +72,7 @@ class TradeGroup {
             total: '10.100',
             totalSymbol: CurrencyService.instance.portfolioCode,
           ),
-          TradeData(
+          HistoryData(
             type: 'sold',
             amount: '30,000',
             symbol: 'EUR',
@@ -84,7 +81,7 @@ class TradeGroup {
             total: '120,000',
             totalSymbol: CurrencyService.instance.portfolioCode,
           ),
-          TradeData(
+          HistoryData(
             type: 'bought',
             amount: '1 🚙',
             symbol: '',

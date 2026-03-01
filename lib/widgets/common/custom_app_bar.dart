@@ -44,7 +44,7 @@ class CustomAppBar extends StatelessWidget {
           // Title Section with Leading Icon
           Container(
             height: 43.h,
-            width: 177.w,
+            width: 180.w,
             decoration: BoxDecoration(
               color: Color(0xffFFCC00),
               borderRadius: BorderRadius.vertical(top: Radius.circular(9.r)),
@@ -83,7 +83,7 @@ class CustomAppBar extends StatelessWidget {
                 GestureDetector(
                   onTap: onActionIconTap,
                   child: Container(
-                    height: 43.w,
+                    height: 43.h,
                     width: 46.w,
                     decoration: BoxDecoration(
                       color: AppColors.background,
@@ -114,14 +114,18 @@ class CustomAppBar extends StatelessWidget {
 
                 // Settings Icon (always present)
                 GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () async {
                     await Navigator.pushNamed(context, AppRoutes.settings.path);
                     onSettingsReturn?.call();
                   },
-                  child: Image.asset(
-                    AppIcons.setting,
-                    height: 24.r,
-                    width: 24.r,
+                  child: Padding(
+                    padding: EdgeInsets.all(10.r),
+                    child: Image.asset(
+                      AppIcons.setting,
+                      height: 24.r,
+                      width: 24.r,
+                    ),
                   ),
                 ),
               ],

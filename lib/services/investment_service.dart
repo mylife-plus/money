@@ -461,6 +461,16 @@ class InvestmentService {
     }
   }
 
+  /// Get a single activity by ID
+  Future<InvestmentActivity?> getActivityById(int id) async {
+    try {
+      return await _activityRepo.getById(id);
+    } catch (e) {
+      debugPrint('[InvestmentService][getActivityById] ❌ Error: $e');
+      return null;
+    }
+  }
+
   /// Get all activities sorted by date
   Future<List<InvestmentActivity>> getAllActivities() async {
     try {

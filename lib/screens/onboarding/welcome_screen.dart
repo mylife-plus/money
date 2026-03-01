@@ -19,7 +19,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Future<void> _onGetStarted() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasSeenWelcome', true);
-    Get.offAllNamed(AppRoutes.currencySelection.path);
+    Get.offAllNamed(AppRoutes.home.path);
   }
 
   @override
@@ -37,7 +37,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomText('😸', size: 32.sp),
+                  CustomText('🥳', size: 32.sp),
                   8.horizontalSpace,
                   CustomText(
                     'Welcome to the',
@@ -50,7 +50,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomText('🤑', size: 28.sp),
+                  CustomText('🤑', size: 32.sp),
                   8.horizontalSpace,
                   CustomText(
                     'money app',
@@ -67,7 +67,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: TextStyle(fontSize: 24.sp, color: Color(0xFF4CAF50)),
+                  style: TextStyle(fontSize: 24.sp, color: Color(0xFF0088FF)),
                   children: [
                     TextSpan(text: '100% '),
                     TextSpan(
@@ -82,7 +82,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: TextStyle(fontSize: 24.sp, color: Color(0xFF2196F3)),
+                  style: TextStyle(fontSize: 24.sp, color: Color(0xFF00C00D)),
                   children: [
                     TextSpan(text: '100%  '),
                     TextSpan(
@@ -97,7 +97,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: TextStyle(fontSize: 24.sp, color: Color(0xFF4CAF50)),
+                  style: TextStyle(fontSize: 24.sp, color: Color(0xFFFF00F6)),
                   children: [
                     TextSpan(text: '100% '),
                     TextSpan(
@@ -128,14 +128,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         CustomText(
                           'choose your ',
 
-                          size: 16.sp,
-                          color: AppColors.greyColor,
+                          size: 20.sp,
+                          color: Colors.black,
                         ),
-                        CustomText('🌐', size: 16.sp),
+                        CustomText('🇺🇳', size: 20.sp),
                         CustomText(
                           ' Language',
-                          size: 16.sp,
-                          color: AppColors.greyColor,
+                          size: 20.sp,
+                          color: Colors.black,
                         ),
                       ],
                     ),

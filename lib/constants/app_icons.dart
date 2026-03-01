@@ -60,4 +60,6 @@ class AppIcons {
   static const String receipt = 'assets/icons/receipt.png';
   static const String colorPicker = 'assets/icons/color_picker.png';
   static const String addImage = 'assets/icons/add_image.png';
+  static const String chartBlue = 'assets/icons/chart_blue.png';
+  static const String historyIcon = 'assets/icons/history_icon.png';
 }

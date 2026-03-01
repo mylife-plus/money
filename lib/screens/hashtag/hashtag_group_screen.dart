@@ -1040,7 +1040,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                 ),
                 // Show checkbox on the left when in filter mode
                 leading: widget.allowMultipleSelection
-                    ? GestureDetector(
+                    ? InkWell(
                         onTap: () => _selectHashtagGroup(mainHashtagGroup),
                         child: Container(
                           width: 24,
@@ -1066,7 +1066,7 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                         ),
                       )
                     : null,
-                title: GestureDetector(
+                title: InkWell(
                   onTap: widget.allowMultipleSelection
                       ? () => _selectHashtagGroup(mainHashtagGroup)
                       : null,
@@ -1148,9 +1148,11 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Hide edit/delete/add buttons when in filter mode or read-only mode
-                    if (!widget.allowMultipleSelection && !widget.isReadOnlyMode) ...[
+                    if (!widget.allowMultipleSelection &&
+                        !widget.isReadOnlyMode) ...[
                       // Edit button for main hashtag group (hidden for N/A)
-                      if (mainHashtagGroup.name != HashtagGroupService.naGroupName)
+                      if (mainHashtagGroup.name !=
+                          HashtagGroupService.naGroupName)
                         IconButton(
                           icon: ColorFiltered(
                             colorFilter: ColorFilter.mode(
@@ -1171,7 +1173,8 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
                         ),
                       // Delete button for main hashtag group (only show if no subgroups, hidden for N/A)
                       if ((mainHashtagGroup.subgroups?.isEmpty ?? true) &&
-                          mainHashtagGroup.name != HashtagGroupService.naGroupName)
+                          mainHashtagGroup.name !=
+                              HashtagGroupService.naGroupName)
                         IconButton(
                           icon: ColorFiltered(
                             colorFilter: const ColorFilter.mode(
@@ -1428,7 +1431,9 @@ class _HashtagGroupScreenState extends State<HashtagGroupScreen> {
               // If no category selected (parentId null) and no new category name,
               // resolve to N/A group so the hashtag moves there
               int? resolvedParentId = parentId;
-              if (parentId == null && newCategoryName == null && hashtagGroup.parentId != null) {
+              if (parentId == null &&
+                  newCategoryName == null &&
+                  hashtagGroup.parentId != null) {
                 final naGroup = await _hashtagGroupService.getOrCreateNAGroup();
                 resolvedParentId = naGroup.id;
               }

@@ -6,6 +6,7 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/models/investment_activity_model.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
 import 'package:moneyapp/widgets/trades/transaction_item.dart';
@@ -39,23 +40,18 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
     super.dispose();
   }
 
+  String get _locale => CurrencyService.instance.portfolioLocale;
+
   /// Format double value as string for display
   String _formatAmount(double? value) {
     if (value == null) return '0';
-    // Remove trailing zeros
-    if (value == value.roundToDouble()) {
-      return value.toInt().toString();
-    }
-    return value
-        .toStringAsFixed(4)
-        .replaceAll(RegExp(r'0+$'), '')
-        .replaceAll(RegExp(r'\.$'), '');
+    return NumberFormatHelper.formatAmount(value, locale: _locale);
   }
 
   /// Format price/total value as string
   String _formatPrice(double? value) {
     if (value == null) return '0';
-    return value.toStringAsFixed(2);
+    return NumberFormatHelper.formatCurrency(value, locale: _locale);
   }
 
   /// Get investment ticker by ID
@@ -143,10 +139,13 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
                 children: [
                   InkWell(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   CustomText(
@@ -154,7 +153,7 @@ class _TradeSearchScreenState extends State<TradeSearchScreen> {
                     size: 16.sp,
                     color: Colors.black,
                   ),
-                  SizedBox(width: 21.w),
+                  SizedBox(width: 41.h),
                 ],
               ),
             ),

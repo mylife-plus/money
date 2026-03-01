@@ -734,9 +734,6 @@ class TestDataService {
       if (onProgress != null) onProgress('Creating investments...');
       final investments = await _createCorrectInvestments();
 
-      final controller = Get.isRegistered<InvestmentController>() ? Get.find<InvestmentController>() : null;
-      if (controller == null) return;
-
       final random = Random(42);
       final now = DateTime.now();
       final startDate = DateTime(now.year - 5, 1, 1);
@@ -744,6 +741,7 @@ class TestDataService {
       final Map<String, double> basePrices = {'MSFT': 180.0, 'AMZN': 95.0, 'NVDA': 30.0, 'SLVR': 18.0, 'SOL': 1.5, 'JPM': 115.0};
       final Map<String, double> volatility = {'MSFT': 0.07, 'AMZN': 0.10, 'NVDA': 0.18, 'SLVR': 0.06, 'SOL': 0.25, 'JPM': 0.06};
 
+      // Build price timelines in memory
       final Map<int, List<_PricePoint>> priceTimelines = {};
       for (final inv in investments) {
         final points = <_PricePoint>[];
@@ -758,36 +756,46 @@ class TestDataService {
         priceTimelines[inv.id!] = points;
       }
 
+      // Build all activities and snapshots in memory first, then bulk-insert
+      final List<InvestmentActivity> allActivities = [];
+      final List<PortfolioSnapshot> allSnapshots = [];
       final Map<int, double> holdings = {for (final inv in investments) inv.id!: 0.0};
 
-      if (onProgress != null) onProgress('Generating deposits...');
+      if (onProgress != null) onProgress('Building deposit data...');
       var eventDate = startDate;
-      int batch = 0;
       while (eventDate.isBefore(now)) {
         for (final inv in investments) {
           if (random.nextDouble() < 0.6) {
             final price = _priceAtDate(priceTimelines[inv.id!]!, eventDate);
             final units = double.parse((random.nextDouble() * 15 + 1).toStringAsFixed(4));
             final total = double.parse((units * price).toStringAsFixed(2));
+            final priceRounded = double.parse(price.toStringAsFixed(2));
             final time = DateTime(eventDate.year, eventDate.month, eventDate.day, random.nextInt(23) + 1, random.nextInt(60));
-            try {
-              await controller.addTransaction(
-                investmentId: inv.id!, direction: TransactionDirection.deposit,
-                amount: units, price: double.parse(price.toStringAsFixed(2)), total: total, date: time,
-                description: 'Buy ${inv.ticker}',
-              );
-              holdings[inv.id!] = (holdings[inv.id!] ?? 0) + units;
-            } catch (e) {
-              debugPrint('[TestDataService] Skip deposit: $e');
-            }
+
+            allActivities.add(InvestmentActivity.transaction(
+              date: time,
+              direction: TransactionDirection.deposit,
+              investmentId: inv.id!,
+              amount: units,
+              price: priceRounded,
+              total: total,
+              description: 'Buy ${inv.ticker}',
+            ));
+            // Auto-snapshot for this activity (activityId will be set during bulk insert)
+            allSnapshots.add(PortfolioSnapshot(
+              investmentId: inv.id!,
+              date: time,
+              unitPrice: priceRounded,
+              isManualPrice: false,
+              entryType: SnapshotEntryType.transaction,
+            ));
+            holdings[inv.id!] = (holdings[inv.id!] ?? 0) + units;
           }
         }
         eventDate = eventDate.add(Duration(days: 14 + random.nextInt(14)));
-        batch++;
-        if (onProgress != null && batch % 20 == 0) onProgress('Processed $batch deposit batches...');
       }
 
-      if (onProgress != null) onProgress('Generating withdrawals...');
+      if (onProgress != null) onProgress('Building withdrawal data...');
       var qDate = DateTime(startDate.year, startDate.month + 2, 15);
       while (qDate.isBefore(now)) {
         for (final inv in investments) {
@@ -796,34 +804,63 @@ class TestDataService {
             final units = double.parse(((h * 0.05) + random.nextDouble() * h * 0.10).toStringAsFixed(4));
             if (units <= 0 || units > h) continue;
             final price = _priceAtDate(priceTimelines[inv.id!]!, qDate);
+            final priceRounded = double.parse(price.toStringAsFixed(2));
             final total = double.parse((units * price).toStringAsFixed(2));
             final time = DateTime(qDate.year, qDate.month, qDate.day, random.nextInt(23) + 1, random.nextInt(60));
-            try {
-              await controller.addTransaction(
-                investmentId: inv.id!, direction: TransactionDirection.withdraw,
-                amount: units, price: double.parse(price.toStringAsFixed(2)), total: total, date: time,
-                description: 'Sell ${inv.ticker}',
-              );
-              holdings[inv.id!] = (holdings[inv.id!] ?? 0) - units;
-            } catch (e) {
-              debugPrint('[TestDataService] Skip withdrawal: $e');
-            }
+
+            allActivities.add(InvestmentActivity.transaction(
+              date: time,
+              direction: TransactionDirection.withdraw,
+              investmentId: inv.id!,
+              amount: units,
+              price: priceRounded,
+              total: total,
+              description: 'Sell ${inv.ticker}',
+            ));
+            allSnapshots.add(PortfolioSnapshot(
+              investmentId: inv.id!,
+              date: time,
+              unitPrice: priceRounded,
+              isManualPrice: false,
+              entryType: SnapshotEntryType.transaction,
+            ));
+            holdings[inv.id!] = (holdings[inv.id!] ?? 0) - units;
           }
         }
         qDate = DateTime(qDate.year, qDate.month + 3, 15);
       }
 
-      if (onProgress != null) onProgress('Generating price snapshots...');
+      // Build manual price snapshots
       for (final inv in investments) {
         for (final point in priceTimelines[inv.id!]!) {
           if (point.date.isAfter(now)) continue;
           final time = DateTime(point.date.year, point.date.month, random.nextInt(28) + 1, random.nextInt(23) + 1, random.nextInt(60));
-          try {
-            await controller.addManualPriceSnapshot(investmentId: inv.id!, unitPrice: double.parse(point.price.toStringAsFixed(2)), date: time);
-          } catch (e) {
-            debugPrint('[TestDataService] Skip snapshot: $e');
-          }
+          allSnapshots.add(PortfolioSnapshot.manualPrice(
+            investmentId: inv.id!,
+            date: time,
+            unitPrice: double.parse(point.price.toStringAsFixed(2)),
+          ));
         }
+      }
+
+      // Bulk insert everything in a single DB transaction
+      if (onProgress != null) onProgress('Saving ${allActivities.length} activities + ${allSnapshots.length} snapshots...');
+      final db = await DatabaseHelper.instance.database;
+      await db.transaction((txn) async {
+        // Insert all activities
+        for (final activity in allActivities) {
+          await txn.insert(DatabaseHelper.tableInvestmentActivities, activity.toMap());
+        }
+        // Insert all snapshots
+        for (final snapshot in allSnapshots) {
+          await txn.insert(DatabaseHelper.tablePortfolioSnapshots, snapshot.toMap());
+        }
+      });
+
+      // Reload controller data once at the end
+      if (onProgress != null) onProgress('Refreshing app...');
+      if (Get.isRegistered<InvestmentController>()) {
+        await Get.find<InvestmentController>().loadData();
       }
 
       if (onProgress != null) onProgress('Done!');

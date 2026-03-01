@@ -6,7 +6,9 @@ import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/models/investment_activity_model.dart';
 import 'package:moneyapp/models/portfolio_snapshot_model.dart';
 import 'package:moneyapp/models/investment_list_item.dart';
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/services/investment_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 
 /// Investment Controller
@@ -105,7 +107,8 @@ class InvestmentController extends GetxController {
   Future<void> loadData() async {
     isLoading.value = true;
     try {
-      investments.value = await _service.getAllInvestments();
+      investments.value = await _service.getAllInvestments()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       activities.value = await _service.getAllActivities();
       portfolioHistory.value = await _service.getPortfolioHistory();
       currentHoldings.value = await _service.calculateCurrentHoldings();
@@ -125,6 +128,11 @@ class InvestmentController extends GetxController {
   /// Refresh data from database
   Future<void> refreshData() async {
     await loadData();
+  }
+
+  /// Get a single activity by ID from database
+  Future<InvestmentActivity?> getActivityById(int id) async {
+    return await _service.getActivityById(id);
   }
 
   void _initializeExpansionState() {
@@ -173,7 +181,9 @@ class InvestmentController extends GetxController {
     }
 
     portfolioSliderMinDate.value = DateTime(
-      earliest.year, earliest.month, earliest.day,
+      earliest.year,
+      earliest.month,
+      earliest.day,
     );
     portfolioSliderMaxDate.value = _endDateTime(latest);
 
@@ -541,6 +551,13 @@ class InvestmentController extends GetxController {
       });
     }
 
+    // Sort alphabetically by investment name (A → Z)
+    result.sort((a, b) {
+      final nameA = (a['investment'] as Investment).name.toLowerCase();
+      final nameB = (b['investment'] as Investment).name.toLowerCase();
+      return nameA.compareTo(nameB);
+    });
+
     return result;
   }
 
@@ -661,7 +678,7 @@ class InvestmentController extends GetxController {
               InvestmentDayHeaderItem(
                 day: day,
                 monthAbbr: monthAbbr,
-                showHeaders: false, // Day headers act as section headers
+                showHeaders: true,
               ),
             );
 
@@ -683,11 +700,11 @@ class InvestmentController extends GetxController {
 
   /// Create an activity item with pre-formatted strings
   InvestmentActivityItem _createActivityItem(InvestmentActivity activity) {
-    final currencyFormat = NumberFormat.currency(
-      symbol: '\$',
-      decimalDigits: 2,
-    );
-    final amountFormat = NumberFormat('#,##0.########');
+    final locale = CurrencyService.instance.portfolioLocale;
+    String fmtCurrency(double? v) =>
+        NumberFormatHelper.formatCurrency(v ?? 0, locale: locale);
+    String fmtAmount(double? v) =>
+        NumberFormatHelper.formatAmount(v ?? 0, locale: locale);
 
     if (activity.isTrade) {
       final soldInvestment = getInvestmentById(
@@ -701,12 +718,12 @@ class InvestmentController extends GetxController {
         activity: activity,
         soldSymbol: soldInvestment?.ticker,
         boughtSymbol: boughtInvestment?.ticker,
-        soldAmount: amountFormat.format(activity.tradeSoldAmount ?? 0),
-        soldPrice: currencyFormat.format(activity.tradeSoldPrice ?? 0),
-        soldTotal: currencyFormat.format(activity.tradeSoldTotal ?? 0),
-        boughtAmount: amountFormat.format(activity.tradeBoughtAmount ?? 0),
-        boughtPrice: currencyFormat.format(activity.tradeBoughtPrice ?? 0),
-        boughtTotal: currencyFormat.format(activity.tradeBoughtTotal ?? 0),
+        soldAmount: fmtAmount(activity.tradeSoldAmount),
+        soldPrice: fmtCurrency(activity.tradeSoldPrice),
+        soldTotal: fmtCurrency(activity.tradeSoldTotal),
+        boughtAmount: fmtAmount(activity.tradeBoughtAmount),
+        boughtPrice: fmtCurrency(activity.tradeBoughtPrice),
+        boughtTotal: fmtCurrency(activity.tradeBoughtTotal),
       );
     } else {
       final investment = getInvestmentById(
@@ -716,9 +733,9 @@ class InvestmentController extends GetxController {
       return InvestmentActivityItem(
         activity: activity,
         transactionSymbol: investment?.ticker,
-        transactionAmount: amountFormat.format(activity.transactionAmount ?? 0),
-        transactionPrice: currencyFormat.format(activity.transactionPrice ?? 0),
-        transactionTotal: currencyFormat.format(activity.transactionTotal ?? 0),
+        transactionAmount: fmtAmount(activity.transactionAmount),
+        transactionPrice: fmtCurrency(activity.transactionPrice),
+        transactionTotal: fmtCurrency(activity.transactionTotal),
       );
     }
   }
@@ -731,7 +748,7 @@ class InvestmentController extends GetxController {
     selectedToggleOption.value = 1;
   }
 
-  void selectTrades() {
+  void selectHistory() {
     selectedToggleOption.value = 2;
   }
 
@@ -917,6 +934,9 @@ class InvestmentController extends GetxController {
       );
       if (investment != null) {
         investments.add(investment);
+        investments.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
       }
       return investment;
     } catch (e) {
@@ -942,8 +962,11 @@ class InvestmentController extends GetxController {
         newImageFile: newImageFile,
       );
       if (success) {
-        // Reload investments to get updated data
-        investments.value = await _service.getAllInvestments();
+        // Reload investments to get updated data (sorted A → Z)
+        investments.value = await _service.getAllInvestments()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
         // Also reload enriched data for portfolio section
         enrichedInvestmentData.value = await _service
             .getInvestmentHoldingsWithPrices();
@@ -1003,7 +1026,7 @@ class InvestmentController extends GetxController {
           final inv = getInvestmentById(investmentId);
           final symbol = inv?.ticker ?? '';
           throw Exception(
-            'Not enough $symbol to withdraw. You have ${currentAmount.toStringAsFixed(2)} but tried to withdraw ${amount.toStringAsFixed(2)}.',
+            'Not enough $symbol to withdraw. You have ${NumberFormatHelper.formatCurrency(currentAmount, locale: CurrencyService.instance.portfolioLocale)} but tried to withdraw ${NumberFormatHelper.formatCurrency(amount, locale: CurrencyService.instance.portfolioLocale)}.',
           );
         }
       }
@@ -1053,7 +1076,7 @@ class InvestmentController extends GetxController {
         final soldInvestment = getInvestmentById(soldInvestmentId);
         final soldSymbol = soldInvestment?.ticker ?? '';
         throw Exception(
-          'Not enough $soldSymbol to sell. You have ${currentAmount.toStringAsFixed(2)} but tried to sell ${soldAmount.toStringAsFixed(2)}.',
+          'Not enough $soldSymbol to sell. You have ${NumberFormatHelper.formatCurrency(currentAmount, locale: CurrencyService.instance.portfolioLocale)} but tried to sell ${NumberFormatHelper.formatCurrency(soldAmount, locale: CurrencyService.instance.portfolioLocale)}.',
         );
       }
 

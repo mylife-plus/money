@@ -7,7 +7,6 @@ import 'package:moneyapp/constants/app_constants.dart';
 import 'package:moneyapp/constants/app_theme.dart';
 import 'package:moneyapp/routes/app_pages.dart';
 import 'package:moneyapp/routes/app_routes.dart';
-import 'package:moneyapp/services/currency_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
@@ -35,12 +34,9 @@ void main() async {
   // Determine initial route based on onboarding state
   final prefs = await SharedPreferences.getInstance();
   final hasSeenWelcome = prefs.getBool('hasSeenWelcome') ?? false;
-  final hasCurrency = await CurrencyService.instance.hasCashflowCurrency();
 
   if (!hasSeenWelcome) {
     AppPages.initial = AppRoutes.welcome.path;
-  } else if (!hasCurrency) {
-    AppPages.initial = AppRoutes.currencySelection.path;
   }
 
   // runApp(

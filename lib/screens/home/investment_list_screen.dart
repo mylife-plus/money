@@ -196,10 +196,13 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
                 children: [
                   InkWell(
                     onTap: () => Navigator.pop(context),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -212,11 +215,14 @@ class _InvestmentListScreenState extends State<InvestmentListScreen> {
                   ),
                   InkWell(
                     onTap: () => _showAddDialog(context),
-                    child: Image.asset(
-                      AppIcons.plus,
-                      color: AppColors.greyColor,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.plus,
+                        color: AppColors.greyColor,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                 ],

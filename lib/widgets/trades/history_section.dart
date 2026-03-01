@@ -13,7 +13,7 @@ import 'package:moneyapp/widgets/trades/trade_item_pair.dart';
 import 'package:moneyapp/widgets/trades/transaction_item.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 import 'package:moneyapp/widgets/common/slide_from_top_route.dart';
-import 'package:moneyapp/screens/investments/new_portfolio_change_screen.dart';
+import 'package:moneyapp/screens/investments/new_trade_transaction_screen.dart';
 
 /// Callback fired whenever the selection state changes.
 /// [isSelection] — true if any items are selected.
@@ -28,16 +28,16 @@ typedef SelectionChangedCallback =
       VoidCallback onDelete,
     );
 
-class TradesSection extends StatefulWidget {
+class HistorySection extends StatefulWidget {
   final SelectionChangedCallback? onSelectionChanged;
 
-  const TradesSection({super.key, this.onSelectionChanged});
+  const HistorySection({super.key, this.onSelectionChanged});
 
   @override
-  State<TradesSection> createState() => _TradesSectionState();
+  State<HistorySection> createState() => _HistorySectionState();
 }
 
-class _TradesSectionState extends State<TradesSection> {
+class _HistorySectionState extends State<HistorySection> {
   // RxList so Obx automatically rebuilds when selection changes
   final RxList<int> selectedIds = <int>[].obs;
 
@@ -303,7 +303,7 @@ class _TradesSectionState extends State<TradesSection> {
                             Navigator.push(
                               context,
                               SlideFromTopRoute(
-                                page: NewPortfolioChangeScreen(
+                                page: NewTradeTransactionScreen(
                                   editingActivity: activity,
                                 ),
                               ),
@@ -330,7 +330,7 @@ class _TradesSectionState extends State<TradesSection> {
                             Navigator.push(
                               context,
                               SlideFromTopRoute(
-                                page: NewPortfolioChangeScreen(
+                                page: NewTradeTransactionScreen(
                                   editingActivity: activity,
                                 ),
                               ),

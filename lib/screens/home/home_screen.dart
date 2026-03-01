@@ -24,6 +24,7 @@ import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 import 'package:moneyapp/widgets/common/slide_from_top_route.dart';
 import 'package:moneyapp/screens/transactions/new_transaction_screen.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 
 /// Home Screen
 /// Main landing screen of the app
@@ -42,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen>
   double _lastScrollOffset = 0;
   bool _isAppBarVisible = true;
   bool _showScrollToTop = false;
+  bool _isFabVisible = true;
   List<int> selectedIds = [];
 
   @override
@@ -61,33 +63,41 @@ class _HomeScreenState extends State<HomeScreen>
   void _onScroll() {
     final currentScrollOffset = _scrollController.offset;
     final scrollDelta = currentScrollOffset - _lastScrollOffset;
+    bool needsRebuild = false;
 
     // Show/hide scroll to top button
     if (currentScrollOffset > 200 && !_showScrollToTop) {
-      setState(() {
-        _showScrollToTop = true;
-      });
+      _showScrollToTop = true;
+      needsRebuild = true;
     } else if (currentScrollOffset <= 200 && _showScrollToTop) {
-      setState(() {
-        _showScrollToTop = false;
-      });
+      _showScrollToTop = false;
+      needsRebuild = true;
     }
 
     // Scrolling down
-    if (scrollDelta > 0 && _isAppBarVisible && currentScrollOffset > 50) {
-      setState(() {
+    if (scrollDelta > 0 && currentScrollOffset > 50) {
+      if (_isAppBarVisible) {
         _isAppBarVisible = false;
-      });
-      _animationController.reverse();
+        _animationController.reverse();
+      }
+      if (_isFabVisible) {
+        _isFabVisible = false;
+        needsRebuild = true;
+      }
     }
     // Scrolling up
-    else if (scrollDelta < 0 && !_isAppBarVisible) {
-      setState(() {
+    else if (scrollDelta < 0) {
+      if (!_isAppBarVisible) {
         _isAppBarVisible = true;
-      });
-      _animationController.forward();
+        _animationController.forward();
+      }
+      if (!_isFabVisible) {
+        _isFabVisible = true;
+        needsRebuild = true;
+      }
     }
 
+    if (needsRebuild) setState(() {});
     _lastScrollOffset = currentScrollOffset;
   }
 
@@ -105,32 +115,39 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: selectedIds.isEmpty
-          ? InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  SlideFromTopRoute(
-                    page: const NewTransactionScreen(),
-                    settings: RouteSettings(
-                      arguments: {
-                        'isExpenseSelected': controller.isExpenseSelected,
-                      },
+          ? AnimatedOpacity(
+              opacity: _isFabVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: IgnorePointer(
+                ignoring: !_isFabVisible,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      SlideFromTopRoute(
+                        page: const NewTransactionScreen(),
+                        settings: RouteSettings(
+                          arguments: {
+                            'isExpenseSelected': controller.isExpenseSelected,
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 51.r,
+                    width: 51.r,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFFCC00),
+                      borderRadius: BorderRadius.circular(5.r),
                     ),
-                  ),
-                );
-              },
-              child: Container(
-                height: 51.r,
-                width: 51.r,
-                decoration: BoxDecoration(
-                  color: const Color(0xffFFCC00),
-                  borderRadius: BorderRadius.circular(5.r),
-                ),
-                child: Center(
-                  child: Image.asset(
-                    AppIcons.roundedPlus,
-                    height: 27.r,
-                    width: 27.r,
+                    child: Center(
+                      child: Image.asset(
+                        AppIcons.roundedPlus,
+                        height: 27.r,
+                        width: 27.r,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -555,27 +572,40 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ),
                         if (controller.visibleItems.length <= 1)
-                          SliverFillRemaining(
-                            hasScrollBody: true,
+                          SliverToBoxAdapter(
                             child: Padding(
                               padding: EdgeInsets.symmetric(horizontal: 23.0.w),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  CustomText(
-                                    'you have 0 💸Cashflows',
-                                    size: 20.sp,
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w400,
+                                  33.verticalSpace,
+                                  CustomText.richText(
+                                    children: [
+                                      CustomText.span(
+                                        'you have no ',
+                                        size: 20.sp,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      CustomText.span(
+                                        controller.isExpenseSelected
+                                            ? 'spending '
+                                            : 'income ',
+                                        size: 20.sp,
+                                        color: controller.isExpenseSelected
+                                            ? const Color(0xffFF0000)
+                                            : const Color(0xff00C00D),
+                                      ),
+                                    ],
                                   ),
-                                  33.verticalSpace, // Visual balance
+                                  33.verticalSpace,
                                   CustomText(
                                     'add Cashflows manually by clicking ➕ or add multiple via ⚙️Settings → ⬆️ Upload 💸Cashflows  ',
                                     size: 20.sp,
                                     color: Colors.black,
                                     fontWeight: FontWeight.w400,
+                                    textAlign: TextAlign.center,
                                   ),
-                                  // 60.horizontalSpace,
+                                  150.verticalSpace,
                                 ],
                               ),
                             ),
@@ -588,6 +618,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                               if (item is YearHeaderItem) {
                                 return Padding(
+                                  key: ValueKey('year_${item.year}'),
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 15.w,
                                   ),
@@ -618,7 +649,7 @@ class _HomeScreenState extends State<HomeScreen>
                                           ],
                                         ),
                                         CustomText(
-                                          '${CurrencyService.instance.cashflowSymbol} ${item.totalAmount.abs().toStringAsFixed(2).replaceAll('.', ',')}',
+                                          '${CurrencyService.instance.cashflowSymbol} ${NumberFormatHelper.formatCurrency(item.totalAmount.abs())}',
                                           color: controller.isExpenseSelected
                                               ? const Color(0xffFF0000)
                                               : const Color(0xff00A40B),
@@ -630,6 +661,9 @@ class _HomeScreenState extends State<HomeScreen>
                                 );
                               } else if (item is MonthHeaderItem) {
                                 return Padding(
+                                  key: ValueKey(
+                                    'month_${item.year}_${item.month}',
+                                  ),
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 15.w,
                                   ),
@@ -662,7 +696,7 @@ class _HomeScreenState extends State<HomeScreen>
                                           ],
                                         ),
                                         CustomText(
-                                          '${CurrencyService.instance.cashflowSymbol} ${item.totalAmount.abs().toStringAsFixed(2).replaceAll('.', ',')}',
+                                          '${CurrencyService.instance.cashflowSymbol} ${NumberFormatHelper.formatCurrency(item.totalAmount.abs())}',
                                           color: controller.isExpenseSelected
                                               ? const Color(0xffFF0000)
                                               : const Color(0xff00A40B),
@@ -674,6 +708,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 );
                               } else if (item is TransactionListItem) {
                                 return Padding(
+                                  key: ValueKey('txn_${item.transaction.id}'),
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 6.w,
                                     vertical: 2.h,
@@ -714,29 +749,34 @@ class _HomeScreenState extends State<HomeScreen>
             Positioned(
               bottom: 40.h,
               right: 30.w,
-              child: InkWell(
-                onTap: () {
-                  _scrollController.animateTo(
-                    0,
-                    duration: const Duration(milliseconds: 100),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                child: Container(
-                  height: 30.r,
-                  width: 30.r,
-                  decoration: BoxDecoration(
-                    color: Color(0xffFFCC00),
-                    borderRadius: BorderRadius.circular(5.r),
-                  ),
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(2.r),
-                      child: Image.asset(
-                        AppIcons.arrowUp,
-                        color: Colors.white,
-                        // height: 16.r,
-                        // width: 16.r,
+              child: AnimatedOpacity(
+                opacity: _isFabVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: IgnorePointer(
+                  ignoring: !_isFabVisible,
+                  child: InkWell(
+                    onTap: () {
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 100),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Container(
+                      height: 30.r,
+                      width: 30.r,
+                      decoration: BoxDecoration(
+                        color: Color(0xffFFCC00),
+                        borderRadius: BorderRadius.circular(5.r),
+                      ),
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(2.r),
+                          child: Image.asset(
+                            AppIcons.arrowUp,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -751,13 +791,8 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildAverageContainer(HomeController controller) {
     final isExpense = controller.isExpenseSelected;
 
-    final noDecimalsFormat = NumberFormat.currency(
-      locale: 'de_DE',
-      symbol: '',
-      decimalDigits: 0,
-    );
     String formatNoDecimals(double val) =>
-        noDecimalsFormat.format(val.abs()).trim();
+        NumberFormatHelper.formatCurrencyNoDecimals(val.abs());
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 10.w),

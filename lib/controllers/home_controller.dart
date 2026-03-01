@@ -7,6 +7,7 @@ import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/services/database/repositories/transaction_repository.dart';
 
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/transactions/top_sort_sheet.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/models/mcc_model.dart';
@@ -475,27 +476,25 @@ class HomeController extends GetxController {
         // Hourly labels
         label = DateFormat('HH:mm').format(windowMidpoint);
         tooltipLabel =
-            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
+            '$currencySymbol${NumberFormatHelper.formatCurrency(windowValue)}\n'
             '${DateFormat('HH:mm dd.MM.yyyy').format(windowMidpoint)}';
       } else if (durationInDays <= 90) {
         // Daily labels (<= 3 months)
         label = DateFormat('dd.MM.yyyy').format(windowMidpoint);
         tooltipLabel =
-            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
+            '$currencySymbol${NumberFormatHelper.formatCurrency(windowValue)}\n'
             '${DateFormat('dd.MM.yyyy').format(windowMidpoint)}';
       } else if (durationInDays <= 365 * 2 + 10) {
         // Monthly labels (> 3 months)
         label = DateFormat('MMM yyyy').format(windowMidpoint);
         tooltipLabel =
-            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
-            '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
+            '$currencySymbol${NumberFormatHelper.formatCurrency(windowValue)}\n'
             '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       } else {
         // Yearly labels (> 3 months)
         label = DateFormat('yyyy').format(windowMidpoint);
         tooltipLabel =
-            '$currencySymbol${windowValue.toStringAsFixed(2)}\n'
-            '${DateFormat('dd.MM.yyyy').format(windowStart)} - '
+            '$currencySymbol${NumberFormatHelper.formatCurrency(windowValue)}\n'
             '${DateFormat('dd.MM.yyyy').format(windowEnd)}';
       }
 
@@ -506,7 +505,8 @@ class HomeController extends GetxController {
           ChartDataPoint(
             label: label,
             value: lastValue, // Keep previous value
-            tooltipLabel: '${lastValue.toStringAsFixed(2)}\n$label',
+            tooltipLabel:
+                '${NumberFormatHelper.formatCurrency(lastValue)}\n$label',
             xValue: i.toDouble(), // Same X position as new value
           ),
         );
@@ -721,6 +721,55 @@ class HomeController extends GetxController {
 
   void selectMonth() {
     selectedChartDurationOption.value = 2;
+  }
+
+  /// Validates whether saving a transaction would keep total expenses within total income.
+  /// Returns null if valid, or a user-friendly error message if the operation would cause
+  /// total expenses to exceed total income.
+  String? validateExpenseWithinIncome({
+    required double amount,
+    required bool isExpense,
+    Transaction? existingTransaction,
+  }) {
+    double totalIncome = 0;
+    double totalExpenses = 0;
+
+    for (var t in transactions) {
+      // Skip the transaction being edited (we account for it via the proposed values)
+      if (existingTransaction != null && t.id == existingTransaction.id)
+        continue;
+      if (t.isExpense) {
+        totalExpenses += t.amount;
+      } else {
+        totalIncome += t.amount;
+      }
+    }
+
+    // Apply the proposed transaction
+    if (isExpense) {
+      totalExpenses += amount;
+    } else {
+      totalIncome += amount;
+    }
+
+    if (totalExpenses > totalIncome) {
+      final symbol = CurrencyService.instance.cashflowSymbol;
+      if (isExpense) {
+        final availableForExpense = totalIncome - (totalExpenses - amount);
+        if (availableForExpense > 0) {
+          final formatted = NumberFormatHelper.formatCurrency(
+            availableForExpense,
+          );
+          return 'This amount exceeds your available balance.\nYou can spend up to $symbol$formatted';
+        }
+        return 'You have no remaining income to cover this expense';
+      } else {
+        // Reducing/editing income would push expenses over income
+        return 'Saving this income would cause your total spending to exceed your total income';
+      }
+    }
+
+    return null;
   }
 
   /// Add a new transaction

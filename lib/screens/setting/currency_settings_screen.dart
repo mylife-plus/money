@@ -105,7 +105,8 @@ class _CurrencySettingsScreenState extends State<CurrencySettingsScreen> {
             30.verticalSpace,
             IntrinsicWidth(
               child: Container(
-                height: 45.h,
+                height: 52.h,
+
                 padding: EdgeInsets.symmetric(horizontal: 7.w),
                 decoration: BoxDecoration(
                   color: Colors.white,

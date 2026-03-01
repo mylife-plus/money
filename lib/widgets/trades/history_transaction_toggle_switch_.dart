@@ -4,7 +4,7 @@ import 'package:moneyapp/widgets/common/custom_text.dart';
 
 /// Custom Toggle Switch Widget
 /// A two-option toggle switch with icons and text
-class TradeTransactionToggleSwitch extends StatelessWidget {
+class HistoryTransactionToggleSwitch extends StatelessWidget {
   /// First option text
   final String option1Text;
 
@@ -23,7 +23,7 @@ class TradeTransactionToggleSwitch extends StatelessWidget {
   /// Background color of the toggle switch
   final Color backgroundColor;
 
-  const TradeTransactionToggleSwitch({
+  const HistoryTransactionToggleSwitch({
     super.key,
 
     required this.option1Text,

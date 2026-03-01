@@ -6,6 +6,7 @@ import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/models/transaction_model.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
 
@@ -72,7 +73,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
           .map((h) => h.name.toLowerCase())
           .join(' ');
       final note = transaction.note.toLowerCase();
-      final amount = transaction.amount.toStringAsFixed(2).replaceAll('.', ',');
+      final amount = NumberFormatHelper.formatCurrency(transaction.amount);
 
       return recipient.contains(lowerQuery) ||
           mccText.contains(lowerQuery) ||
@@ -100,16 +101,19 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                 children: [
                   InkWell(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
 
                   Image.asset(AppIcons.search, height: 28.r, width: 28.r),
 
-                  SizedBox(width: 21.w),
+                  SizedBox(width: 41.h),
                 ],
               ),
             ),

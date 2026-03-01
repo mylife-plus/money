@@ -239,17 +239,9 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
   }
 
   void _resetFilter() {
-    setState(() {
-      fromDate = null;
-      toDate = null;
-      selectedActivityType = 'Trades & Transaction';
-      selectedInvestments.clear();
-      minAmountController.clear();
-      maxAmountController.clear();
-    });
-
     // Reset controller filters
     controller.resetFilters();
+    Navigator.of(context).pop();
   }
 
   @override
@@ -266,14 +258,17 @@ class _PortfolioFilterScreenState extends State<PortfolioFilterScreen> {
                 children: [
                   InkWell(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   Image.asset(AppIcons.filter, height: 28.r, width: 28.r),
-                  SizedBox(width: 21.w),
+                  SizedBox(width: 41.h),
                 ],
               ),
             ),

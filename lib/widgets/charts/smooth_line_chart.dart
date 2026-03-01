@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:moneyapp/models/chart_data_point.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 
 class SmoothLineChartWidget extends StatelessWidget {
   final List<ChartDataPoint> data;
@@ -10,6 +11,7 @@ class SmoothLineChartWidget extends StatelessWidget {
   final bool showDots;
   final bool showEndDot;
   final Color? tooltipAmountColor;
+  final String? locale;
 
   const SmoothLineChartWidget({
     super.key,
@@ -19,6 +21,7 @@ class SmoothLineChartWidget extends StatelessWidget {
     this.showDots = false,
     this.showEndDot = true,
     this.tooltipAmountColor,
+    this.locale,
   });
 
   List<FlSpot> _getSpots() {
@@ -197,11 +200,6 @@ class SmoothLineChartWidget extends StatelessWidget {
   }
 
   String _formatYAxisLabel(double value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(0)}m';
-    } else if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(0)}k';
-    }
-    return value.toStringAsFixed(0);
+    return NumberFormatHelper.formatYAxisLabel(value, locale: locale);
   }
 }

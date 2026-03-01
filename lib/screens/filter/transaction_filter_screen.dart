@@ -10,6 +10,7 @@ import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
@@ -59,12 +60,12 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
     // We compare with infinity for max to leave blank if not set
     minAmountController = TextEditingController(
       text: homeController.minAmount.value > 0
-          ? homeController.minAmount.value.toStringAsFixed(0)
+          ? NumberFormatHelper.formatCurrencyNoDecimals(homeController.minAmount.value)
           : '',
     );
     maxAmountController = TextEditingController(
       text: homeController.maxAmount.value < double.infinity
-          ? homeController.maxAmount.value.toStringAsFixed(0)
+          ? NumberFormatHelper.formatCurrencyNoDecimals(homeController.maxAmount.value)
           : '',
     );
 
@@ -246,7 +247,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
       selectedMCCs.clear();
       selectedHashtags.clear();
     });
-    _applyFilter(closeScreen: false);
+    _applyFilter(closeScreen: true);
   }
 
   @override
@@ -263,14 +264,17 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                 children: [
                   InkWell(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   Image.asset(AppIcons.filter, height: 28.r, width: 28.r),
-                  SizedBox(width: 21.w),
+                  SizedBox(width: 41.h),
                 ],
               ),
             ),

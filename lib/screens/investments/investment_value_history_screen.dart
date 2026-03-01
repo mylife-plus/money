@@ -10,7 +10,9 @@ import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/models/portfolio_snapshot_model.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
+import 'package:moneyapp/screens/investments/new_trade_transaction_screen.dart';
 import 'package:moneyapp/widgets/investments/price_entry_dialog.dart';
 
 class InvestmentValueHistoryScreen extends StatefulWidget {
@@ -73,6 +75,8 @@ class _InvestmentValueHistoryScreenState
     showDialog(
       context: context,
       builder: (context) => PriceEntryDialog(
+        initialDate: DateTime.now(),
+        initialUnitPrice: snapshots.isNotEmpty ? snapshots.first.unitPrice : null,
         onSave: (date, unitPrice) async {
           await controller.addManualPriceSnapshot(
             investmentId: investment.id!,
@@ -97,7 +101,11 @@ class _InvestmentValueHistoryScreenState
         onDelete: () async {
           await controller.deleteSnapshot(snapshots[index].id!);
           await _loadSnapshots();
-          _showSnackbar('Success', 'Price deleted successfully', isError: false);
+          _showSnackbar(
+            'Success',
+            'Price deleted successfully',
+            isError: false,
+          );
         },
         onSave: (date, unitPrice) async {
           await controller.deleteSnapshot(snapshot.id!);
@@ -116,6 +124,28 @@ class _InvestmentValueHistoryScreenState
         },
       ),
     );
+  }
+
+  Future<void> _onSnapshotTap(int index) async {
+    final snapshot = snapshots[index];
+    if (snapshot.isManualPrice) {
+      _showEditPriceDialog(index);
+    } else if (snapshot.activityId != null) {
+      // Fetch the linked activity from database
+      final activity = await controller.getActivityById(snapshot.activityId!);
+      if (activity != null && mounted) {
+        Navigator.of(context)
+            .push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    NewTradeTransactionScreen(editingActivity: activity),
+              ),
+            )
+            .then((_) => _loadSnapshots());
+      }
+    } else {
+      debugPrint('[SnapshotTap] No action: not manual and no activityId');
+    }
   }
 
   Future<void> _deleteEntry(int index) async {
@@ -177,10 +207,13 @@ class _InvestmentValueHistoryScreenState
                 children: [
                   InkWell(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   Row(
@@ -246,68 +279,60 @@ class _InvestmentValueHistoryScreenState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             for (int i = 0; i < snapshots.length; i++)
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 6.h,
-                                  horizontal: 11.w,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(4.r),
-                                  border: Border.all(
-                                    color: AppColors.greyBorder,
+                              InkWell(
+                                onTap: () => _onSnapshotTap(i),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 6.h,
+                                    horizontal: 11.w,
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // Date Container
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          CustomText(
-                                            DateFormat(
-                                              'dd.MM.yyyy',
-                                            ).format(snapshots[i].date),
-                                            size: 20.sp,
-                                            color: Colors.black,
-                                          ),
-                                          if (snapshots[i].note != null &&
-                                              snapshots[i].note!.isNotEmpty)
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(4.r),
+                                    border: Border.all(
+                                      color: AppColors.greyBorder,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Date Container
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
                                             CustomText(
-                                              snapshots[i].note!,
-                                              size: 12.sp,
-                                              color: AppColors.greyColor,
+                                              DateFormat(
+                                                'dd.MM.yyyy',
+                                              ).format(snapshots[i].date),
+                                              size: 20.sp,
+                                              color: Colors.black,
                                             ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // Price Container
-                                    CustomText(
-                                      '${CurrencyService.instance.portfolioSymbol} ${NumberFormat('#,##0.00').format(snapshots[i].unitPrice)}',
-                                      size: 20.sp,
-                                      color: Colors.black,
-                                    ),
-                                    CustomText(
-                                      ' ${CurrencyService.instance.portfolioCode}',
-                                      size: 12.sp,
-                                      color: AppColors.greyColor,
-                                    ),
-                                    20.horizontalSpace,
-                                    // Edit Icon (only for manual entries)
-                                    if (snapshots[i].isManualPrice)
-                                      InkWell(
-                                        onTap: () => _showEditPriceDialog(i),
-                                        child: Image.asset(
-                                          AppIcons.edit,
-                                          width: 22.r,
-                                          height: 22.r,
+                                            if (snapshots[i].note != null &&
+                                                snapshots[i].note!.isNotEmpty)
+                                              CustomText(
+                                                snapshots[i].note!,
+                                                size: 12.sp,
+                                                color: AppColors.greyColor,
+                                              ),
+                                          ],
                                         ),
                                       ),
-                                  ],
+
+                                      // Price Container
+                                      CustomText(
+                                        '${CurrencyService.instance.portfolioSymbol} ${NumberFormatHelper.formatCurrency(snapshots[i].unitPrice, locale: CurrencyService.instance.portfolioLocale)}',
+                                        size: 20.sp,
+                                        color: Colors.black,
+                                      ),
+                                      CustomText(
+                                        ' ${CurrencyService.instance.portfolioCode}',
+                                        size: 12.sp,
+                                        color: AppColors.greyColor,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                           ],

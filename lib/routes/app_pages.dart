@@ -13,7 +13,7 @@ import 'package:moneyapp/screens/home/investment_list_screen.dart';
 import 'package:moneyapp/screens/home/investment_screen.dart';
 
 import 'package:moneyapp/screens/investments/investment_value_history_screen.dart';
-import 'package:moneyapp/screens/investments/new_portfolio_change_screen.dart';
+import 'package:moneyapp/screens/investments/new_trade_transaction_screen.dart';
 import 'package:moneyapp/screens/mcc/add_mcc_screen.dart';
 import 'package:moneyapp/screens/setting/settings_screen.dart';
 import 'package:moneyapp/screens/transactions/new_transaction_screen.dart';
@@ -111,7 +111,7 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.newPortfolioChange.path,
-      page: () => const NewPortfolioChangeScreen(),
+      page: () => const NewTradeTransactionScreen(),
       binding: InvestmentBinding(),
     ),
     GetPage(

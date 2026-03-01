@@ -11,6 +11,7 @@ import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 
+import 'package:moneyapp/constants/app_currencies.dart';
 import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
@@ -39,12 +40,18 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   MCCItem? selectedMCC;
   List<HashtagGroup> selectedHashtags = [];
 
+  // Cashflow currency selection (inline, one-time)
+  bool _hasCashflowCurrency = true; // assume true until checked
+  AppCurrency? _selectedCashflowCurrency;
+
   Transaction? existingTransaction;
   bool get isEditMode => existingTransaction != null;
 
   @override
   void initState() {
     super.initState();
+
+    _loadCashflowCurrency();
 
     // Check if editing existing transaction
     existingTransaction = Get.arguments?['transaction'] as Transaction?;
@@ -81,6 +88,25 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     recipientController.dispose();
     noteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCashflowCurrency() async {
+    final has = await CurrencyService.instance.hasCashflowCurrency();
+    if (mounted) {
+      setState(() {
+        _hasCashflowCurrency = has;
+      });
+    }
+  }
+
+  Future<void> _confirmCashflowCurrency() async {
+    if (_selectedCashflowCurrency == null) return;
+    await CurrencyService.instance.setCashflowCurrency(
+      _selectedCashflowCurrency!,
+    );
+    setState(() {
+      _hasCashflowCurrency = true;
+    });
   }
 
   Future<void> _showMCCSelectionDialog() async {
@@ -195,6 +221,17 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     // Get HomeController
     final homeController = Get.find<HomeController>();
 
+    // Validate: total expenses must not exceed total income after save
+    final balanceError = homeController.validateExpenseWithinIncome(
+      amount: amount,
+      isExpense: !isAddingIncome,
+      existingTransaction: isEditMode ? existingTransaction : null,
+    );
+    if (balanceError != null) {
+      _showSnackbar('Limit reached', balanceError);
+      return;
+    }
+
     if (isEditMode && existingTransaction != null) {
       // Update existing transaction
       final updatedTransaction = existingTransaction!.copyWith(
@@ -255,10 +292,13 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                 children: [
                   InkWell(
                     onTap: () => Navigator.pop(context),
-                    child: Image.asset(
-                      AppIcons.backArrow,
-                      width: 21.h,
-                      height: 21.h,
+                    child: Padding(
+                      padding: EdgeInsets.all(10.r),
+                      child: Image.asset(
+                        AppIcons.backArrow,
+                        width: 21.h,
+                        height: 21.h,
+                      ),
                     ),
                   ),
                   CustomText(
@@ -266,136 +306,153 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                     size: 16.sp,
                     color: Colors.black,
                   ),
-                  SizedBox(width: 21.w),
+                  SizedBox(width: 41.h),
                 ],
               ),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 33.w),
-                  child: Column(
-                    children: [
-                      12.verticalSpace,
-                      Row(
-                        children: [
-                          Container(
+            if (!_hasCashflowCurrency) ...[
+              // Inline currency selection (one-time, same pattern as portfolio/trade)
+              Expanded(
+                child: Column(
+                  children: [
+                    const Spacer(flex: 2),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20.w,
+                        vertical: 20.h,
+                      ),
+                      child: CustomText(
+                        'select the Currency for all future Cashflows',
+                        size: 20.sp,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w400,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    20.verticalSpace,
+                    Center(
+                      child: IntrinsicWidth(
+                        child: Container(
+                          height: 52.h,
+
+                          padding: EdgeInsets.symmetric(horizontal: 7.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: AppColors.greyBorder),
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomText(
+                                'Currency',
+                                size: 12.sp,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.greyColor,
+                              ),
+                              DropdownButtonHideUnderline(
+                                child: DropdownButton<AppCurrency>(
+                                  value: _selectedCashflowCurrency,
+                                  hint: Text('Select Currency'),
+                                  isExpanded: false,
+                                  isDense: true,
+                                  menuMaxHeight: 400.h,
+                                  icon: Padding(
+                                    padding: EdgeInsets.only(left: 8.w),
+                                    child: Image.asset(
+                                      AppIcons.arrowDown,
+                                      width: 16.r,
+                                      height: 16.r,
+                                      color: AppColors.greyColor,
+                                    ),
+                                  ),
+                                  items: AppCurrencies.all.map((currency) {
+                                    return DropdownMenuItem<AppCurrency>(
+                                      value: currency,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          CustomText(
+                                            currency.name,
+                                            size: 16.sp,
+                                            color: Colors.black,
+                                          ),
+                                          6.horizontalSpace,
+                                          CustomText(
+                                            currency.symbol,
+                                            size: 16.sp,
+                                            color: AppColors.greyColor,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedCashflowCurrency = value;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    20.verticalSpace,
+                    AnimatedOpacity(
+                      opacity: _selectedCashflowCurrency != null ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: IgnorePointer(
+                        ignoring: _selectedCashflowCurrency == null,
+                        child: InkWell(
+                          onTap: _confirmCashflowCurrency,
+                          child: Container(
+                            width: 120.w,
                             height: 41.h,
-                            width: 109.w,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 7.w,
-                              vertical: 2.h,
-                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: AppColors.greyBorder),
-                              borderRadius: BorderRadius.circular(4.r),
+                              borderRadius: BorderRadius.circular(13.r),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 4.0,
+                                  offset: Offset(0, 0),
+                                ),
+                              ],
                             ),
-                            child: TextField(
-                              controller: TextEditingController(
-                                text: selectedDate != null
-                                    ? DateFormat(
-                                        'dd.MM.yyyy',
-                                      ).format(selectedDate!)
-                                    : '',
-                              ),
-                              readOnly: true,
-                              onTap: () async {
-                                final DateTime? picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: selectedDate ?? DateTime.now(),
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime.now(),
-                                  builder: (context, child) {
-                                    return Theme(
-                                      data: Theme.of(context).copyWith(
-                                        colorScheme: ColorScheme.light(
-                                          primary: AppColors.primary,
-                                          onPrimary: Colors.black,
-                                          surface: AppColors.background,
-                                        ),
-                                        textButtonTheme: TextButtonThemeData(
-                                          style: TextButton.styleFrom(
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        ),
-                                      ),
-                                      child: child!,
-                                    );
-                                  },
-                                );
-                                if (picked != null) {
-                                  setState(() {
-                                    selectedDate = picked;
-                                  });
-                                }
-                              },
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'Select Date',
-                                labelText: 'Date',
-                                labelStyle: TextStyle(
-                                  color: AppColors.greyColor,
+                            child: Center(
+                              child: Text(
+                                'Confirm',
+                                style: TextStyle(
                                   fontSize: 16.sp,
-                                ),
-                                hintStyle: TextStyle(
-                                  color: AppColors.greyColor,
-                                  fontSize: 16.sp,
-                                ),
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                                suffixStyle: TextStyle(
-                                  color: AppColors.greyColor,
-                                  fontSize: 16.sp,
-                                ),
-                              ),
-                              style: TextStyle(fontSize: 16.sp),
-                              textAlign: TextAlign.end,
-                            ),
-                          ),
-                          8.horizontalSpace,
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                isAddingIncome = !isAddingIncome;
-                              });
-                            },
-                            child: Container(
-                              height: 37.h,
-                              width: 39.w,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(4.r),
-                                border: Border.all(
-                                  color: AppColors.greyBorder,
-                                  width: 1,
-                                ),
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Image.asset(
-                                  isAddingIncome
-                                      ? AppIcons.plus
-                                      : AppIcons.minus,
-                                  color: isAddingIncome
-                                      ? const Color(0xff00C00D)
-                                      : const Color(0xffFF0000),
-                                  width: 20.w,
-                                  height: 20.h,
+                                  color: Color(0xff0071FF),
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
                           ),
-                          4.horizontalSpace,
-                          Expanded(
-                            child: Container(
+                        ),
+                      ),
+                    ),
+                    const Spacer(flex: 3),
+                  ],
+                ),
+              ),
+            ] else ...[
+              // Normal transaction form
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 33.w),
+                    child: Column(
+                      children: [
+                        12.verticalSpace,
+                        Row(
+                          children: [
+                            Container(
                               height: 41.h,
+                              width: 109.w,
                               padding: EdgeInsets.symmetric(
                                 horizontal: 7.w,
                                 vertical: 2.h,
@@ -406,288 +463,417 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                 borderRadius: BorderRadius.circular(4.r),
                               ),
                               child: TextField(
-                                controller: amountController,
+                                controller: TextEditingController(
+                                  text: selectedDate != null
+                                      ? DateFormat(
+                                          'dd.MM.yyyy',
+                                        ).format(selectedDate!)
+                                      : '',
+                                ),
+                                readOnly: true,
+                                onTap: () async {
+                                  final DateTime? picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedDate ?? DateTime.now(),
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime.now(),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(context).copyWith(
+                                          colorScheme: ColorScheme.light(
+                                            primary: AppColors.primary,
+                                            onPrimary: Colors.black,
+                                            surface: AppColors.background,
+                                          ),
+                                          textButtonTheme: TextButtonThemeData(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                        child: child!,
+                                      );
+                                    },
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      selectedDate = picked;
+                                    });
+                                  }
+                                },
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
-                                  hintText: '0,00',
-                                  labelText: isAddingIncome
-                                      ? 'Income'
-                                      : 'Spending',
+                                  hintText: 'Select Date',
+                                  labelText: 'Date',
                                   labelStyle: TextStyle(
                                     color: AppColors.greyColor,
-                                    fontSize: 16.sp,
+                                    fontSize: 14.sp,
                                   ),
                                   hintStyle: TextStyle(
                                     color: AppColors.greyColor,
-                                    fontSize: 16.sp,
+                                    fontSize: 14.sp,
                                   ),
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
                                   suffixStyle: TextStyle(
                                     color: AppColors.greyColor,
-                                    fontSize: 16.sp,
+                                    fontSize: 14.sp,
                                   ),
-                                  suffixText:
-                                      CurrencyService.instance.cashflowCode,
                                 ),
-                                keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: isAddingIncome
-                                      ? Color(0xff00C00D)
-                                      : Color(0xffFF0000),
-                                ),
+                                style: TextStyle(fontSize: 14.sp),
                                 textAlign: TextAlign.end,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      7.verticalSpace,
-
-                      Row(
-                        children: [
-                          InkWell(
-                            onTap: _showMCCSelectionDialog,
-                            child: Container(
-                              height: 41.h,
-                              width: 35.h,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: AppColors.greyBorder),
-                                borderRadius: BorderRadius.circular(4.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 0),
+                            8.horizontalSpace,
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  isAddingIncome = !isAddingIncome;
+                                });
+                              },
+                              child: Container(
+                                height: 37.h,
+                                width: 39.w,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  border: Border.all(
+                                    color: AppColors.greyBorder,
+                                    width: 1,
                                   ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  CustomText(
-                                    'MCC',
-                                    size: 12.sp,
-                                    color: AppColors.greyColor,
-                                  ),
-                                  // 3.verticalSpace,
-                                  Center(
-                                    child: selectedMCC != null
-                                        ? selectedMCC!.getIcon(size: 15.r)
-                                        : Image.asset(
-                                            AppIcons.shopIcon,
-                                            height: 17.r,
-                                            width: 19.r,
-                                            color: AppColors.greyColor,
-                                          ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          8.horizontalSpace,
-
-                          Expanded(
-                            child: Container(
-                              height: 41.h,
-
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 7.w,
-                                vertical: 2.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: AppColors.greyBorder),
-                                borderRadius: BorderRadius.circular(4.r),
-                              ),
-                              child: TextField(
-                                controller: recipientController,
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: '',
-                                  labelText: 'Recipient',
-                                  labelStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
-                                  ),
-                                  hintStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
-                                  ),
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                style: TextStyle(fontSize: 16.sp),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      7.verticalSpace,
-                      Container(
-                        constraints: BoxConstraints(minHeight: 41.h),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 7.w,
-                          vertical: 2.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: AppColors.greyBorder),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                        child: TextField(
-                          controller: noteController,
-                          minLines: 1,
-                          maxLines: 4,
-                          maxLength: 150,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            hintText: '',
-                            labelText: 'Note',
-                            labelStyle: TextStyle(
-                              color: AppColors.greyColor,
-                              fontSize: 16.sp,
-                            ),
-                            hintStyle: TextStyle(
-                              color: AppColors.greyColor,
-                              fontSize: 16.sp,
-                            ),
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            counterText: "", // Hide the counter
-                          ),
-                          style: TextStyle(fontSize: 16.sp),
-                        ),
-                      ),
-                      7.verticalSpace,
-
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Obx(() {
-                          // Register dependency to avoid "improper use of GetX" when list is empty
-                          // This ensures the widget rebuilds when groups are loaded/updated
-                          // Accessing .length is required to register the listener on the RxList
-                          hashtagController.allGroups.length;
-
-                          return Wrap(
-                            alignment: WrapAlignment.start,
-                            spacing: 8.w,
-                            runSpacing: 8.h,
-                            children: [
-                              InkWell(
-                                onTap: _showHashtagSelectionDialog,
-                                child: Container(
-                                  height: 42.h,
-                                  width: 37.w,
-                                  padding: EdgeInsets.fromLTRB(
-                                    5.r,
-                                    0.r,
-                                    5.r,
-                                    0.r,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(4.r),
-                                    border: Border.all(
-                                      color: AppColors.greyBorder,
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 0),
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.25,
-                                        ),
-                                        blurRadius: 4.r,
-                                        offset: Offset(0, 0),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      CustomText(
-                                        'Add',
-                                        size: 12.sp,
-                                        color: AppColors.greyColor,
-                                      ),
-                                      CustomText(
-                                        '#',
-                                        size: 16.sp,
-                                        color: Color(0xff0088FF),
-                                      ),
-                                    ],
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Image.asset(
+                                    isAddingIncome
+                                        ? AppIcons.plus
+                                        : AppIcons.minus,
+                                    color: isAddingIncome
+                                        ? const Color(0xff00C00D)
+                                        : const Color(0xffFF0000),
+                                    width: 20.w,
+                                    height: 20.h,
                                   ),
                                 ),
                               ),
-                              ...selectedHashtags.map((hashtag) {
-                                // Find latest hashtag data from controller to ensure updates are reflected
-                                // and parent references are correct
-                                final currentHashtag =
-                                    hashtagController.findGroupById(
-                                      hashtag.id ?? -1,
-                                    ) ??
-                                    hashtag;
-
-                                // Find parent group name
-                                String categoryGroup = 'Main Group';
-                                if (currentHashtag.isSubgroup) {
-                                  final mainGroup = hashtagController.allGroups
-                                      .firstWhereOrNull(
-                                        (g) => g.id == currentHashtag.parentId,
-                                      );
-                                  categoryGroup = mainGroup?.name ?? 'Unknown';
-                                }
-
-                                return CategoryChip(
-                                  category: currentHashtag.name,
-                                  categoryGroup: categoryGroup,
-                                  onRemove: () {
-                                    setState(() {
-                                      selectedHashtags.removeWhere(
-                                        (h) => h.id == hashtag.id,
-                                      );
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ],
-                          );
-                        }),
-                      ),
-                      23.verticalSpace,
-                      InkWell(
-                        onTap: _saveTransaction,
-                        child: Container(
-                          width: 120.w,
-                          height: 41.h,
-                          decoration: BoxDecoration(
-                            color: const Color(0xffFFFFFF),
-                            borderRadius: BorderRadius.circular(13.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 4,
-                                offset: const Offset(0, 0),
+                            ),
+                            4.horizontalSpace,
+                            Expanded(
+                              child: Container(
+                                height: 41.h,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 7.w,
+                                  vertical: 2.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: AppColors.greyBorder,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4.r),
+                                ),
+                                child: TextField(
+                                  controller: amountController,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: '0,00',
+                                    labelText: isAddingIncome
+                                        ? 'Income'
+                                        : 'Spending',
+                                    labelStyle: TextStyle(
+                                      color: AppColors.greyColor,
+                                      fontSize: 16.sp,
+                                    ),
+                                    hintStyle: TextStyle(
+                                      color: AppColors.greyColor,
+                                      fontSize: 16.sp,
+                                    ),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    suffixStyle: TextStyle(
+                                      color: AppColors.greyColor,
+                                      fontSize: 16.sp,
+                                    ),
+                                    suffixText:
+                                        CurrencyService.instance.cashflowCode,
+                                  ),
+                                  keyboardType: TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    color: isAddingIncome
+                                        ? Color(0xff00C00D)
+                                        : Color(0xffFF0000),
+                                  ),
+                                  textAlign: TextAlign.end,
+                                ),
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                        7.verticalSpace,
+
+                        Row(
+                          children: [
+                            InkWell(
+                              onTap: _showMCCSelectionDialog,
+                              child: Container(
+                                height: 41.h,
+                                width: 35.h,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: AppColors.greyBorder,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CustomText(
+                                      'MCC',
+                                      size: 10.sp,
+                                      color: AppColors.greyColor,
+                                    ),
+                                    Center(
+                                      child: selectedMCC != null
+                                          ? selectedMCC!.getIcon(size: 13.r)
+                                          : Image.asset(
+                                              AppIcons.shopIcon,
+                                              height: 13.r,
+                                              width: 15.r,
+                                              color: AppColors.greyColor,
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            8.horizontalSpace,
+
+                            Expanded(
+                              child: Container(
+                                height: 41.h,
+
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 7.w,
+                                  vertical: 2.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: AppColors.greyBorder,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4.r),
+                                ),
+                                child: TextField(
+                                  controller: recipientController,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: '',
+                                    labelText: 'Recipient',
+                                    labelStyle: TextStyle(
+                                      color: AppColors.greyColor,
+                                      fontSize: 16.sp,
+                                    ),
+                                    hintStyle: TextStyle(
+                                      color: AppColors.greyColor,
+                                      fontSize: 16.sp,
+                                    ),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                  style: TextStyle(fontSize: 16.sp),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        7.verticalSpace,
+                        Container(
+                          constraints: BoxConstraints(minHeight: 41.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 7.w,
+                            vertical: 2.h,
                           ),
-                          child: Center(
-                            child: CustomText(
-                              isEditMode ? 'Save' : 'Add',
-                              size: 16.sp,
-                              color: Color(0xff0071FF),
-                              fontWeight: FontWeight.w400,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: AppColors.greyBorder),
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: TextField(
+                            controller: noteController,
+                            minLines: 1,
+                            maxLines: 4,
+                            maxLength: 150,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: '',
+                              labelText: 'Note',
+                              labelStyle: TextStyle(
+                                color: AppColors.greyColor,
+                                fontSize: 16.sp,
+                              ),
+                              hintStyle: TextStyle(
+                                color: AppColors.greyColor,
+                                fontSize: 16.sp,
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              counterText: "", // Hide the counter
+                            ),
+                            style: TextStyle(fontSize: 16.sp),
+                          ),
+                        ),
+                        7.verticalSpace,
+
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Obx(() {
+                            // Register dependency to avoid "improper use of GetX" when list is empty
+                            // This ensures the widget rebuilds when groups are loaded/updated
+                            // Accessing .length is required to register the listener on the RxList
+                            hashtagController.allGroups.length;
+
+                            return Wrap(
+                              alignment: WrapAlignment.start,
+                              spacing: 8.w,
+                              runSpacing: 8.h,
+                              children: [
+                                InkWell(
+                                  onTap: _showHashtagSelectionDialog,
+                                  child: Container(
+                                    height: 42.h,
+                                    width: 37.w,
+                                    padding: EdgeInsets.fromLTRB(
+                                      5.r,
+                                      0.r,
+                                      5.r,
+                                      0.r,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(4.r),
+                                      border: Border.all(
+                                        color: AppColors.greyBorder,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.25,
+                                          ),
+                                          blurRadius: 4.r,
+                                          offset: Offset(0, 0),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        CustomText(
+                                          'Add',
+                                          size: 10.sp,
+                                          color: AppColors.greyColor,
+                                        ),
+                                        CustomText(
+                                          '#',
+                                          size: 12.sp,
+                                          color: Color(0xff0088FF),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                ...selectedHashtags.map((hashtag) {
+                                  // Find latest hashtag data from controller to ensure updates are reflected
+                                  // and parent references are correct
+                                  final currentHashtag =
+                                      hashtagController.findGroupById(
+                                        hashtag.id ?? -1,
+                                      ) ??
+                                      hashtag;
+
+                                  // Find parent group name
+                                  String categoryGroup = 'Main Group';
+                                  if (currentHashtag.isSubgroup) {
+                                    final mainGroup = hashtagController
+                                        .allGroups
+                                        .firstWhereOrNull(
+                                          (g) =>
+                                              g.id == currentHashtag.parentId,
+                                        );
+                                    categoryGroup =
+                                        mainGroup?.name ?? 'Unknown';
+                                  }
+
+                                  return CategoryChip(
+                                    category: currentHashtag.name,
+                                    categoryGroup: categoryGroup,
+                                    onRemove: () {
+                                      setState(() {
+                                        selectedHashtags.removeWhere(
+                                          (h) => h.id == hashtag.id,
+                                        );
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                              ],
+                            );
+                          }),
+                        ),
+                        23.verticalSpace,
+                        InkWell(
+                          onTap: _saveTransaction,
+                          child: Container(
+                            width: 120.w,
+                            height: 41.h,
+                            decoration: BoxDecoration(
+                              color: const Color(0xffFFFFFF),
+                              borderRadius: BorderRadius.circular(13.r),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: CustomText(
+                                isEditMode ? 'Save' : 'Add',
+                                size: 16.sp,
+                                color: Color(0xff0071FF),
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

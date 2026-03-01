@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 
 /// Transaction Model
 /// Contains all transaction details including expense/income, date, amount, MCC ID, notes, and hashtags
@@ -37,7 +38,7 @@ class Transaction {
   /// Get formatted amount with currency symbol
   String getFormattedAmount({String? currency}) {
     final symbol = currency ?? CurrencyService.instance.cashflowSymbol;
-    return '$symbol ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
+    return '$symbol ${NumberFormatHelper.formatCurrency(amount)}';
   }
 
   /// Convert to database map
