@@ -90,20 +90,16 @@ class PortfolioSection extends StatelessWidget {
                   (startMs + (i + 1) * windowSizeMs).round();
               final midpoint = slotMidpoints[i];
 
-              bool hadNewPrice = false;
               while (priceIdx < sortedPricePoints.length &&
                   sortedPricePoints[priceIdx].key.millisecondsSinceEpoch <=
                       windowEndMs) {
                 carryPrices.addAll(sortedPricePoints[priceIdx].value);
                 priceIdx++;
-                hadNewPrice = true;
               }
 
               if (carryPrices.isEmpty) continue;
 
-              // Stop after the last slot that had actual price data —
-              // no data should be shown beyond the last entry.
-              if (!hadNewPrice && priceIdx >= sortedPricePoints.length) break;
+
 
               final holdingsAtSlot = holdingsTimeline[midpoint] ?? {};
               double totalValue = 0;
@@ -163,7 +159,6 @@ class PortfolioSection extends StatelessWidget {
                   (startMs + (i + 1) * windowSizeMs).round();
               final midpoint = slotMidpoints[i];
 
-              bool hadNewPrice = false;
               Map<int, double> windowPrices = {};
               Map<int, DateTime> windowPriceDates = {};
 
@@ -179,15 +174,14 @@ class PortfolioSection extends StatelessWidget {
                   }
                 });
                 priceIdx++;
-                hadNewPrice = true;
               }
 
-              if (hadNewPrice) {
+              if (windowPrices.isNotEmpty) {
                 carryPrices.addAll(windowPrices);
               }
 
               if (carryPrices.isEmpty) continue;
-              if (!hadNewPrice && priceIdx >= sortedPricePoints.length) break;
+
 
               final holdingsAtSlot = holdingsTimeline[midpoint] ?? {};
               double totalValue = 0;
@@ -272,63 +266,77 @@ class PortfolioSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 height: 227.h,
-                child: Column(
-                  children: [
-                    Center(
-                      child: CustomText(
-                        enrichedData.isEmpty
-                            ? 'N/A  -  N/A'
-                            : '${DateFormat('dd.MM.yyyy').format(controller.portfolioDateStart.value)}  -  ${DateFormat('dd.MM.yyyy').format(controller.portfolioDateEnd.value)}',
-                        size: 14.sp,
-                        color: AppColors.greyColor,
-                      ),
-                    ),
-                    if (enrichedData.isNotEmpty)
-                      Center(
-                        child: CustomText.richText(
-                          children: [
-                            CustomText.span(
-                              '${CurrencyService.instance.portfolioSymbol} ${_formatCurrency(currentValue)}',
-                              size: 20.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            CustomText.span(
-                              ' ${CurrencyService.instance.portfolioCode}',
-                              size: 12.sp,
+                child: controller.uniqueDataDaysCount >= 2
+                    ? Column(
+                        children: [
+                          Center(
+                            child: CustomText(
+                              enrichedData.isEmpty
+                                  ? 'N/A  -  N/A'
+                                  : '${DateFormat('dd.MM.yyyy').format(controller.portfolioDateStart.value)}  -  ${DateFormat('dd.MM.yyyy').format(controller.portfolioDateEnd.value)}',
+                              size: 14.sp,
                               color: AppColors.greyColor,
                             ),
-                            CustomText.span(
-                              '  ${percentChange >= 0 ? '+' : ''}${NumberFormat('0.0', CurrencyService.instance.portfolioLocale).format(percentChange)}%',
-                              size: 14.sp,
-                              color: percentChange >= 0
-                                  ? Color(0xff00C00D)
-                                  : Color(0xffFF0000),
+                          ),
+                          if (enrichedData.isNotEmpty)
+                            Center(
+                              child: CustomText.richText(
+                                children: [
+                                  CustomText.span(
+                                    '${CurrencyService.instance.portfolioSymbol} ${_formatCurrency(currentValue)}',
+                                    size: 20.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                  CustomText.span(
+                                    ' ${CurrencyService.instance.portfolioCode}',
+                                    size: 12.sp,
+                                    color: AppColors.greyColor,
+                                  ),
+                                  CustomText.span(
+                                    '  ${percentChange >= 0 ? '+' : ''}${NumberFormat('0.0', CurrencyService.instance.portfolioLocale).format(percentChange)}%',
+                                    size: 14.sp,
+                                    color: percentChange >= 0
+                                        ? Color(0xff00C00D)
+                                        : Color(0xffFF0000),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Center(
+                              child: CustomText(
+                                '0',
+                                size: 20.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
                             ),
-                          ],
-                        ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 35.0),
+                              child: SmoothLineChartWidget(
+                                data: chartData,
+                                lineColor: const Color(0xff0088FF),
+                                locale: CurrencyService.instance.portfolioLocale,
+                                showFourLabels: durationInDays > 30,
+                              ),
+                            ),
+                          ),
+                        ],
                       )
-                    else
-                      Center(
-                        child: CustomText(
-                          '0',
-                          size: 20.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                    : Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          child: CustomText(
+                            'Your portfolio 📈 graph will appear here once you have at least 2 days of data.',
+                            size: 20.sp,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w400,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 35.0),
-                        child: SmoothLineChartWidget(
-                          data: chartData,
-                          lineColor: const Color(0xff0088FF),
-                          locale: CurrencyService.instance.portfolioLocale,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
               7.verticalSpace,
               // Duration tabs
@@ -432,26 +440,7 @@ class PortfolioSection extends StatelessWidget {
                         lineColor: const Color(0xff0088FF),
                         handleColor: const Color(0xff0088FF),
                       ),
-                      10.verticalSpace,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          CustomText(
-                            DateFormat(
-                              'dd.MM.yyyy',
-                            ).format(controller.portfolioDateStart.value),
-                            size: 12.sp,
-                            color: AppColors.greyColor,
-                          ),
-                          CustomText(
-                            DateFormat(
-                              'dd.MM.yyyy',
-                            ).format(controller.portfolioDateEnd.value),
-                            size: 12.sp,
-                            color: AppColors.greyColor,
-                          ),
-                        ],
-                      ),
+
                     ],
                   ),
                 ),

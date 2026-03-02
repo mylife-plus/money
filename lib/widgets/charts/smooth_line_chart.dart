@@ -12,6 +12,7 @@ class SmoothLineChartWidget extends StatelessWidget {
   final bool showEndDot;
   final Color? tooltipAmountColor;
   final String? locale;
+  final bool showFourLabels;
 
   const SmoothLineChartWidget({
     super.key,
@@ -22,6 +23,7 @@ class SmoothLineChartWidget extends StatelessWidget {
     this.showEndDot = true,
     this.tooltipAmountColor,
     this.locale,
+    this.showFourLabels = false,
   });
 
   List<FlSpot> _getSpots() {
@@ -43,8 +45,10 @@ class SmoothLineChartWidget extends StatelessWidget {
     final range = (maxY - minY).abs();
     final padding = range > 0 ? range * 0.1 : 1.0;
 
-    // Prevent division by zero for horizontalInterval
-    final horizontalInterval = range > 0 ? range / 4 : 1.0;
+    final chartMin = minY - padding;
+    final chartMax = maxY + padding;
+    final totalRange = chartMax - chartMin;
+    final horizontalInterval = totalRange > 0 ? totalRange / 3 : 1.0;
 
     final amountColor = tooltipAmountColor ?? const Color(0xff0088FF);
 
@@ -76,14 +80,15 @@ class SmoothLineChartWidget extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 30.w,
+              reservedSize: 45.w,
+              minIncluded: true,
+              maxIncluded: true,
+              interval: horizontalInterval,
               getTitlesWidget: (value, meta) {
-                if (value < 0) {
-                  return const SizedBox.shrink();
-                }
+                if (value < 0) return const SizedBox.shrink();
                 return Text(
                   _formatYAxisLabel(value),
-                  style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+                  style: TextStyle(color: Colors.grey, fontSize: 10.sp),
                 );
               },
             ),
@@ -92,13 +97,26 @@ class SmoothLineChartWidget extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 30.h,
-              // Show exactly 4 labels on X-axis (same as step_line_chart)
-              interval: data.length > 4
-                  ? (data.length / 3).ceilToDouble()
-                  : 1,
+              interval: 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index >= 0 && index < data.length) {
+                if (index < 0 || index >= data.length) {
+                  return const SizedBox.shrink();
+                }
+                final maxIdx = data.length - 1;
+                if (maxIdx <= 3) {
+                  return Padding(
+                    padding: EdgeInsets.only(top: 14.h),
+                    child: Text(
+                      data[index].label,
+                      style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+                    ),
+                  );
+                }
+                final labelCount = showFourLabels ? 4 : 3;
+                final step = maxIdx / (labelCount - 1).toDouble();
+                final positions = List.generate(labelCount, (i) => (step * i).round()).toSet();
+                if (positions.contains(index)) {
                   return Padding(
                     padding: EdgeInsets.only(top: 14.h),
                     child: Text(

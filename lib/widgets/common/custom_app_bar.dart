@@ -25,6 +25,9 @@ class CustomAppBar extends StatelessWidget {
   /// Callback when returning from settings screen
   final VoidCallback? onSettingsReturn;
 
+  /// Whether to show the yellow background on the title card
+  final bool showYellowBackground;
+
   const CustomAppBar({
     super.key,
     required this.title,
@@ -32,6 +35,7 @@ class CustomAppBar extends StatelessWidget {
     required this.actionIconPath,
     this.onActionIconTap,
     this.onSettingsReturn,
+    this.showYellowBackground = true,
   });
 
   @override
@@ -46,16 +50,18 @@ class CustomAppBar extends StatelessWidget {
             height: 43.h,
             width: 180.w,
             decoration: BoxDecoration(
-              color: Color(0xffFFCC00),
+              color: showYellowBackground ? const Color(0xffFFCC00) : Colors.transparent,
               borderRadius: BorderRadius.vertical(top: Radius.circular(9.r)),
-              border: Border.all(color: AppColors.greyBorder, width: 1.w),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  offset: const Offset(0, 1),
-                  blurRadius: 4,
-                ),
-              ],
+              border: Border.all(color: showYellowBackground ? AppColors.greyBorder : Colors.transparent, width: 1.w),
+              boxShadow: showYellowBackground
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        offset: const Offset(0, 1),
+                        blurRadius: 4,
+                      ),
+                    ]
+                  : [],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -65,13 +71,14 @@ class CustomAppBar extends StatelessWidget {
                 13.horizontalSpace,
                 CustomText(
                   title,
-                  color: Colors.white,
+                  color: showYellowBackground ? Colors.white : Colors.black,
                   size: 20.sp,
                   fontWeight: FontWeight.w600,
                 ),
               ],
             ),
           ),
+
           17.horizontalSpace,
 
           // Action Icons Section
@@ -92,13 +99,15 @@ class CustomAppBar extends StatelessWidget {
                         color: AppColors.greyBorder,
                         width: 1.w,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          offset: const Offset(0, 1),
-                          blurRadius: 4,
-                        ),
-                      ],
+                      boxShadow: showYellowBackground
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                offset: const Offset(0, 1),
+                                blurRadius: 4,
+                              ),
+                            ]
+                          : [],
                     ),
                     child: Center(
                       child: Image.asset(
@@ -109,8 +118,7 @@ class CustomAppBar extends StatelessWidget {
                     ),
                   ),
                 ),
-                // 13.horizontalSpace,
-                Spacer(),
+                // if (showYellowBackground) Spacer() else Spacer(),
 
                 // Settings Icon (always present)
                 GestureDetector(
@@ -119,12 +127,16 @@ class CustomAppBar extends StatelessWidget {
                     await Navigator.pushNamed(context, AppRoutes.settings.path);
                     onSettingsReturn?.call();
                   },
-                  child: Padding(
-                    padding: EdgeInsets.all(10.r),
-                    child: Image.asset(
-                      AppIcons.setting,
-                      height: 24.r,
-                      width: 24.r,
+                  child: Container(
+                    height: 43.h,
+                    width: 46.w,
+                   
+                    child: Center(
+                      child: Image.asset(
+                        AppIcons.setting,
+                        height: 24.r,
+                        width: 24.r,
+                      ),
                     ),
                   ),
                 ),

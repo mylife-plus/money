@@ -44,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isAppBarVisible = true;
   bool _showScrollToTop = false;
   bool _isFabVisible = true;
+  bool _isAtTop = true;
   List<int> selectedIds = [];
 
   @override
@@ -72,6 +73,12 @@ class _HomeScreenState extends State<HomeScreen>
     } else if (currentScrollOffset <= 200 && _showScrollToTop) {
       _showScrollToTop = false;
       needsRebuild = true;
+    }
+
+    if (_isAtTop && currentScrollOffset > 1) {
+      setState(() => _isAtTop = false);
+    } else if (!_isAtTop && currentScrollOffset <= 3) {
+      setState(() => _isAtTop = true);
     }
 
     // Scrolling down
@@ -216,6 +223,7 @@ class _HomeScreenState extends State<HomeScreen>
                             title: 'Cashflow',
                             leadingIconPath: AppIcons.transaction,
                             actionIconPath: AppIcons.investmentGraphIcon,
+                            showYellowBackground: _isAtTop,
                             onActionIconTap: () {
                               Navigator.pushReplacementNamed(
                                 context,
@@ -292,45 +300,47 @@ class _HomeScreenState extends State<HomeScreen>
                                 15.verticalSpace,
                                 _buildAverageContainer(controller),
                                 15.verticalSpace,
-                                Container(
-                                  margin: EdgeInsets.symmetric(horizontal: 7.w),
-                                  padding: EdgeInsets.fromLTRB(
-                                    5.w,
-                                    8.h,
-                                    30.w,
-                                    0,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(
-                                      color: const Color(0xffE3E3E3),
+                                if (controller.transactionDateEnd.difference(controller.transactionDateStart).inDays >= 2)
+                                  Container(
+                                    margin: EdgeInsets.symmetric(horizontal: 7.w),
+                                    padding: EdgeInsets.fromLTRB(
+                                      5.w,
+                                      8.h,
+                                      30.w,
+                                      0,
                                     ),
-                                    borderRadius: BorderRadius.circular(12.r),
-                                  ),
-                                  height: 227.h,
-                                  child: Column(
-                                    children: [
-                                      Center(
-                                        child: CustomText(
-                                          controller.transactions.isEmpty
-                                              ? 'N/A  -  N/A'
-                                              : '${DateFormat('dd.MM.yyyy').format(controller.transactionDateStart)}  -  ${DateFormat('dd.MM.yyyy').format(controller.transactionDateEnd)}',
-                                          size: 14.sp,
-                                          color: AppColors.greyColor,
-                                        ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(
+                                        color: const Color(0xffE3E3E3),
                                       ),
-                                      Expanded(
-                                        child: StepLineChartWidget(
-                                          data: controller.chartData,
-                                          lineColor:
-                                              controller.isExpenseSelected
-                                              ? const Color(0xffFF0000)
-                                              : const Color(0xff00C00D),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    height: 227.h,
+                                    child: Column(
+                                      children: [
+                                        Center(
+                                          child: CustomText(
+                                            controller.transactions.isEmpty
+                                                ? 'N/A  -  N/A'
+                                                : '${DateFormat('dd.MM.yyyy').format(controller.transactionDateStart)}  -  ${DateFormat('dd.MM.yyyy').format(controller.transactionDateEnd)}',
+                                            size: 14.sp,
+                                            color: AppColors.greyColor,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        Expanded(
+                                          child: StepLineChartWidget(
+                                            data: controller.chartData,
+                                            lineColor:
+                                                controller.isExpenseSelected
+                                                ? const Color(0xffFF0000)
+                                                : const Color(0xff00C00D),
+                                            showFourLabels: controller.transactionDateEnd.difference(controller.transactionDateStart).inDays > 30,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
                                 9.verticalSpace,
                                 Obx(
                                   () => Column(
@@ -450,34 +460,7 @@ class _HomeScreenState extends State<HomeScreen>
                                                 );
                                               },
                                             ),
-                                            8.verticalSpace,
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                CustomText(
-                                                  DateFormat(
-                                                    'dd MMM yyyy',
-                                                  ).format(
-                                                    controller
-                                                        .transactionDateStart,
-                                                  ),
-                                                  size: 12.sp,
-                                                  color: AppColors.greyColor,
-                                                ),
-                                                CustomText(
-                                                  DateFormat(
-                                                    'dd MMM yyyy',
-                                                  ).format(
-                                                    controller
-                                                        .transactionDateEnd,
-                                                  ),
-                                                  size: 12.sp,
-                                                  color: AppColors.greyColor,
-                                                ),
-                                              ],
-                                            ),
+
                                           ],
                                         ),
                                       ),

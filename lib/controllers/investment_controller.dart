@@ -315,6 +315,17 @@ class InvestmentController extends GetxController {
     }).toList();
   }
 
+  int get uniqueDataDaysCount {
+    final days = <String>{};
+    for (var a in activities) {
+      days.add('${a.date.year}-${a.date.month}-${a.date.day}');
+    }
+    for (var s in portfolioHistory) {
+      days.add('${s.date.year}-${s.date.month}-${s.date.day}');
+    }
+    return days.length;
+  }
+
   /// Get all price points (from manual snapshots and activities) for graph building
   /// Returns a map of DateTime to Map of investmentId to unitPrice
   /// Uses the latest price from any source (manual snapshot, transaction, or trade)
@@ -517,18 +528,7 @@ class InvestmentController extends GetxController {
       endDate.add(Duration(days: 1)),
     );
 
-    final filteredPortfolioHistory = portfolioHistory.where((s) {
-      return s.date.isAfter(
-            portfolioDateStart.value.subtract(Duration(days: 1)),
-          ) &&
-          s.date.isBefore(portfolioDateEnd.value.add(Duration(days: 1)));
-    }).toList();
-
-    final relevantIds = <int>{};
-    relevantIds.addAll(investmentChanges.keys);
-    relevantIds.addAll(filteredPortfolioHistory.map((s) => s.investmentId));
-
-    for (final investmentId in relevantIds) {
+    for (final investmentId in holdingsAtEnd.keys) {
       final holdings = holdingsAtEnd[investmentId] ?? 0.0;
       if (holdings <= 0) continue;
 

@@ -13,6 +13,7 @@ class StepLineChartWidget extends StatelessWidget {
   final bool showDot;
   final Color? tooltipAmountColor;
   final String? locale;
+  final bool showFourLabels;
 
   const StepLineChartWidget({
     super.key,
@@ -22,6 +23,7 @@ class StepLineChartWidget extends StatelessWidget {
     this.showDot = true,
     this.tooltipAmountColor,
     this.locale,
+    this.showFourLabels = false,
   });
 
   @override
@@ -110,11 +112,13 @@ class StepLineChartWidget extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 30.h,
-                // Fixed: Show exactly 4 labels on X-axis
-                interval: _getMaxX() > 3 ? (_getMaxX() / 3).ceilToDouble() : 1,
+                interval: 1,
                 getTitlesWidget: (value, meta) {
-                  final point = _getDataPointByXValue(value.toInt());
-                  if (point != null) {
+                  final index = value.toInt();
+                  final point = _getDataPointByXValue(index);
+                  if (point == null) return const SizedBox.shrink();
+                  final maxX = _getMaxX().toInt();
+                  if (maxX <= 3) {
                     return Padding(
                       padding: EdgeInsets.only(top: 14.h),
                       child: Text(
@@ -126,7 +130,22 @@ class StepLineChartWidget extends StatelessWidget {
                       ),
                     );
                   }
-                  return const Text('');
+                  final labelCount = showFourLabels ? 4 : 3;
+                  final step = maxX / (labelCount - 1).toDouble();
+                  final positions = List.generate(labelCount, (i) => (step * i).round());
+                  if (positions.contains(index)) {
+                    return Padding(
+                      padding: EdgeInsets.only(top: 14.h),
+                      child: Text(
+                        point.label,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: const Color(0xFF666666),
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
                 },
               ),
             ),
@@ -134,9 +153,14 @@ class StepLineChartWidget extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 30,
+                reservedSize: 40,
                 interval: _getHorizontalInterval(),
                 getTitlesWidget: (value, meta) {
+                  final step = _getHorizontalInterval();
+                  final maxY = _getMaxY();
+                  final targets = [0.0, step, step * 2, maxY];
+                  final isTarget = targets.any((t) => (value - t).abs() < step * 0.01);
+                  if (!isTarget) return const SizedBox.shrink();
                   return Text(
                     _formatYAxisLabel(value),
                     style: TextStyle(

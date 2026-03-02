@@ -42,6 +42,7 @@ class _InvestmentScreenState extends State<InvestmentScreen>
   bool _isAppBarVisible = true;
   bool _showScrollToTop = false;
   bool _isFabVisible = true;
+  bool _isAtTop = true;
   static const double _scrollThreshold = 5.0;
 
   // Selection state
@@ -88,6 +89,12 @@ class _InvestmentScreenState extends State<InvestmentScreen>
     } else if (currentScrollOffset <= 200 && _showScrollToTop) {
       _showScrollToTop = false;
       needsRebuild = true;
+    }
+
+    if (_isAtTop && currentScrollOffset > 1) {
+      setState(() => _isAtTop = false);
+    } else if (!_isAtTop && currentScrollOffset <= 3) {
+      setState(() => _isAtTop = true);
     }
 
     if (scrollDelta.abs() < _scrollThreshold) {
@@ -210,6 +217,7 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                             title: 'Investments',
                             leadingIconPath: AppIcons.investmentGraphIcon,
                             actionIconPath: AppIcons.transaction,
+                            showYellowBackground: _isAtTop,
                             onActionIconTap: () {
                               Navigator.pushReplacementNamed(
                                 context,

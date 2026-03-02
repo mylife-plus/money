@@ -212,7 +212,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
 
     // New Requirement: Recipient is Mandatory
     if (recipientController.text.trim().isEmpty) {
-      _showSnackbar('Error', 'Please enter a recipient');
+      _showSnackbar('Error', isAddingIncome ? 'Please enter a sender' : 'Please enter a recipient');
       return;
     }
 
@@ -689,7 +689,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
                                     hintText: '',
-                                    labelText: 'Recipient',
+                                    labelText: isAddingIncome ? 'Sender' : 'Recipient',
                                     labelStyle: TextStyle(
                                       color: AppColors.greyColor,
                                       fontSize: 16.sp,
