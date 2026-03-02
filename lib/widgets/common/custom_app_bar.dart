@@ -127,16 +127,14 @@ class CustomAppBar extends StatelessWidget {
                     await Navigator.pushNamed(context, AppRoutes.settings.path);
                     onSettingsReturn?.call();
                   },
-                  child: Container(
-                    height: 43.h,
-                    width: 46.w,
+                  child: Padding(
+                    padding: EdgeInsets.all(10.r),
+
                    
-                    child: Center(
-                      child: Image.asset(
-                        AppIcons.setting,
-                        height: 24.r,
-                        width: 24.r,
-                      ),
+                    child: Image.asset(
+                      AppIcons.setting,
+                      height: 24.r,
+                      width: 24.r,
                     ),
                   ),
                 ),
