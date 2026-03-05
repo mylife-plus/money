@@ -40,26 +40,16 @@ class SmoothLineChartWidget extends StatelessWidget {
     }
 
     final spots = _getSpots();
-    final dataMinY = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
-    final dataMaxY = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    final chartMinY = _getRoundedMin(dataMinY);
-    final chartMaxY = _getRoundedMax(dataMaxY);
-    final chartRange = chartMaxY - chartMinY;
-    final yStep = chartRange > 0 ? chartRange / 3 : 1.0;
-
     final amountColor = tooltipAmountColor ?? const Color(0xff0088FF);
 
     return LineChart(
       LineChartData(
-        minY: chartMinY,
-        maxY: chartMaxY,
         minX: 0,
         maxX: (data.length - 1).toDouble(),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: true,
           drawHorizontalLine: true,
-          horizontalInterval: yStep,
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: Colors.grey.withValues(alpha: 0.3),
@@ -78,11 +68,16 @@ class SmoothLineChartWidget extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 50.w,
-              interval: yStep,
               getTitlesWidget: (value, meta) {
-                final targets = <double>[chartMinY, chartMinY + yStep, chartMinY + yStep * 2, chartMaxY];
-                final isTarget = targets.any((double t) => (value - t).abs() < yStep * 0.01);
-                if (!isTarget) return const SizedBox.shrink();
+                final range = meta.max - meta.min;
+                final threshold = range * 0.10;
+                final isMin = value == meta.min;
+                final isMax = value == meta.max;
+                final nearMin = !isMin && (value - meta.min).abs() < threshold;
+                final nearMax = !isMax && (meta.max - value).abs() < threshold;
+                if (nearMin || nearMax) {
+                  return const SizedBox.shrink();
+                }
                 return Text(
                   _formatYAxisLabel(value),
                   style: TextStyle(color: Colors.grey, fontSize: 10.sp),
@@ -214,27 +209,6 @@ class SmoothLineChartWidget extends StatelessWidget {
     );
   }
 
-  double _getRoundedMin(double minValue) {
-    if (minValue <= 0) return 0;
-    if (minValue <= 100) {
-      return ((minValue / 10).floor() * 10).toDouble();
-    } else if (minValue <= 1000) {
-      return ((minValue / 100).floor() * 100).toDouble();
-    } else {
-      return ((minValue / 1000).floor() * 1000).toDouble();
-    }
-  }
-
-  double _getRoundedMax(double maxValue) {
-    if (maxValue <= 0) return 100;
-    if (maxValue <= 100) {
-      return ((maxValue / 10).ceil() * 10).toDouble();
-    } else if (maxValue <= 1000) {
-      return ((maxValue / 100).ceil() * 100).toDouble();
-    } else {
-      return ((maxValue / 1000).ceil() * 1000).toDouble();
-    }
-  }
 
   String _formatYAxisLabel(double value) {
     return NumberFormatHelper.formatYAxisLabel(value, locale: locale);

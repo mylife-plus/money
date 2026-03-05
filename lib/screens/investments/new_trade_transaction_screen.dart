@@ -981,7 +981,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                                   0)
                                             CustomText(
                                               'max: ${_amountLabel(_soldInvestment?.id)}',
-                                              size: 16.sp,
+                                              size: 14.sp,
                                               color: AppColors.greyColor,
                                             ),
                                         ],
@@ -1424,7 +1424,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               0)
                                         CustomText(
                                           'max: ${_amountLabel(_transactionInvestment?.id)}',
-                                          size: 16.sp,
+                                          size: 14.sp,
                                           color: AppColors.greyColor,
                                         ),
                                     ],
