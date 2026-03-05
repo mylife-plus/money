@@ -893,16 +893,16 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                   labelText: 'Date',
                                   labelStyle: TextStyle(
                                     color: AppColors.greyColor,
-                                    fontSize: 14.sp,
+                                    fontSize: 16.sp,
                                   ),
                                   hintStyle: TextStyle(
                                     color: AppColors.greyColor,
-                                    fontSize: 14.sp,
+                                    fontSize: 16.sp,
                                   ),
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
                                 ),
-                                style: TextStyle(fontSize: 14.sp),
+                                style: TextStyle(fontSize: 16.sp),
                                 textAlign: TextAlign.end,
                               ),
                             ),
@@ -966,35 +966,27 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      CustomText(
-                                        'sell',
-                                        color: Color(0xffFF0000),
-                                        size: 16.sp,
-                                      ),
-                                      7.verticalSpace,
                                       Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
                                         children: [
+                                          CustomText(
+                                            'sell',
+                                            color: Color(0xffFF0000),
+                                            size: 16.sp,
+                                          ),
+                                          Spacer(),
                                           if (_soldInvestment != null &&
                                               (_controller.currentHoldings[_soldInvestment!
                                                           .id] ??
                                                       0) >
                                                   0)
-                                            Padding(
-                                              padding: EdgeInsets.only(
-                                                bottom: 2.h,
-                                              ),
-                                              child: CustomText(
-                                                'max: ${_amountLabel(_soldInvestment?.id)}',
-                                                size: 10.sp,
-                                                color: AppColors.greyColor,
-                                              ),
-                                            )
-                                          else
-                                            7.verticalSpace,
+                                            CustomText(
+                                              'max: ${_amountLabel(_soldInvestment?.id)}',
+                                              size: 16.sp,
+                                              color: AppColors.greyColor,
+                                            ),
                                         ],
                                       ),
+                                      7.verticalSpace,
                                       Row(
                                         children: [
                                           Expanded(
@@ -1027,6 +1019,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                             child: buildTextField(
                                               'Amount',
                                               '0',
+                                              useThousandsSeparator: true,
                                               controller: _soldAmountController,
                                               enabled: _soldInvestment != null,
                                               onChanged: (value) {
@@ -1160,6 +1153,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                             child: buildTextField(
                                               'Amount',
                                               '0',
+                                              useThousandsSeparator: true,
                                               controller:
                                                   _boughtAmountController,
                                               enabled:
@@ -1421,33 +1415,23 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                             ? Color(0xff00C00D)
                                             : Color(0xffFF0000),
                                       ),
+                                      Spacer(),
+                                      if (!isAddingInvestment &&
+                                          _transactionInvestment != null &&
+                                          (_controller.currentHoldings[_transactionInvestment!
+                                                      .id] ??
+                                                  0) >
+                                              0)
+                                        CustomText(
+                                          'max: ${_amountLabel(_transactionInvestment?.id)}',
+                                          size: 16.sp,
+                                          color: AppColors.greyColor,
+                                        ),
                                     ],
                                   ),
                                   7.verticalSpace,
                                   buildDescriptionField(),
-                                  if (!isAddingInvestment)
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        if (_transactionInvestment != null &&
-                                            (_controller.currentHoldings[_transactionInvestment!
-                                                        .id] ??
-                                                    0) >
-                                                0)
-                                          Padding(
-                                            padding: EdgeInsets.only(bottom: 2.h),
-                                            child: CustomText(
-                                              'max: ${_amountLabel(_transactionInvestment?.id)}',
-                                              size: 10.sp,
-                                              color: AppColors.greyColor,
-                                            ),
-                                          )
-                                        else
-                                          7.verticalSpace,
-                                      ],
-                                    )
-                                  else
-                                    7.verticalSpace,
+                                  7.verticalSpace,
                                   Row(
                                     children: [
                                       Expanded(
@@ -1481,6 +1465,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                           'Amount',
                                           '0.00',
                                           showCurrencySymbol: false,
+                                          useThousandsSeparator: true,
                                           controller: _amountController,
                                           enabled:
                                               _transactionInvestment != null,

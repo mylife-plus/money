@@ -93,7 +93,20 @@ class NumberFormatHelper {
   /// Format for chart Y-axis labels (compact: 1k, 2.5k/2,5k, 1m)
   static String formatYAxisLabel(double value, {String? locale}) {
     final l = locale ?? _defaultLocale();
-    if (value.abs() >= 1000) {
+    final abs = value.abs();
+    if (abs >= 1e12) {
+      final v = value / 1e12;
+      return v % 1 == 0 ? '${v.toInt()}T' : '${_formatDecimal(v, 1, l)}T';
+    }
+    if (abs >= 1e9) {
+      final v = value / 1e9;
+      return v % 1 == 0 ? '${v.toInt()}B' : '${_formatDecimal(v, 1, l)}B';
+    }
+    if (abs >= 1e6) {
+      final v = value / 1e6;
+      return v % 1 == 0 ? '${v.toInt()}M' : '${_formatDecimal(v, 1, l)}M';
+    }
+    if (abs >= 1000) {
       final kValue = value / 1000;
       if (kValue % 1 == 0) {
         return '${kValue.toInt()}k';

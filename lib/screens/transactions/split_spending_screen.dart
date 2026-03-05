@@ -12,6 +12,7 @@ import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
@@ -438,6 +439,11 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                           ),
                           child: TextField(
                             controller: item.amountController,
+                            inputFormatters: [
+                              ThousandsSeparatorFormatter(
+                                locale: CurrencyService.instance.cashflowLocale,
+                              ),
+                            ],
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: '0,00',

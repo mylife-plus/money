@@ -10,6 +10,7 @@ import 'package:moneyapp/controllers/hashtag_groups_controller.dart';
 import 'package:moneyapp/models/mcc_model.dart';
 import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
+import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
@@ -595,7 +596,12 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                               ),
                               child: TextField(
                                 controller: minAmountController,
-                                keyboardType: TextInputType.number,
+                                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [
+                                  ThousandsSeparatorFormatter(
+                                    locale: CurrencyService.instance.cashflowLocale,
+                                  ),
+                                ],
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
                                   labelText: 'min amount',
@@ -644,8 +650,12 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                               ),
                               child: TextField(
                                 controller: maxAmountController,
-
-                                keyboardType: TextInputType.number,
+                                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [
+                                  ThousandsSeparatorFormatter(
+                                    locale: CurrencyService.instance.cashflowLocale,
+                                  ),
+                                ],
                                 decoration: InputDecoration(
                                   prefixIconConstraints: BoxConstraints(
                                     minWidth: 20.w,

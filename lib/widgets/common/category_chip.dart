@@ -64,22 +64,26 @@ class CategoryChip extends StatelessWidget {
           ),
           if (onRemove != null)
             Positioned(
-              top: -6.h,
-              right: -6.w,
+              top: -10.h,
+              right: -10.w,
               child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: onRemove,
-                child: Container(
-                  width: 20.r,
-                  height: 20.r,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.greyColor),
-                  ),
-                  child: Icon(
-                    Icons.close,
-                    size: 14.sp,
-                    color: AppColors.greyColor,
+                child: Padding(
+                  padding: EdgeInsets.all(4.r),
+                  child: Container(
+                    width: 20.r,
+                    height: 20.r,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.greyColor),
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 14.sp,
+                      color: AppColors.greyColor,
+                    ),
                   ),
                 ),
               ),

@@ -171,7 +171,7 @@ class _TradeItemPairState extends State<TradeItemPair> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomText(
-                        'sold',
+                        'sell',
                         color: Color(0xffFF0000),
                         size: 16.sp,
                         fontWeight: FontWeight.w400,
@@ -263,7 +263,7 @@ class _TradeItemPairState extends State<TradeItemPair> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomText(
-                        'bought',
+                        'buy',
                         color: Color(0xff00C00D),
                         size: 16.sp,
                       ),

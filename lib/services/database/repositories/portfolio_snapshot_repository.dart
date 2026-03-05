@@ -334,10 +334,12 @@ class PortfolioSnapshotRepository {
       // Query to get latest snapshot per investment
       final maps = await db.rawQuery('''
         SELECT * FROM ${DatabaseHelper.tablePortfolioSnapshots} s1
-        WHERE ${DatabaseHelper.columnSnapshotDate} = (
-          SELECT MAX(${DatabaseHelper.columnSnapshotDate})
+        WHERE ${DatabaseHelper.columnSnapshotId} = (
+          SELECT ${DatabaseHelper.columnSnapshotId}
           FROM ${DatabaseHelper.tablePortfolioSnapshots} s2
           WHERE s1.${DatabaseHelper.columnSnapshotInvestmentId} = s2.${DatabaseHelper.columnSnapshotInvestmentId}
+          ORDER BY ${DatabaseHelper.columnSnapshotDate} DESC, ${DatabaseHelper.columnSnapshotId} DESC
+          LIMIT 1
         )
       ''');
 

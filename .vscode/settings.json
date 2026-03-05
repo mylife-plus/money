@@ -2,5 +2,6 @@
   "cSpell.words": [
     "moneyapp"
   ],
-  "dart.flutterSdkPath": ".fvm/versions/3.35.7"
+  "dart.flutterSdkPath": ".fvm/versions/3.35.7",
+  "cmake.sourceDirectory": "/Users/macuser/sabir_dev/SpaceTimeApp/incubator/money/windows"
 }

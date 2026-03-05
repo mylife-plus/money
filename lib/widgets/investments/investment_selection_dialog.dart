@@ -12,6 +12,7 @@ import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/main.dart';
 import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
+import 'package:moneyapp/widgets/common/inner_shadow_button.dart';
 
 class AddEditInvestmentDialog extends StatefulWidget {
   final Investment? existingInvestment;
@@ -525,62 +526,28 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
 
               // Buttons
               Row(
-                mainAxisAlignment: isEditMode
-                    ? MainAxisAlignment.spaceBetween
-                    : MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (isEditMode)
-                    InkWell(
+                    InnerShadowButton(
+                      width: 120.w,
                       onTap: _deleteInvestment,
-                      child: Container(
-                        width: 120.w,
-                        height: 41.h,
-                        decoration: BoxDecoration(
-                          color: const Color(0xffFFFFFF),
-                          borderRadius: BorderRadius.circular(13.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 4,
-                              offset: const Offset(0, 0),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: CustomText(
-                            'Delete',
-                            size: 16.sp,
-                            color: const Color(0xffFF0000),
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
+                      child: CustomText(
+                        'Delete',
+                        size: 16.sp,
+                        color: const Color(0xffFF0000),
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   if (isEditMode) 16.horizontalSpace,
-                  InkWell(
+                  InnerShadowButton(
+                    width: 120.w,
                     onTap: _saveInvestment,
-                    child: Container(
-                      width: 120.w,
-                      height: 41.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffFFFFFF),
-                        borderRadius: BorderRadius.circular(13.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 4,
-                            offset: const Offset(0, 0),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: CustomText(
-                          isEditMode ? 'Save' : 'Add',
-                          size: 16.sp,
-                          color: const Color(0xff0071FF),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
+                    child: CustomText(
+                      isEditMode ? 'Save' : 'Add',
+                      size: 16.sp,
+                      color: const Color(0xff0071FF),
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],

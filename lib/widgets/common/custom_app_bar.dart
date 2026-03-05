@@ -77,65 +77,26 @@ class CustomAppBar extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Action Icon (in container with shadow)
                 GestureDetector(
                   onTap: onActionIconTap,
-                  child: Container(
+                  child: SizedBox(
                     height: 43.h,
                     width: 46.w,
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.all(Radius.circular(12.r)),
-                      border: Border.all(
-                        color: AppColors.greyBorder,
-                        width: 1.w,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.all(Radius.circular(11.r)),
-                      child: Stack(
-                        children: [
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.12),
-                                  Colors.black.withValues(alpha: 0.04),
-                                  Colors.transparent,
-                                  Colors.white.withValues(alpha: 0.3),
-                                ],
-                                stops: const [0.0, 0.15, 0.5, 1.0],
-                              ),
-                            ),
-                            child: const SizedBox.expand(),
-                          ),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.06),
-                                  Colors.transparent,
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.03),
-                                ],
-                                stops: const [0.0, 0.2, 0.8, 1.0],
-                              ),
-                            ),
-                            child: const SizedBox.expand(),
-                          ),
-                          Center(
-                            child: Image.asset(
-                              actionIconPath,
-                              height: 32.r,
-                              width: 32.r,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/icons/button_rect_bg.png',
+                          height: 43.h,
+                          width: 46.w,
+                          fit: BoxFit.fill,
+                        ),
+                        Image.asset(
+                          actionIconPath,
+                          height: 32.r,
+                          width: 32.r,
+                        ),
+                      ],
                     ),
                   ),
                 ),

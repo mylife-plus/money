@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:moneyapp/constants/app_colors.dart';
 import 'package:moneyapp/constants/app_theme.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class PriceEntryDialog extends StatefulWidget {
@@ -272,6 +273,11 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
               child: TextField(
                 controller: priceController,
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  ThousandsSeparatorFormatter(
+                    locale: CurrencyService.instance.portfolioLocale,
+                  ),
+                ],
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   hintText: '0.00',
