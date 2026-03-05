@@ -64,15 +64,40 @@ class NumberFormatHelper {
     return _getCurrencyNoDecFormat(l).format(value);
   }
 
-  /// Format compact currency (M/k abbreviations): 1,23M (de) or 1.23M (en)
+  /// Format compact currency (k/M/B/T) with thousand separators on the reduced number
   static String formatCurrencyCompact(double value, {String? locale}) {
     final l = locale ?? _defaultLocale();
-    if (value.abs() >= 1000000) {
-      return '${_formatDecimal(value / 1000000, 2, l)}M';
-    } else if (value.abs() >= 1000) {
-      return '${_formatDecimal(value / 1000, 1, l)}k';
+    final abs = value.abs();
+    if (abs >= 1e12) {
+      final v = value / 1e12;
+      return '${_formatCompactNumber(v, l)}T';
+    }
+    if (abs >= 1e9) {
+      final v = value / 1e9;
+      return '${_formatCompactNumber(v, l)}B';
+    }
+    if (abs >= 1e6) {
+      final v = value / 1e6;
+      return '${_formatCompactNumber(v, l)}M';
+    }
+    if (abs >= 1000) {
+      final v = value / 1000;
+      return '${_formatCompactNumber(v, l)}k';
     }
     return formatCurrency(value, locale: l);
+  }
+
+  static String _formatCompactNumber(double value, String locale) {
+    if (value == value.roundToDouble() && value.abs() < 1000) {
+      return value.toInt().toString();
+    }
+    if (value.abs() >= 1000) {
+      if (value == value.roundToDouble()) {
+        return _getCurrencyNoDecFormat(locale).format(value);
+      }
+      return _getCurrencyFormat(locale).format(value);
+    }
+    return _formatDecimal(value, 2, locale);
   }
 
   /// Format quantity/amount (up to 4 decimal places, trailing zeros removed)
@@ -90,7 +115,7 @@ class NumberFormatHelper {
     return _getAmountFormat(l).format(parsed);
   }
 
-  /// Format for chart Y-axis labels (compact: 1k, 2.5k/2,5k, 1m)
+  /// Format for chart Y-axis labels (compact: 1k, 2.5k, 1M etc. with locale decimal)
   static String formatYAxisLabel(double value, {String? locale}) {
     final l = locale ?? _defaultLocale();
     final abs = value.abs();
@@ -113,7 +138,10 @@ class NumberFormatHelper {
       }
       return '${_formatDecimal(kValue, 1, l)}k';
     }
-    return value.toInt().toString();
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return _formatDecimal(value, 1, l);
   }
 
   /// Strip thousand separators from a formatted string for parsing

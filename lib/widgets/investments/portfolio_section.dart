@@ -294,7 +294,7 @@ class PortfolioSection extends StatelessWidget {
                                     color: AppColors.greyColor,
                                   ),
                                   CustomText.span(
-                                    '  ${percentChange >= 0 ? '+' : ''}${NumberFormat('0.0', CurrencyService.instance.portfolioLocale).format(percentChange)}%',
+                                    '  ${percentChange >= 0 ? '+' : ''}${NumberFormat('#,##0.0', CurrencyService.instance.portfolioLocale).format(percentChange)}%',
                                     size: 14.sp,
                                     color: percentChange >= 0
                                         ? Color(0xff00C00D)

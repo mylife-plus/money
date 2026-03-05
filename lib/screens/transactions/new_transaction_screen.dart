@@ -688,8 +688,8 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                           ? selectedMCC!.getIcon(size: 13.r)
                                           : Image.asset(
                                               AppIcons.shopIcon,
-                                              height: 13.r,
-                                              width: 15.r,
+                                              height: 18.r,
+                                              width: 18.r,
                                               color: AppColors.greyColor,
                                             ),
                                     ),
@@ -791,7 +791,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                 InkWell(
                                   onTap: _showHashtagSelectionDialog,
                                   child: Container(
-                                    height: 42.h,
+                                    // height: 42.h,
                                     width: 37.w,
                                     padding: EdgeInsets.fromLTRB(
                                       5.r,
@@ -826,7 +826,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                         ),
                                         CustomText(
                                           '#',
-                                          size: 12.sp,
+                                          size: 18.sp,
                                           color: Color(0xff0088FF),
                                         ),
                                       ],

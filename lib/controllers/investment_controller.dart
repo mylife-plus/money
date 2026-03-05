@@ -277,7 +277,7 @@ class InvestmentController extends GetxController {
     portfolioSliderMaxDate.value = _endDateTime(latest);
 
     portfolioDateStart.value = portfolioSliderMinDate.value;
-    portfolioDateEnd.value = portfolioSliderMaxDate.value;
+    portfolioDateEnd.value = _endDateTime(DateTime.now());
     selectedPortfolioDurationTab.value = 'All';
   }
 

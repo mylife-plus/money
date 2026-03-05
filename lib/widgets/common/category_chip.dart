@@ -72,8 +72,8 @@ class CategoryChip extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.all(4.r),
                   child: Container(
-                    width: 20.r,
-                    height: 20.r,
+                    width: 24.r,
+                    height: 24.r,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
@@ -81,7 +81,7 @@ class CategoryChip extends StatelessWidget {
                     ),
                     child: Icon(
                       Icons.close,
-                      size: 14.sp,
+                      size: 16.sp,
                       color: AppColors.greyColor,
                     ),
                   ),

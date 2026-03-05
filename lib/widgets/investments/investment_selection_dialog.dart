@@ -525,9 +525,7 @@ class _AddEditInvestmentDialogState extends State<AddEditInvestmentDialog> {
 
               // Buttons
               Row(
-                mainAxisAlignment: isEditMode
-                    ? MainAxisAlignment.spaceBetween
-                    : MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (isEditMode)
                     InkWell(
