@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -130,6 +131,94 @@ class InvestmentController extends GetxController {
     await loadData();
   }
 
+  void _refreshDerivedDataInBackground() {
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      final results = await Future.wait([
+        _service.getAllActivities(),
+        _service.getPortfolioHistory(),
+        _service.getAllInvestments(),
+        _service.getLatestSnapshotsForAll(),
+      ]);
+
+      final allActivities = results[0] as List<InvestmentActivity>;
+      final history = results[1] as List<PortfolioSnapshot>;
+      final allInvestments = results[2] as List<Investment>;
+      final latestSnapshots = results[3] as Map<int, PortfolioSnapshot>;
+
+      final computed = await compute(_computeDerivedData, {
+        'activities': allActivities,
+        'investments': allInvestments,
+        'latestSnapshots': latestSnapshots,
+      });
+
+      activities.value = allActivities;
+      currentHoldings.value = computed['holdings'] as Map<int, double>;
+      portfolioHistory.value = history;
+      enrichedInvestmentData.value =
+          computed['enriched'] as List<Map<String, dynamic>>;
+      _initializeExpansionState();
+      _extendPortfolioSliderRange();
+    });
+  }
+
+  static Map<String, dynamic> _computeDerivedData(
+    Map<String, dynamic> params,
+  ) {
+    final activities = params['activities'] as List<InvestmentActivity>;
+    final investments = params['investments'] as List<Investment>;
+    final latestSnapshots =
+        params['latestSnapshots'] as Map<int, PortfolioSnapshot>;
+
+    final sorted = InvestmentActivityHelper.sortByDateAsc(activities);
+    final Map<int, double> holdings = {};
+
+    for (final activity in sorted) {
+      if (activity.isTransaction) {
+        final investmentId = activity.transactionInvestmentId!;
+        holdings.putIfAbsent(investmentId, () => 0);
+        if (activity.isDeposit) {
+          holdings[investmentId] =
+              holdings[investmentId]! + (activity.transactionAmount ?? 0);
+        } else {
+          holdings[investmentId] =
+              holdings[investmentId]! - (activity.transactionAmount ?? 0);
+        }
+      } else if (activity.isTrade) {
+        final soldId = activity.tradeSoldInvestmentId!;
+        holdings.putIfAbsent(soldId, () => 0);
+        holdings[soldId] = holdings[soldId]! - (activity.tradeSoldAmount ?? 0);
+
+        final boughtId = activity.tradeBoughtInvestmentId!;
+        holdings.putIfAbsent(boughtId, () => 0);
+        holdings[boughtId] =
+            holdings[boughtId]! + (activity.tradeBoughtAmount ?? 0);
+      }
+    }
+
+    final List<Map<String, dynamic>> enrichedData = [];
+    for (final investment in investments) {
+      final amount = holdings[investment.id] ?? 0.0;
+      if (amount <= 0) continue;
+
+      final latestSnapshot = latestSnapshots[investment.id];
+      final latestPrice = latestSnapshot?.unitPrice ?? 0.0;
+      final totalValue = amount * latestPrice;
+
+      enrichedData.add({
+        'investment': investment,
+        'amount': amount,
+        'latestPrice': latestPrice,
+        'totalValue': totalValue,
+        'hasPrice': latestSnapshot != null,
+      });
+    }
+
+    return {
+      'holdings': holdings,
+      'enriched': enrichedData,
+    };
+  }
+
   /// Get a single activity by ID from database
   Future<InvestmentActivity?> getActivityById(int id) async {
     return await _service.getActivityById(id);
@@ -226,7 +315,6 @@ class InvestmentController extends GetxController {
     final days = DateTime.now().difference(portfolioSliderMinDate.value).inDays;
     final tabs = <String>[];
 
-    tabs.add('1d');
     if (days >= 7) tabs.add('7d');
     if (days >= 14) tabs.add('2w');
     if (days >= 30) tabs.add('1m');
@@ -248,9 +336,7 @@ class InvestmentController extends GetxController {
     DateTime start = portfolioSliderMinDate.value;
 
     switch (tab) {
-      case '1d':
-        start = DateTime(now.year, now.month, now.day);
-        break;
+    
       case '7d':
         start = DateTime(
           now.year,
@@ -1041,13 +1127,7 @@ class InvestmentController extends GetxController {
         description: description,
       );
       if (activity != null) {
-        activities.insert(0, activity); // Add at beginning (newest first)
-        currentHoldings.value = await _service.calculateCurrentHoldings();
-        portfolioHistory.value = await _service.getPortfolioHistory();
-        enrichedInvestmentData.value = await _service
-            .getInvestmentHoldingsWithPrices();
-        _initializeExpansionState();
-        _extendPortfolioSliderRange();
+        _refreshDerivedDataInBackground();
       }
       return activity;
     } catch (e) {
@@ -1093,13 +1173,7 @@ class InvestmentController extends GetxController {
         description: description,
       );
       if (activity != null) {
-        activities.insert(0, activity); // Add at beginning (newest first)
-        currentHoldings.value = await _service.calculateCurrentHoldings();
-        portfolioHistory.value = await _service.getPortfolioHistory();
-        enrichedInvestmentData.value = await _service
-            .getInvestmentHoldingsWithPrices();
-        _initializeExpansionState();
-        _extendPortfolioSliderRange();
+        _refreshDerivedDataInBackground();
       }
       return activity;
     } catch (e) {
@@ -1113,12 +1187,7 @@ class InvestmentController extends GetxController {
     try {
       final success = await _service.deleteActivities(ids);
       if (success) {
-        activities.removeWhere((a) => a.id != null && ids.contains(a.id));
-        currentHoldings.value = await _service.calculateCurrentHoldings();
-        portfolioHistory.value = await _service.getPortfolioHistory();
-        enrichedInvestmentData.value = await _service
-            .getInvestmentHoldingsWithPrices();
-        _extendPortfolioSliderRange();
+        _refreshDerivedDataInBackground();
       }
       return success;
     } catch (e) {
@@ -1132,16 +1201,7 @@ class InvestmentController extends GetxController {
     try {
       final success = await _service.updateActivityWithSnapshot(activity);
       if (success) {
-        final index = activities.indexWhere((a) => a.id == activity.id);
-        if (index != -1) {
-          activities[index] = activity.copyWithUpdatedTimestamp();
-        }
-        currentHoldings.value = await _service.calculateCurrentHoldings();
-        portfolioHistory.value = await _service.getPortfolioHistory();
-        enrichedInvestmentData.value = await _service
-            .getInvestmentHoldingsWithPrices();
-        _initializeExpansionState();
-        _extendPortfolioSliderRange();
+        _refreshDerivedDataInBackground();
       }
       return success;
     } catch (e) {

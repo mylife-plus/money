@@ -167,10 +167,13 @@ class _InvestmentScreenState extends State<InvestmentScreen>
                 ignoring: !_isFabVisible,
                 child: InkWell(
                   onTap: () {
+                    final controller = Get.find<InvestmentController>();
                     Navigator.push(
                       context,
                       SlideFromTopRoute(
-                        page: const NewTradeTransactionScreen(),
+                        page: NewTradeTransactionScreen(
+                          fromPortfolio: controller.isPortfolioSelected,
+                        ),
                       ),
                     );
                   },

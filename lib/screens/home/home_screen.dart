@@ -554,46 +554,65 @@ class _HomeScreenState extends State<HomeScreen>
                             ],
                           ),
                         ),
-                        if (controller.visibleItems.length <= 1)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 23.0.w),
-                              child: Column(
-                                children: [
-                                  33.verticalSpace,
-                                  CustomText.richText(
-                                    children: [
-                                      CustomText.span(
-                                        'you have no ',
-                                        size: 20.sp,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                      CustomText.span(
-                                        controller.isExpenseSelected
-                                            ? 'spending '
-                                            : 'income ',
-                                        size: 20.sp,
-                                        color: controller.isExpenseSelected
-                                            ? const Color(0xffFF0000)
-                                            : const Color(0xff00C00D),
-                                      ),
-                                    ],
-                                  ),
-                                  33.verticalSpace,
-                                  CustomText(
-                                    'add Cashflows manually by clicking ➕ or add multiple via ⚙️Settings → ⬆️ Upload 💸Cashflows  ',
-                                    size: 20.sp,
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w400,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  150.verticalSpace,
-                                ],
+                        if (controller.visibleItems.length <= 1) ...[
+                          if (controller.hasAnyForCurrentType)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 23.0.w),
+                                child: Column(
+                                  children: [
+                                    33.verticalSpace,
+                                    CustomText(
+                                      'no records to show',
+                                      size: 20.sp,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                    150.verticalSpace,
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 23.0.w),
+                                child: Column(
+                                  children: [
+                                    33.verticalSpace,
+                                    CustomText.richText(
+                                      children: [
+                                        CustomText.span(
+                                          'you have no ',
+                                          size: 20.sp,
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        CustomText.span(
+                                          controller.isExpenseSelected
+                                              ? 'spending '
+                                              : 'income ',
+                                          size: 20.sp,
+                                          color: controller.isExpenseSelected
+                                              ? const Color(0xffFF0000)
+                                              : const Color(0xff00C00D),
+                                        ),
+                                      ],
+                                    ),
+                                    33.verticalSpace,
+                                    CustomText(
+                                      'add Cashflows manually by clicking ➕ or add multiple via ⚙️Settings → ⬆️ Upload 💸Cashflows  ',
+                                      size: 20.sp,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w400,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    150.verticalSpace,
+                                  ],
+                                ),
                               ),
                             ),
-                          )
-                        else
+                        ] else
                           SliverList.builder(
                             itemCount: controller.visibleItems.length,
                             itemBuilder: (context, index) {

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:moneyapp/services/currency_service.dart';
 
@@ -102,9 +103,81 @@ class NumberFormatHelper {
     return value.toInt().toString();
   }
 
+  /// Strip thousand separators from a formatted string for parsing
+  static String stripFormatting(String text, {String? locale}) {
+    final l = locale ?? _defaultLocale();
+    final symbols = NumberFormat('#', l).symbols;
+    final thousandSep = symbols.GROUP_SEP;
+    return text.replaceAll(thousandSep, '');
+  }
+
+  /// Parse a locale-formatted number string to double
+  static double? tryParseFormatted(String text, {String? locale}) {
+    final l = locale ?? _defaultLocale();
+    final symbols = NumberFormat('#', l).symbols;
+    final stripped = text.replaceAll(symbols.GROUP_SEP, '');
+    final normalized = stripped.replaceAll(symbols.DECIMAL_SEP, '.');
+    return double.tryParse(normalized);
+  }
+
   /// Helper: format a double with the locale's decimal separator
   static String _formatDecimal(double value, int decimals, String locale) {
     final decSep = _getDecimalSeparator(locale);
     return value.toStringAsFixed(decimals).replaceAll('.', decSep);
+  }
+}
+
+class ThousandsSeparatorFormatter extends TextInputFormatter {
+  final String locale;
+
+  ThousandsSeparatorFormatter({required this.locale});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) return newValue;
+
+    final symbols = NumberFormat('#', locale).symbols;
+    final thousandSep = symbols.GROUP_SEP;
+    final decimalSep = symbols.DECIMAL_SEP;
+
+    String text = newValue.text.replaceAll(thousandSep, '');
+
+    final parts = text.split(decimalSep);
+    if (parts.isEmpty) return newValue;
+
+    String integerPart = parts[0];
+    if (integerPart.isEmpty) integerPart = '0';
+
+    final isNegative = integerPart.startsWith('-');
+    if (isNegative) integerPart = integerPart.substring(1);
+
+    final buffer = StringBuffer();
+    for (int i = 0; i < integerPart.length; i++) {
+      if (i > 0 && (integerPart.length - i) % 3 == 0) {
+        buffer.write(thousandSep);
+      }
+      buffer.write(integerPart[i]);
+    }
+
+    String formatted = isNegative ? '-${buffer.toString()}' : buffer.toString();
+    if (parts.length > 1) {
+      formatted += '$decimalSep${parts[1]}';
+    } else if (text.endsWith(decimalSep)) {
+      formatted += decimalSep;
+    }
+
+    final oldLen = newValue.text.length;
+    final newLen = formatted.length;
+    final cursorOffset = newValue.selection.baseOffset + (newLen - oldLen);
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(
+        offset: cursorOffset.clamp(0, formatted.length),
+      ),
+    );
   }
 }

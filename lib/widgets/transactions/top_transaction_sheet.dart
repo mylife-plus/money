@@ -90,10 +90,14 @@ class TopTransactionSheet extends StatelessWidget {
                           }
                           Navigator.of(context).pop();
                         },
-                        child: Image.asset(
-                          AppIcons.tickLight,
-                          height: 22.r,
-                          width: 22.r,
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: EdgeInsets.all(10.r),
+                          child: Image.asset(
+                            AppIcons.tickLight,
+                            height: 22.r,
+                            width: 22.r,
+                          ),
                         ),
                       ),
                     ],

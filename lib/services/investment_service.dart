@@ -607,6 +607,15 @@ class InvestmentService {
     }
   }
 
+  Future<Map<int, PortfolioSnapshot>> getLatestSnapshotsForAll() async {
+    try {
+      return await _snapshotRepo.getLatestForAllInvestments();
+    } catch (e) {
+      debugPrint('[InvestmentService][getLatestSnapshotsForAll] ❌ Error: $e');
+      return {};
+    }
+  }
+
   /// Get all snapshots for a specific investment (sorted by date desc)
   Future<List<PortfolioSnapshot>> getSnapshotsForInvestment(
     int investmentId,

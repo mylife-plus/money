@@ -53,15 +53,6 @@ class CustomAppBar extends StatelessWidget {
               color: showYellowBackground ? const Color(0xffFFCC00) : Colors.transparent,
               borderRadius: BorderRadius.vertical(top: Radius.circular(9.r)),
               border: Border.all(color: showYellowBackground ? AppColors.greyBorder : Colors.transparent, width: 1.w),
-              boxShadow: showYellowBackground
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        offset: const Offset(0, 1),
-                        blurRadius: 4,
-                      ),
-                    ]
-                  : [],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -99,21 +90,51 @@ class CustomAppBar extends StatelessWidget {
                         color: AppColors.greyBorder,
                         width: 1.w,
                       ),
-                      boxShadow: showYellowBackground
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                offset: const Offset(0, 1),
-                                blurRadius: 4,
-                              ),
-                            ]
-                          : [],
                     ),
-                    child: Center(
-                      child: Image.asset(
-                        actionIconPath,
-                        height: 32.r,
-                        width: 32.r,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(11.r)),
+                      child: Stack(
+                        children: [
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.12),
+                                  Colors.black.withValues(alpha: 0.04),
+                                  Colors.transparent,
+                                  Colors.white.withValues(alpha: 0.3),
+                                ],
+                                stops: const [0.0, 0.15, 0.5, 1.0],
+                              ),
+                            ),
+                            child: const SizedBox.expand(),
+                          ),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.06),
+                                  Colors.transparent,
+                                  Colors.transparent,
+                                  Colors.black.withValues(alpha: 0.03),
+                                ],
+                                stops: const [0.0, 0.2, 0.8, 1.0],
+                              ),
+                            ),
+                            child: const SizedBox.expand(),
+                          ),
+                          Center(
+                            child: Image.asset(
+                              actionIconPath,
+                              height: 32.r,
+                              width: 32.r,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

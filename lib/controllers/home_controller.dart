@@ -34,9 +34,16 @@ class HomeController extends GetxController {
   final RxList<Transaction> transactions = <Transaction>[].obs;
   final RxBool isLoading = false.obs;
 
-  // Expandable state tracking
-  final RxSet<int> expandedYears = <int>{}.obs;
-  final RxSet<String> expandedMonths = <String>{}.obs; // Format: "year-month"
+  // Expandable state tracking (separate per tab)
+  final RxSet<int> _spendingExpandedYears = <int>{}.obs;
+  final RxSet<String> _spendingExpandedMonths = <String>{}.obs;
+  final RxSet<int> _incomeExpandedYears = <int>{}.obs;
+  final RxSet<String> _incomeExpandedMonths = <String>{}.obs;
+
+  RxSet<int> get expandedYears =>
+      isExpenseSelected ? _spendingExpandedYears : _incomeExpandedYears;
+  RxSet<String> get expandedMonths =>
+      isExpenseSelected ? _spendingExpandedMonths : _incomeExpandedMonths;
 
   // Optimized Flattened List for UI
   final RxList<HomeListItem> visibleItems = <HomeListItem>[].obs;
@@ -89,8 +96,10 @@ class HomeController extends GetxController {
     );
 
     // Expansion changes handle purely visual flattening, no re-grouping needed
-    ever(expandedYears, (_) => _updateVisibleItems());
-    ever(expandedMonths, (_) => _updateVisibleItems());
+    ever(_spendingExpandedYears, (_) => _updateVisibleItems());
+    ever(_spendingExpandedMonths, (_) => _updateVisibleItems());
+    ever(_incomeExpandedYears, (_) => _updateVisibleItems());
+    ever(_incomeExpandedMonths, (_) => _updateVisibleItems());
 
     loadTransactions();
   }
@@ -225,9 +234,7 @@ class HomeController extends GetxController {
     final days = DateTime.now().difference(minDate).inDays;
     final tabs = <String>[];
 
-    tabs.add('1d');
-    if (days >= 7) tabs.add('7d');
-    if (days >= 14) tabs.add('2w');
+
     if (days >= 30) tabs.add('1m');
     if (days >= 90) tabs.add('3m');
     if (days >= 180) tabs.add('6m');
@@ -249,10 +256,7 @@ class HomeController extends GetxController {
     DateTime start = minDate;
 
     switch (tab) {
-      case '1d':
-        // Today (from 00:00:00)
-        start = DateTime(now.year, now.month, now.day);
-        break;
+     
       case '7d':
         // Last 7 days
         start = DateTime(
@@ -706,6 +710,10 @@ class HomeController extends GetxController {
   // Getters
   bool get isExpenseSelected => selectedToggleOption.value == 1;
 
+  bool get hasAnyForCurrentType => isExpenseSelected
+      ? TransactionHelper.filterExpenses(transactions).isNotEmpty
+      : TransactionHelper.filterIncome(transactions).isNotEmpty;
+
   // Methods
   void selectSpending() {
     selectedToggleOption.value = 1;
@@ -776,18 +784,16 @@ class HomeController extends GetxController {
   Future<void> addTransaction(Transaction transaction) async {
     try {
       await _transactionRepository.addTransaction(transaction);
-      // loadTransactions triggers the worker flow
-      await loadTransactions();
+      Future.delayed(const Duration(milliseconds: 100), () => loadTransactions());
     } catch (e) {
       debugPrint('[HomeController] Error adding transaction: $e');
     }
   }
 
-  /// Update a transaction
   Future<void> updateTransaction(Transaction transaction) async {
     try {
       await _transactionRepository.updateTransaction(transaction);
-      await loadTransactions();
+      Future.delayed(const Duration(milliseconds: 100), () => loadTransactions());
     } catch (e) {
       debugPrint('[HomeController] Error updating transaction: $e');
     }

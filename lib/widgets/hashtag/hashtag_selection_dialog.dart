@@ -450,9 +450,13 @@ class _HashtagSelectionDialogState extends State<HashtagSelectionDialog> {
                   size: 18.sp,
                   fontWeight: FontWeight.w600,
                 ),
-                InkWell(
+                GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
-                  child: Icon(Icons.close, size: 24.sp),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: EdgeInsets.all(10.r),
+                    child: Icon(Icons.close, size: 24.sp),
+                  ),
                 ),
               ],
             ),

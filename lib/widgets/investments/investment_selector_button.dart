@@ -8,12 +8,14 @@ class InvestmentSelectorButton extends StatefulWidget {
   final TextEditingController controller;
   final String hintText;
   final Function(Investment)? onSelected;
+  final bool enabled;
 
   const InvestmentSelectorButton({
     super.key,
     required this.controller,
     this.hintText = 'select',
     this.onSelected,
+    this.enabled = true,
   });
 
   @override
@@ -46,26 +48,29 @@ class _InvestmentSelectorButtonState extends State<InvestmentSelectorButton> {
       height: 41.h,
       padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.enabled ? Colors.white : const Color(0xffF0F0F0),
         border: Border.all(color: AppColors.greyBorder),
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: TextField(
         controller: widget.controller,
         readOnly: true,
-        onTap: () async {
-          final result = await Navigator.push<Investment>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const InvestmentListScreen(),
-            ),
-          );
+        enabled: widget.enabled,
+        onTap: widget.enabled
+            ? () async {
+                final result = await Navigator.push<Investment>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InvestmentListScreen(),
+                  ),
+                );
 
-          if (result != null) {
-            widget.controller.text = result.name;
-            widget.onSelected?.call(result);
-          }
-        },
+                if (result != null) {
+                  widget.controller.text = result.name;
+                  widget.onSelected?.call(result);
+                }
+              }
+            : null,
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: widget.hintText,

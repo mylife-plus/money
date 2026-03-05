@@ -80,12 +80,18 @@ class SmoothLineChartWidget extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 45.w,
-              minIncluded: true,
-              maxIncluded: true,
+              reservedSize: 50.w,
+              minIncluded: false,
+              maxIncluded: false,
               interval: horizontalInterval,
               getTitlesWidget: (value, meta) {
                 if (value < 0) return const SizedBox.shrink();
+                final distToMin = (value - chartMin).abs();
+                final distToMax = (value - chartMax).abs();
+                final threshold = totalRange * 0.08;
+                if (distToMin < threshold || distToMax < threshold) {
+                  return const SizedBox.shrink();
+                }
                 return Text(
                   _formatYAxisLabel(value),
                   style: TextStyle(color: Colors.grey, fontSize: 10.sp),

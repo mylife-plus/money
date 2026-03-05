@@ -13,6 +13,7 @@ import 'package:moneyapp/models/transaction_model.dart';
 
 import 'package:moneyapp/constants/app_currencies.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
@@ -60,9 +61,10 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       // Populate fields with existing data
       isAddingIncome = !existingTransaction!.isExpense;
       selectedDate = existingTransaction!.date;
-      amountController.text = existingTransaction!.amount
-          .toStringAsFixed(2)
-          .replaceAll('.', ',');
+      amountController.text = NumberFormatHelper.formatCurrency(
+        existingTransaction!.amount,
+        locale: CurrencyService.instance.cashflowLocale,
+      );
       recipientController.text = existingTransaction!.recipient;
       noteController.text = existingTransaction!.note;
       selectedHashtags = existingTransaction!.hashtags.map((h) {
@@ -145,6 +147,26 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     });
   }
 
+  Future<void> _showLoaderDialog() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+    );
+    await Future.delayed(const Duration(milliseconds: 50));
+  }
+
+  void _dismissLoaderDialog() {
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
   void _showSnackbar(String title, String message, {bool isError = true}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -202,8 +224,9 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       return;
     }
 
-    final double? amount = double.tryParse(
-      amountController.text.replaceAll(',', '.'),
+    final double? amount = NumberFormatHelper.tryParseFormatted(
+      amountController.text,
+      locale: CurrencyService.instance.cashflowLocale,
     );
     if (amount == null || amount <= 0) {
       _showSnackbar('Error', 'Please enter a valid amount');
@@ -232,13 +255,14 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       return;
     }
 
+    await _showLoaderDialog();
+
     if (isEditMode && existingTransaction != null) {
-      // Update existing transaction
       final updatedTransaction = existingTransaction!.copyWith(
         isExpense: !isAddingIncome,
         date: selectedDate!,
         amount: amount,
-        mccId: selectedMCC?.id, // Can be null now
+        mccId: selectedMCC?.id,
         recipient: recipientController.text.trim(),
         note: noteController.text.trim(),
         hashtags: selectedHashtags,
@@ -248,6 +272,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       await homeController.updateTransaction(updatedTransaction);
 
       if (!mounted) return;
+      _dismissLoaderDialog();
       Navigator.pop(context);
       _showSnackbar(
         'Success',
@@ -255,13 +280,12 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
         isError: false,
       );
     } else {
-      // Create new transaction
       final newTransaction = Transaction(
-        id: DateTime.now().millisecondsSinceEpoch, // Simple ID generation
+        id: DateTime.now().millisecondsSinceEpoch,
         isExpense: !isAddingIncome,
         date: selectedDate!,
         amount: amount,
-        mccId: selectedMCC?.id, // Can be null now
+        mccId: selectedMCC?.id,
         recipient: recipientController.text.trim(),
         note: noteController.text.trim(),
         hashtags: selectedHashtags,
@@ -269,6 +293,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
 
       await homeController.addTransaction(newTransaction);
       if (!mounted) return;
+      _dismissLoaderDialog();
       Navigator.pop(context);
       _showSnackbar(
         'Success',
@@ -582,6 +607,11 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                 ),
                                 child: TextField(
                                   controller: amountController,
+                                  inputFormatters: [
+                                    ThousandsSeparatorFormatter(
+                                      locale: CurrencyService.instance.cashflowLocale,
+                                    ),
+                                  ],
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
                                     hintText: '0,00',

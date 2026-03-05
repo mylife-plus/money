@@ -28,6 +28,7 @@ class PriceEntryDialog extends StatefulWidget {
 class _PriceEntryDialogState extends State<PriceEntryDialog> {
   late TextEditingController priceController;
   DateTime? selectedDate;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -44,29 +45,18 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
     super.dispose();
   }
 
-  void _showSnackbar(String title, String message, {bool isError = true}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(message, style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+  void _setError(String message) {
+    setState(() {
+      _errorMessage = message;
+    });
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) {
+      setState(() {
+        _errorMessage = null;
+      });
+    }
   }
 
   Future<void> _pickDate() async {
@@ -135,21 +125,22 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
 
   void _save() {
     if (selectedDate == null) {
-      _showSnackbar('Error', 'Please select a date');
+      _setError('Please select a date');
       return;
     }
 
     if (priceController.text.trim().isEmpty) {
-      _showSnackbar('Error', 'Please enter a unit price');
+      _setError('Please enter a unit price');
       return;
     }
 
     final unitPrice = double.tryParse(priceController.text.trim());
     if (unitPrice == null || unitPrice <= 0) {
-      _showSnackbar('Error', 'Please enter a valid price');
+      _setError('Please enter a valid price');
       return;
     }
 
+    _clearError();
     Navigator.of(context).pop();
     widget.onSave(selectedDate!, unitPrice);
   }
@@ -305,6 +296,14 @@ class _PriceEntryDialogState extends State<PriceEntryDialog> {
                 textAlign: TextAlign.end,
               ),
             ),
+            if (_errorMessage != null) ...[
+              8.verticalSpace,
+              CustomText(
+                _errorMessage!,
+                size: 12.sp,
+                color: Colors.red,
+              ),
+            ],
             23.verticalSpace,
 
             // Buttons

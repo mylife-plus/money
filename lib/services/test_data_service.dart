@@ -845,14 +845,19 @@ class TestDataService {
 
       // Bulk insert everything in a single DB transaction
       if (onProgress != null) onProgress('Saving ${allActivities.length} activities + ${allSnapshots.length} snapshots...');
+      final activityLinkedCount = allActivities.length;
       final db = await DatabaseHelper.instance.database;
       await db.transaction((txn) async {
-        // Insert all activities
+        final List<int> activityIds = [];
         for (final activity in allActivities) {
-          await txn.insert(DatabaseHelper.tableInvestmentActivities, activity.toMap());
+          final id = await txn.insert(DatabaseHelper.tableInvestmentActivities, activity.toMap());
+          activityIds.add(id);
         }
-        // Insert all snapshots
-        for (final snapshot in allSnapshots) {
+        for (int i = 0; i < allSnapshots.length; i++) {
+          var snapshot = allSnapshots[i];
+          if (i < activityLinkedCount) {
+            snapshot = snapshot.copyWith(activityId: activityIds[i]);
+          }
           await txn.insert(DatabaseHelper.tablePortfolioSnapshots, snapshot.toMap());
         }
       });
@@ -905,8 +910,11 @@ class TestDataService {
   double _priceAtDate(List<_PricePoint> points, DateTime date) {
     _PricePoint? best;
     for (final pt in points) {
-      if (!pt.date.isAfter(date)) best = pt;
-      else break;
+      if (!pt.date.isAfter(date)) {
+        best = pt;
+      } else {
+        break;
+      }
     }
     return best?.price ?? points.first.price;
   }
@@ -916,37 +924,7 @@ class TestDataService {
     return DateTime(date.year, date.month + 1, 1);
   }
 
-  Future<void> _generatePortfolioSnapshots(Function(String)? onProgress) async {
-    final random = Random();
-    final startDate = DateTime(2020, 1, 1);
-    final now = DateTime.now();
 
-    // Generate monthly snapshots
-    var currentDate = startDate;
-    var portfolioValue = 10000.0; // Starting value
-
-    int count = 0;
-    while (currentDate.isBefore(now)) {
-      // Random monthly growth/decline (-10% to +15%)
-      final change = (random.nextDouble() * 0.25) - 0.10;
-      portfolioValue = portfolioValue * (1 + change);
-      portfolioValue = portfolioValue.clamp(5000, 500000); // Keep it reasonable
-
-      // Note: This test data generation needs to be updated for per-investment snapshots
-      // For now, we'll skip generating portfolio snapshots as they require investmentId
-      // TODO: Update this to generate per-investment price snapshots instead
-
-      // Move to next month
-      currentDate = DateTime(currentDate.year, currentDate.month + 1, 1);
-      count++;
-
-      if (onProgress != null && count % 12 == 0) {
-        onProgress(
-          'Skipped ${count ~/ 12} years of snapshots (needs investment-specific data)...',
-        );
-      }
-    }
-  }
 }
 
 class _PricePoint {

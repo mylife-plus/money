@@ -18,7 +18,14 @@ class NewTradeTransactionScreen extends StatefulWidget {
   /// Pass an existing activity to open in edit mode; null = add mode.
   final InvestmentActivity? editingActivity;
 
-  const NewTradeTransactionScreen({super.key, this.editingActivity});
+  /// When true, navigates to history tab after a successful add.
+  final bool fromPortfolio;
+
+  const NewTradeTransactionScreen({
+    super.key,
+    this.editingActivity,
+    this.fromPortfolio = false,
+  });
 
   @override
   State<NewTradeTransactionScreen> createState() =>
@@ -88,16 +95,16 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     if (activity.isTrade) {
       selectedOption = 1;
       _soldAmountController.text = activity.tradeSoldAmount?.toString() ?? '';
-      _soldPriceController.text =
-          activity.tradeSoldPrice?.toStringAsFixed(2) ?? '';
-      _soldTotalController.text =
-          activity.tradeSoldTotal?.toStringAsFixed(2) ?? '';
+      _soldPriceController.text = activity.tradeSoldPrice != null
+          ? _formatForField(activity.tradeSoldPrice!) : '';
+      _soldTotalController.text = activity.tradeSoldTotal != null
+          ? _formatForField(activity.tradeSoldTotal!) : '';
       _boughtAmountController.text =
           activity.tradeBoughtAmount?.toString() ?? '';
-      _boughtPriceController.text =
-          activity.tradeBoughtPrice?.toStringAsFixed(2) ?? '';
-      _boughtTotalController.text =
-          activity.tradeBoughtTotal?.toStringAsFixed(2) ?? '';
+      _boughtPriceController.text = activity.tradeBoughtPrice != null
+          ? _formatForField(activity.tradeBoughtPrice!) : '';
+      _boughtTotalController.text = activity.tradeBoughtTotal != null
+          ? _formatForField(activity.tradeBoughtTotal!) : '';
 
       if (activity.tradeSoldInvestmentId != null) {
         final inv = _controller.getInvestmentById(
@@ -122,10 +129,10 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
       _hasPortfolioCurrency = true; // currency already set
       _descriptionController.text = activity.description ?? '';
       _amountController.text = activity.transactionAmount?.toString() ?? '';
-      _priceController.text =
-          activity.transactionPrice?.toStringAsFixed(2) ?? '';
-      _totalController.text =
-          activity.transactionTotal?.toStringAsFixed(2) ?? '';
+      _priceController.text = activity.transactionPrice != null
+          ? _formatForField(activity.transactionPrice!) : '';
+      _totalController.text = activity.transactionTotal != null
+          ? _formatForField(activity.transactionTotal!) : '';
       isAddingInvestment = activity.isDeposit;
 
       if (activity.transactionInvestmentId != null) {
@@ -226,12 +233,12 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     if (_isUpdating) return;
     _isUpdating = true;
 
-    final amount = double.tryParse(amountController.text);
-    final price = double.tryParse(priceController.text);
+    final amount = _parseField(amountController);
+    final price = _parseField(priceController);
 
     if (amount != null && price != null) {
       final total = amount * price;
-      totalController.text = total.toStringAsFixed(2);
+      totalController.text = _formatForField(total);
     }
 
     _isUpdating = false;
@@ -245,12 +252,12 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     if (_isUpdating) return;
     _isUpdating = true;
 
-    final total = double.tryParse(totalController.text);
-    final amount = double.tryParse(amountController.text);
+    final total = _parseField(totalController);
+    final amount = _parseField(amountController);
 
     if (total != null && amount != null && amount != 0) {
       final price = total / amount;
-      priceController.text = price.toStringAsFixed(2);
+      priceController.text = _formatForField(price);
     }
 
     _isUpdating = false;
@@ -264,8 +271,8 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     if (_isUpdating) return;
     _isUpdating = true;
 
-    final total = double.tryParse(totalController.text);
-    final price = double.tryParse(priceController.text);
+    final total = _parseField(totalController);
+    final price = _parseField(priceController);
 
     if (total != null && price != null && price != 0) {
       final amount = total / price;
@@ -305,20 +312,19 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
   ) {
     final price = _getLatestPrice(investmentId);
     if (price != null) {
-      priceController.text = price.toStringAsFixed(2);
+      priceController.text = _formatForField(price);
     }
   }
 
-  /// Sync bought total to match sold total, recalculating bought amount.
   void _syncBoughtFromSoldTotal() {
     if (_isUpdating) return;
-    final soldTotal = double.tryParse(_soldTotalController.text);
+    final soldTotal = _parseField(_soldTotalController);
     if (soldTotal == null) return;
 
     _isUpdating = true;
-    _boughtTotalController.text = soldTotal.toStringAsFixed(2);
+    _boughtTotalController.text = _formatForField(soldTotal);
 
-    final boughtPrice = double.tryParse(_boughtPriceController.text);
+    final boughtPrice = _parseField(_boughtPriceController);
     if (boughtPrice != null && boughtPrice != 0) {
       final boughtAmount = soldTotal / boughtPrice;
       _boughtAmountController.text = boughtAmount
@@ -329,24 +335,51 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     _isUpdating = false;
   }
 
-  /// Sync sold total to match bought total, recalculating sold amount.
-  void _syncSoldFromBoughtTotal() {
+  void _onBoughtPriceChanged() {
     if (_isUpdating) return;
-    final boughtTotal = double.tryParse(_boughtTotalController.text);
-    if (boughtTotal == null) return;
-
     _isUpdating = true;
-    _soldTotalController.text = boughtTotal.toStringAsFixed(2);
-
-    final soldPrice = double.tryParse(_soldPriceController.text);
-    if (soldPrice != null && soldPrice != 0) {
-      final soldAmount = boughtTotal / soldPrice;
-      _soldAmountController.text = soldAmount
+    final soldTotal = _parseField(_soldTotalController);
+    final boughtPrice = _parseField(_boughtPriceController);
+    if (soldTotal != null && boughtPrice != null && boughtPrice != 0) {
+      final boughtAmount = soldTotal / boughtPrice;
+      _boughtAmountController.text = boughtAmount
           .toStringAsFixed(8)
           .replaceAll(RegExp(r'0+$'), '')
           .replaceAll(RegExp(r'\.$'), '');
     }
     _isUpdating = false;
+  }
+
+  void _onBoughtAmountChanged() {
+    if (_isUpdating) return;
+    _isUpdating = true;
+    final soldTotal = _parseField(_soldTotalController);
+    final boughtAmount = _parseField(_boughtAmountController);
+    if (soldTotal != null && boughtAmount != null && boughtAmount != 0) {
+      final boughtPrice = soldTotal / boughtAmount;
+      _boughtPriceController.text = _formatForField(boughtPrice);
+    }
+    _isUpdating = false;
+  }
+
+  Future<void> _showLoaderDialog() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+    );
+    await Future.delayed(const Duration(milliseconds: 50));
+  }
+
+  void _dismissLoaderDialog() {
+    Navigator.of(context, rootNavigator: true).pop();
   }
 
   void _showSnackbar(String title, String message, {bool isError = true}) {
@@ -380,12 +413,12 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
       return;
     }
 
-    final soldAmount = double.tryParse(_soldAmountController.text);
-    final soldPrice = double.tryParse(_soldPriceController.text);
-    final soldTotal = double.tryParse(_soldTotalController.text);
-    final boughtAmount = double.tryParse(_boughtAmountController.text);
-    final boughtPrice = double.tryParse(_boughtPriceController.text);
-    final boughtTotal = double.tryParse(_boughtTotalController.text);
+    final soldAmount = _parseField(_soldAmountController);
+    final soldPrice = _parseField(_soldPriceController);
+    final soldTotal = _parseField(_soldTotalController);
+    final boughtAmount = _parseField(_boughtAmountController);
+    final boughtPrice = _parseField(_boughtPriceController);
+    final boughtTotal = _parseField(_boughtTotalController);
 
     if (soldAmount == null ||
         soldPrice == null ||
@@ -411,6 +444,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     }
 
     setState(() => _isSaving = true);
+    await _showLoaderDialog();
 
     try {
       final updated = widget.editingActivity!.copyWith(
@@ -423,11 +457,13 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
         tradeBoughtPrice: boughtPrice,
         tradeBoughtTotal: boughtTotal,
         date: selectedDate ?? DateTime.now(),
-        description:
-            'Traded ${_soldInvestment!.ticker} for ${_boughtInvestment!.ticker}',
+        description: _descriptionController.text.isNotEmpty
+            ? _descriptionController.text
+            : null,
       );
 
       final success = await _controller.updateActivity(updated);
+      if (mounted) _dismissLoaderDialog();
       if (success) {
         _showSnackbar('Success', 'Trade updated successfully', isError: false);
         if (mounted) Navigator.of(context).pop();
@@ -435,6 +471,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
         _showSnackbar('Error', 'Failed to update trade');
       }
     } catch (e) {
+      if (mounted) _dismissLoaderDialog();
       _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -447,9 +484,9 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
       return;
     }
 
-    final amount = double.tryParse(_amountController.text);
-    final price = double.tryParse(_priceController.text);
-    final total = double.tryParse(_totalController.text);
+    final amount = _parseField(_amountController);
+    final price = _parseField(_priceController);
+    final total = _parseField(_totalController);
 
     if (amount == null || price == null || total == null) {
       _showSnackbar('Error', 'Please enter valid numbers for all fields');
@@ -462,6 +499,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     }
 
     setState(() => _isSaving = true);
+    await _showLoaderDialog();
 
     try {
       final direction = isAddingInvestment
@@ -477,10 +515,11 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
         date: selectedDate ?? DateTime.now(),
         description: _descriptionController.text.isNotEmpty
             ? _descriptionController.text
-            : '${isAddingInvestment ? "Bought" : "Sold"} ${_transactionInvestment!.ticker}',
+            : null,
       );
 
       final success = await _controller.updateActivity(updated);
+      if (mounted) _dismissLoaderDialog();
       if (success) {
         _showSnackbar(
           'Success',
@@ -492,6 +531,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
         _showSnackbar('Error', 'Failed to update transaction');
       }
     } catch (e) {
+      if (mounted) _dismissLoaderDialog();
       _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -504,12 +544,12 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
       return;
     }
 
-    final soldAmount = double.tryParse(_soldAmountController.text);
-    final soldPrice = double.tryParse(_soldPriceController.text);
-    final soldTotal = double.tryParse(_soldTotalController.text);
-    final boughtAmount = double.tryParse(_boughtAmountController.text);
-    final boughtPrice = double.tryParse(_boughtPriceController.text);
-    final boughtTotal = double.tryParse(_boughtTotalController.text);
+    final soldAmount = _parseField(_soldAmountController);
+    final soldPrice = _parseField(_soldPriceController);
+    final soldTotal = _parseField(_soldTotalController);
+    final boughtAmount = _parseField(_boughtAmountController);
+    final boughtPrice = _parseField(_boughtPriceController);
+    final boughtTotal = _parseField(_boughtTotalController);
 
     if (soldAmount == null ||
         soldPrice == null ||
@@ -535,6 +575,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     }
 
     setState(() => _isSaving = true);
+    await _showLoaderDialog();
 
     try {
       final activity = await _controller.addTrade(
@@ -547,17 +588,25 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
         boughtPrice: boughtPrice,
         boughtTotal: boughtTotal,
         date: selectedDate ?? DateTime.now(),
-        description:
-            'Traded ${_soldInvestment!.ticker} for ${_boughtInvestment!.ticker}',
+        description: _descriptionController.text.isNotEmpty
+            ? _descriptionController.text
+            : null,
       );
 
+      if (mounted) _dismissLoaderDialog();
       if (activity != null) {
         _showSnackbar('Success', 'Trade added successfully', isError: false);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          Navigator.of(context).pop();
+          if (widget.fromPortfolio) {
+            _controller.selectHistory();
+          }
+        }
       } else {
         _showSnackbar('Error', 'Failed to add trade');
       }
     } catch (e) {
+      if (mounted) _dismissLoaderDialog();
       _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -570,9 +619,9 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
       return;
     }
 
-    final amount = double.tryParse(_amountController.text);
-    final price = double.tryParse(_priceController.text);
-    final total = double.tryParse(_totalController.text);
+    final amount = _parseField(_amountController);
+    final price = _parseField(_priceController);
+    final total = _parseField(_totalController);
 
     if (amount == null || price == null || total == null) {
       _showSnackbar('Error', 'Please enter valid numbers for all fields');
@@ -585,6 +634,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     }
 
     setState(() => _isSaving = true);
+    await _showLoaderDialog();
 
     try {
       final direction = isAddingInvestment
@@ -600,25 +650,40 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
         date: selectedDate ?? DateTime.now(),
         description: _descriptionController.text.isNotEmpty
             ? _descriptionController.text
-            : '${isAddingInvestment ? "Bought" : "Sold"} ${_transactionInvestment!.ticker}',
+            : null,
       );
 
+      if (mounted) _dismissLoaderDialog();
       if (activity != null) {
         _showSnackbar(
           'Success',
           'Transaction added successfully',
           isError: false,
         );
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          Navigator.of(context).pop();
+          if (widget.fromPortfolio) {
+            _controller.selectHistory();
+          }
+        }
       } else {
         _showSnackbar('Error', 'Failed to add transaction');
       }
     } catch (e) {
+      if (mounted) _dismissLoaderDialog();
       _showSnackbar('Error', '$e'.replaceFirst(RegExp(r'^Exception:\s*'), ''));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
+
+  String get _portfolioLocale => CurrencyService.instance.portfolioLocale;
+
+  double? _parseField(TextEditingController c) =>
+      NumberFormatHelper.tryParseFormatted(c.text, locale: _portfolioLocale);
+
+  String _formatForField(double value) =>
+      NumberFormatHelper.formatCurrency(value, locale: _portfolioLocale);
 
   Widget buildTextField(
     String label,
@@ -626,20 +691,26 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     bool showCurrencySymbol = false,
     TextEditingController? controller,
     Function(String)? onChanged,
+    bool useThousandsSeparator = false,
+    bool enabled = true,
   }) {
     return Container(
       height: 41.h,
       padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: enabled ? Colors.white : const Color(0xffF0F0F0),
         border: Border.all(color: AppColors.greyBorder),
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: TextField(
         controller: controller,
+        enabled: enabled,
         keyboardType: TextInputType.numberWithOptions(decimal: true),
         textAlign: TextAlign.end,
         onChanged: onChanged,
+        inputFormatters: useThousandsSeparator
+            ? [ThousandsSeparatorFormatter(locale: _portfolioLocale)]
+            : null,
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hint,
@@ -957,6 +1028,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               'Amount',
                                               '0',
                                               controller: _soldAmountController,
+                                              enabled: _soldInvestment != null,
                                               onChanged: (value) {
                                                 _calculateTotalFromAmountPrice(
                                                   _soldAmountController,
@@ -977,7 +1049,9 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               'Price',
                                               '0',
                                               showCurrencySymbol: true,
+                                              useThousandsSeparator: true,
                                               controller: _soldPriceController,
+                                              enabled: _soldInvestment != null,
                                               onChanged: (value) {
                                                 _calculateTotalFromAmountPrice(
                                                   _soldAmountController,
@@ -994,13 +1068,15 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               'Total',
                                               '0',
                                               showCurrencySymbol: true,
+                                              useThousandsSeparator: true,
                                               controller: _soldTotalController,
+                                              enabled: _soldInvestment != null,
                                               onChanged: (value) {
-                                                final amount = double.tryParse(
-                                                  _soldAmountController.text,
+                                                final amount = _parseField(
+                                                  _soldAmountController,
                                                 );
-                                                final price = double.tryParse(
-                                                  _soldPriceController.text,
+                                                final price = _parseField(
+                                                  _soldPriceController,
                                                 );
 
                                                 if (amount != null &&
@@ -1052,29 +1128,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                         color: Color(0xff00C00D),
                                         size: 16.sp,
                                       ),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          if (_boughtInvestment != null &&
-                                              (_controller.currentHoldings[_boughtInvestment!
-                                                          .id] ??
-                                                      0) >
-                                                  0)
-                                            Padding(
-                                              padding: EdgeInsets.only(
-                                                bottom: 2.h,
-                                              ),
-                                              child: CustomText(
-                                                'max: ${_amountLabel(_boughtInvestment?.id)}',
-                                                size: 10.sp,
-                                                color: AppColors.greyColor,
-                                              ),
-                                            )
-                                          else
-                                            7.verticalSpace,
-                                        ],
-                                      ),
+                                      7.verticalSpace,
                                       Row(
                                         children: [
                                           Expanded(
@@ -1082,6 +1136,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               controller:
                                                   _boughtInvestmentController,
                                               hintText: 'select',
+                                              enabled: _soldInvestment != null,
                                               onSelected: (investment) {
                                                 setState(() {
                                                   _boughtInvestment =
@@ -1090,16 +1145,12 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                                 _boughtInvestmentController
                                                         .text =
                                                     investment.ticker;
+                                                _syncBoughtFromSoldTotal();
                                                 _autoFillPrice(
                                                   investment.id,
                                                   _boughtPriceController,
                                                 );
-                                                _calculateTotalFromAmountPrice(
-                                                  _boughtAmountController,
-                                                  _boughtPriceController,
-                                                  _boughtTotalController,
-                                                );
-                                                _syncSoldFromBoughtTotal();
+                                                _onBoughtPriceChanged();
                                               },
                                             ),
                                           ),
@@ -1111,13 +1162,10 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               '0',
                                               controller:
                                                   _boughtAmountController,
+                                              enabled:
+                                                  _boughtInvestment != null,
                                               onChanged: (value) {
-                                                _calculateTotalFromAmountPrice(
-                                                  _boughtAmountController,
-                                                  _boughtPriceController,
-                                                  _boughtTotalController,
-                                                );
-                                                _syncSoldFromBoughtTotal();
+                                                _onBoughtAmountChanged();
                                               },
                                             ),
                                           ),
@@ -1131,15 +1179,13 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               'Price',
                                               '0',
                                               showCurrencySymbol: true,
+                                              useThousandsSeparator: true,
                                               controller:
                                                   _boughtPriceController,
+                                              enabled:
+                                                  _boughtInvestment != null,
                                               onChanged: (value) {
-                                                _calculateTotalFromAmountPrice(
-                                                  _boughtAmountController,
-                                                  _boughtPriceController,
-                                                  _boughtTotalController,
-                                                );
-                                                _syncSoldFromBoughtTotal();
+                                                _onBoughtPriceChanged();
                                               },
                                             ),
                                           ),
@@ -1149,33 +1195,10 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               'Total',
                                               '0',
                                               showCurrencySymbol: true,
+                                              useThousandsSeparator: true,
                                               controller:
                                                   _boughtTotalController,
-                                              onChanged: (value) {
-                                                final amount = double.tryParse(
-                                                  _boughtAmountController.text,
-                                                );
-                                                final price = double.tryParse(
-                                                  _boughtPriceController.text,
-                                                );
-
-                                                if (amount != null &&
-                                                    amount != 0) {
-                                                  _calculatePriceFromTotalAmount(
-                                                    _boughtTotalController,
-                                                    _boughtAmountController,
-                                                    _boughtPriceController,
-                                                  );
-                                                } else if (price != null &&
-                                                    price != 0) {
-                                                  _calculateAmountFromTotalPrice(
-                                                    _boughtTotalController,
-                                                    _boughtPriceController,
-                                                    _boughtAmountController,
-                                                  );
-                                                }
-                                                _syncSoldFromBoughtTotal();
-                                              },
+                                              enabled: false,
                                             ),
                                           ),
                                         ],
@@ -1402,26 +1425,29 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                   ),
                                   7.verticalSpace,
                                   buildDescriptionField(),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      if (_transactionInvestment != null &&
-                                          (_controller.currentHoldings[_transactionInvestment!
-                                                      .id] ??
-                                                  0) >
-                                              0)
-                                        Padding(
-                                          padding: EdgeInsets.only(bottom: 2.h),
-                                          child: CustomText(
-                                            'max: ${_amountLabel(_transactionInvestment?.id)}',
-                                            size: 10.sp,
-                                            color: AppColors.greyColor,
-                                          ),
-                                        )
-                                      else
-                                        7.verticalSpace,
-                                    ],
-                                  ),
+                                  if (!isAddingInvestment)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        if (_transactionInvestment != null &&
+                                            (_controller.currentHoldings[_transactionInvestment!
+                                                        .id] ??
+                                                    0) >
+                                                0)
+                                          Padding(
+                                            padding: EdgeInsets.only(bottom: 2.h),
+                                            child: CustomText(
+                                              'max: ${_amountLabel(_transactionInvestment?.id)}',
+                                              size: 10.sp,
+                                              color: AppColors.greyColor,
+                                            ),
+                                          )
+                                        else
+                                          7.verticalSpace,
+                                      ],
+                                    )
+                                  else
+                                    7.verticalSpace,
                                   Row(
                                     children: [
                                       Expanded(
@@ -1456,6 +1482,8 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                           '0.00',
                                           showCurrencySymbol: false,
                                           controller: _amountController,
+                                          enabled:
+                                              _transactionInvestment != null,
                                           onChanged: (value) {
                                             _calculateTotalFromAmountPrice(
                                               _amountController,
@@ -1475,7 +1503,10 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                           'Price',
                                           '0.00',
                                           showCurrencySymbol: true,
+                                          useThousandsSeparator: true,
                                           controller: _priceController,
+                                          enabled:
+                                              _transactionInvestment != null,
                                           onChanged: (value) {
                                             _calculateTotalFromAmountPrice(
                                               _amountController,
@@ -1491,18 +1522,19 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                           'Total',
                                           '0.00',
                                           showCurrencySymbol: true,
+                                          useThousandsSeparator: true,
                                           controller: _totalController,
+                                          enabled:
+                                              _transactionInvestment != null,
                                           onChanged: (value) {
-                                            // When total changes, try to calculate amount or price
-                                            final amount = double.tryParse(
-                                              _amountController.text,
+                                            final amount = _parseField(
+                                              _amountController,
                                             );
-                                            final price = double.tryParse(
-                                              _priceController.text,
+                                            final price = _parseField(
+                                              _priceController,
                                             );
 
                                             if (amount != null && amount != 0) {
-                                              // Calculate price from total and amount
                                               _calculatePriceFromTotalAmount(
                                                 _totalController,
                                                 _amountController,
@@ -1510,7 +1542,6 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                               );
                                             } else if (price != null &&
                                                 price != 0) {
-                                              // Calculate amount from total and price
                                               _calculateAmountFromTotalPrice(
                                                 _totalController,
                                                 _priceController,

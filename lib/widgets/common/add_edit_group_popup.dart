@@ -156,7 +156,11 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
                 // Close button
                 GestureDetector(
                   onTap: _handleCancel,
-                  child: const Icon(Icons.close, color: Colors.red, size: 28),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: const Icon(Icons.close, color: Colors.red, size: 28),
+                  ),
                 ),
                 // Title
                 Text(
@@ -172,7 +176,11 @@ class _AddEditGroupPopupState extends State<AddEditGroupPopup> {
                 // Check button
                 GestureDetector(
                   onTap: _handleSave,
-                  child: const Icon(Icons.check, color: Colors.green, size: 28),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: const Icon(Icons.check, color: Colors.green, size: 28),
+                  ),
                 ),
               ],
             ),
