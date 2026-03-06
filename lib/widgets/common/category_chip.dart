@@ -27,15 +27,13 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicWidth(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          InkWell(
-            onTap: onTap,
-            child: Container(
-              height: 42.h,
-              padding: EdgeInsets.fromLTRB(8.r, 0.r, 11.r, 0.r),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
               decoration: BoxDecoration(
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(4.r),
@@ -48,51 +46,49 @@ class CategoryChip extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.only(right: 10.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CustomText(
-                      categoryGroup,
-                      size: 12.sp,
-                      color: Color(0xffB4B4B4),
-                    ),
-                    CustomText("# $category", size: 16.sp, color: Colors.black),
-                  ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomText(
+                  categoryGroup,
+                  size: 12.sp,
+                  color: Color(0xffB4B4B4),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+                CustomText("# $category", size: 16.sp, color: Colors.black, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
             ),
           ),
-          if (onRemove != null)
-            Positioned(
-              top: -10.h,
-              right: -10.w,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onRemove,
-                child: Padding(
-                  padding: EdgeInsets.all(4.r),
-                  child: Container(
-                    width: 24.r,
-                    height: 24.r,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.greyColor),
-                    ),
-                    child: Icon(
-                      Icons.close,
-                      size: 16.sp,
-                      color: AppColors.greyColor,
-                    ),
+        ),
+        if (onRemove != null)
+          Positioned(
+            top: -10.h,
+            right: -10.w,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onRemove,
+              child: Padding(
+                padding: EdgeInsets.all(8.r),
+                child: Container(
+                  width: 24.r,
+                  height: 24.r,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.greyColor),
+                  ),
+                  child: Icon(
+                    Icons.close,
+                    size: 16.sp,
+                    color: AppColors.greyColor,
                   ),
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

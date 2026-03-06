@@ -254,8 +254,11 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        body: SafeArea(
         child: Column(
           children: [
             // Header
@@ -777,6 +780,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -80,7 +80,7 @@ class SmoothLineChartWidget extends StatelessWidget {
                 }
                 return Text(
                   _formatYAxisLabel(value),
-                  style: TextStyle(color: Colors.grey, fontSize: 10.sp),
+                  style: TextStyle(color: const Color(0xFF666666), fontSize: 11.sp),
                 );
               },
             ),
@@ -101,7 +101,7 @@ class SmoothLineChartWidget extends StatelessWidget {
                     padding: EdgeInsets.only(top: 14.h),
                     child: Text(
                       data[index].label,
-                      style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+                      style: TextStyle(color: const Color(0xFF666666), fontSize: 11.sp),
                     ),
                   );
                 }
@@ -113,7 +113,7 @@ class SmoothLineChartWidget extends StatelessWidget {
                     padding: EdgeInsets.only(top: 14.h),
                     child: Text(
                       data[index].label,
-                      style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+                      style: TextStyle(color: const Color(0xFF666666), fontSize: 11.sp),
                     ),
                   );
                 }

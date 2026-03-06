@@ -95,13 +95,14 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
 
     if (activity.isTrade) {
       selectedOption = 1;
-      _soldAmountController.text = activity.tradeSoldAmount?.toString() ?? '';
+      _soldAmountController.text = activity.tradeSoldAmount != null
+          ? _formatAmountForField(activity.tradeSoldAmount!) : '';
       _soldPriceController.text = activity.tradeSoldPrice != null
           ? _formatForField(activity.tradeSoldPrice!) : '';
       _soldTotalController.text = activity.tradeSoldTotal != null
           ? _formatForField(activity.tradeSoldTotal!) : '';
-      _boughtAmountController.text =
-          activity.tradeBoughtAmount?.toString() ?? '';
+      _boughtAmountController.text = activity.tradeBoughtAmount != null
+          ? _formatAmountForField(activity.tradeBoughtAmount!) : '';
       _boughtPriceController.text = activity.tradeBoughtPrice != null
           ? _formatForField(activity.tradeBoughtPrice!) : '';
       _boughtTotalController.text = activity.tradeBoughtTotal != null
@@ -129,7 +130,8 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
       selectedOption = 2;
       _hasPortfolioCurrency = true; // currency already set
       _descriptionController.text = activity.description ?? '';
-      _amountController.text = activity.transactionAmount?.toString() ?? '';
+      _amountController.text = activity.transactionAmount != null
+          ? _formatAmountForField(activity.transactionAmount!) : '';
       _priceController.text = activity.transactionPrice != null
           ? _formatForField(activity.transactionPrice!) : '';
       _totalController.text = activity.transactionTotal != null
@@ -277,10 +279,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
 
     if (total != null && price != null && price != 0) {
       final amount = total / price;
-      amountController.text = amount
-          .toStringAsFixed(8)
-          .replaceAll(RegExp(r'0+$'), '')
-          .replaceAll(RegExp(r'\.$'), '');
+      amountController.text = _formatAmountForField(amount);
     }
 
     _isUpdating = false;
@@ -328,10 +327,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     final boughtPrice = _parseField(_boughtPriceController);
     if (boughtPrice != null && boughtPrice != 0) {
       final boughtAmount = soldTotal / boughtPrice;
-      _boughtAmountController.text = boughtAmount
-          .toStringAsFixed(8)
-          .replaceAll(RegExp(r'0+$'), '')
-          .replaceAll(RegExp(r'\.$'), '');
+      _boughtAmountController.text = _formatAmountForField(boughtAmount);
     }
     _isUpdating = false;
   }
@@ -343,10 +339,7 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
     final boughtPrice = _parseField(_boughtPriceController);
     if (soldTotal != null && boughtPrice != null && boughtPrice != 0) {
       final boughtAmount = soldTotal / boughtPrice;
-      _boughtAmountController.text = boughtAmount
-          .toStringAsFixed(8)
-          .replaceAll(RegExp(r'0+$'), '')
-          .replaceAll(RegExp(r'\.$'), '');
+      _boughtAmountController.text = _formatAmountForField(boughtAmount);
     }
     _isUpdating = false;
   }
@@ -685,6 +678,19 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
 
   String _formatForField(double value) =>
       NumberFormatHelper.formatCurrency(value, locale: _portfolioLocale);
+
+  String _formatAmountForField(double value) {
+    final l = _portfolioLocale;
+    if (value == value.roundToDouble()) {
+      return NumberFormatHelper.formatCurrencyNoDecimals(value, locale: l);
+    }
+    final raw = value
+        .toStringAsFixed(8)
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
+    final parsed = double.tryParse(raw) ?? value;
+    return NumberFormat('#,##0.########', l).format(parsed);
+  }
 
   Widget buildTextField(
     String label,
