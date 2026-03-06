@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/models/mcc_model.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class AddMCCScreen extends StatefulWidget {
@@ -286,18 +287,18 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                             border: InputBorder.none,
                             hintText: '',
                             labelText: 'MCC Name',
-                            labelStyle: TextStyle(
+                            labelStyle: GoogleFonts.kumbhSans(
                               color: const Color(0xffB4B4B4),
                               fontSize: 14.sp,
                             ),
-                            hintStyle: TextStyle(
+                            hintStyle: GoogleFonts.kumbhSans(
                               color: const Color(0xffB4B4B4),
                               fontSize: 14.sp,
                             ),
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          style: TextStyle(fontSize: 14.sp),
+                          style: GoogleFonts.kumbhSans(fontSize: 14.sp),
                         ),
                       ),
 
@@ -443,18 +444,18 @@ class _AddMCCScreenState extends State<AddMCCScreen> {
                               border: InputBorder.none,
                               hintText: '',
                               labelText: 'Category Name',
-                              labelStyle: TextStyle(
+                              labelStyle: GoogleFonts.kumbhSans(
                                 color: const Color(0xffB4B4B4),
                                 fontSize: 16.sp,
                               ),
-                              hintStyle: TextStyle(
+                              hintStyle: GoogleFonts.kumbhSans(
                                 color: const Color(0xffB4B4B4),
                                 fontSize: 16.sp,
                               ),
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
-                            style: TextStyle(fontSize: 16.sp),
+                            style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                           ),
                         ),
                       ] else ...[

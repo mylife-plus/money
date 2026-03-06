@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/investment_controller.dart';
 import 'package:moneyapp/models/investment_model.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class InvestmentEntryRow extends StatefulWidget {
@@ -377,15 +378,15 @@ class _InvestmentEntryRowState extends State<InvestmentEntryRow> {
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: '???',
-                      hintStyle: const TextStyle(
-                        color: Color(0xffB4B4B4),
+                      hintStyle: GoogleFonts.kumbhSans(
+                        color: const Color(0xffB4B4B4),
                         fontSize: 14,
                       ),
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                       counterText: '',
                     ),
-                    style: TextStyle(fontSize: 14.sp, color: Colors.black),
+                    style: GoogleFonts.kumbhSans(fontSize: 14.sp, color: Colors.black),
                   )
                 : CustomText(
                     tickerController.text.isEmpty

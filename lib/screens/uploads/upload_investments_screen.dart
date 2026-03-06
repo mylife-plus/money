@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:moneyapp/constants/app_icons.dart';
 import 'package:moneyapp/controllers/ui_controller.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 
 class UploadInvestmentsScreen extends StatefulWidget {
@@ -262,18 +263,18 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
                   border: InputBorder.none,
                   hintText: '',
                   labelText: 'Column',
-                  labelStyle: TextStyle(
+                  labelStyle: GoogleFonts.kumbhSans(
                     color: Color(0xffB4B4B4),
                     fontSize: 16.sp,
                   ),
-                  hintStyle: TextStyle(
+                  hintStyle: GoogleFonts.kumbhSans(
                     color: Color(0xffB4B4B4),
                     fontSize: 16.sp,
                   ),
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
                 ),
-                style: TextStyle(fontSize: 16.sp),
+                style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                 textAlign: TextAlign.end,
               ),
             ),
@@ -295,18 +296,18 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
                   border: InputBorder.none,
                   hintText: '',
                   labelText: 'Format',
-                  labelStyle: TextStyle(
+                  labelStyle: GoogleFonts.kumbhSans(
                     color: Color(0xffB4B4B4),
                     fontSize: 16.sp,
                   ),
-                  hintStyle: TextStyle(
+                  hintStyle: GoogleFonts.kumbhSans(
                     color: Color(0xffB4B4B4),
                     fontSize: 16.sp,
                   ),
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
                 ),
-                style: TextStyle(fontSize: 16.sp),
+                style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                 textAlign: TextAlign.end,
               ),
             ),
@@ -340,15 +341,15 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
                 border: InputBorder.none,
                 hintText: '',
                 labelText: 'Column',
-                labelStyle: TextStyle(
+                labelStyle: GoogleFonts.kumbhSans(
                   color: Color(0xffB4B4B4),
                   fontSize: 16.sp,
                 ),
-                hintStyle: TextStyle(color: Color(0xffB4B4B4), fontSize: 16.sp),
+                hintStyle: GoogleFonts.kumbhSans(color: Color(0xffB4B4B4), fontSize: 16.sp),
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
-              style: TextStyle(fontSize: 16.sp),
+              style: GoogleFonts.kumbhSans(fontSize: 16.sp),
               textAlign: TextAlign.end,
             ),
           ),
@@ -370,15 +371,15 @@ class _UploadInvestmentsScreenState extends State<UploadInvestmentsScreen> {
                 border: InputBorder.none,
                 hintText: '',
                 labelText: 'with text',
-                labelStyle: TextStyle(
+                labelStyle: GoogleFonts.kumbhSans(
                   color: Color(0xffB4B4B4),
                   fontSize: 16.sp,
                 ),
-                hintStyle: TextStyle(color: Color(0xffB4B4B4), fontSize: 16.sp),
+                hintStyle: GoogleFonts.kumbhSans(color: Color(0xffB4B4B4), fontSize: 16.sp),
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
-              style: TextStyle(fontSize: 16.sp),
+              style: GoogleFonts.kumbhSans(fontSize: 16.sp),
               textAlign: TextAlign.end,
             ),
           ),

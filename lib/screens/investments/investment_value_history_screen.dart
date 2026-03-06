@@ -42,7 +42,17 @@ class _InvestmentValueHistoryScreenState
 
   Future<void> _loadSnapshots() async {
     setState(() => _isLoading = true);
-    snapshots = await controller.getSnapshotsForInvestment(investment.id!);
+    final all = await controller.getSnapshotsForInvestment(investment.id!);
+    final Map<String, PortfolioSnapshot> byDate = {};
+    for (final s in all) {
+      final key = '${s.date.year}-${s.date.month}-${s.date.day}';
+      final existing = byDate[key];
+      if (existing == null || (s.id ?? 0) > (existing.id ?? 0)) {
+        byDate[key] = s;
+      }
+    }
+    snapshots = byDate.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
     setState(() => _isLoading = false);
   }
 

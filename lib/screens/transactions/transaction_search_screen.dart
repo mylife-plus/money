@@ -7,6 +7,7 @@ import 'package:moneyapp/controllers/home_controller.dart';
 import 'package:moneyapp/controllers/mcc_controller.dart';
 import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/utils/number_format_helper.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/transactions/transaction_item.dart';
 
@@ -152,18 +153,18 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                               border: InputBorder.none,
                               hintText: '',
                               // labelText: 'Search',
-                              labelStyle: TextStyle(
+                              labelStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
-                              hintStyle: TextStyle(
+                              hintStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
-                            style: TextStyle(fontSize: 16.sp),
+                            style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                           ),
                         ),
                         if (_searchController.text.isNotEmpty)

@@ -14,6 +14,7 @@ import 'package:moneyapp/models/transaction_model.dart';
 import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
@@ -405,22 +406,22 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                             border: InputBorder.none,
                             hintText: 'Select Date',
                             labelText: 'Date',
-                            labelStyle: TextStyle(
+                            labelStyle: GoogleFonts.kumbhSans(
                               color: AppColors.greyColor,
                               fontSize: 16.sp,
                             ),
-                            hintStyle: TextStyle(
+                            hintStyle: GoogleFonts.kumbhSans(
                               color: AppColors.greyColor,
                               fontSize: 16.sp,
                             ),
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
-                            suffixStyle: TextStyle(
+                            suffixStyle: GoogleFonts.kumbhSans(
                               color: AppColors.greyColor,
                               fontSize: 16.sp,
                             ),
                           ),
-                          style: TextStyle(fontSize: 16.sp),
+                          style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                           textAlign: TextAlign.end,
                         ),
                       ),
@@ -456,17 +457,17 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                                     ? const Color(0xff00C00D)
                                     : const Color(0xffFF0000),
                               ),
-                              labelStyle: TextStyle(
+                              labelStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
-                              hintStyle: TextStyle(
+                              hintStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
-                              suffixStyle: TextStyle(
+                              suffixStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
@@ -475,7 +476,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
-                            style: TextStyle(
+                            style: GoogleFonts.kumbhSans(
                               fontSize: 16.sp,
                               color: isIncome
                                   ? const Color(0xff00C00D)
@@ -548,18 +549,18 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                               border: InputBorder.none,
                               hintText: '',
                               labelText: 'Recipient',
-                              labelStyle: TextStyle(
+                              labelStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
-                              hintStyle: TextStyle(
+                              hintStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
-                            style: TextStyle(fontSize: 16.sp),
+                            style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                           ),
                         ),
                       ),
@@ -586,11 +587,11 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                         border: InputBorder.none,
                         hintText: '',
                         labelText: 'Note',
-                        labelStyle: TextStyle(
+                        labelStyle: GoogleFonts.kumbhSans(
                           color: AppColors.greyColor,
                           fontSize: 16.sp,
                         ),
-                        hintStyle: TextStyle(
+                        hintStyle: GoogleFonts.kumbhSans(
                           color: AppColors.greyColor,
                           fontSize: 16.sp,
                         ),
@@ -598,7 +599,7 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                         contentPadding: EdgeInsets.zero,
                         counterText: "", // Hide the counter
                       ),
-                      style: TextStyle(fontSize: 16.sp),
+                      style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                     ),
                   ),
                   7.verticalSpace,
@@ -617,9 +618,9 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                           InkWell(
                             onTap: () => _showHashtagSelectionDialog(index),
                             child: Container(
-                              height: 42.h,
-                              width: 37.w,
-                              padding: EdgeInsets.fromLTRB(5.r, 0.r, 5.r, 0.r),
+                              height: 41.h,
+                              width: 35.h,
+                              padding: EdgeInsets.zero,
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(4.r),
@@ -637,12 +638,12 @@ class _SplitSpendingScreenState extends State<SplitSpendingScreen> {
                                 children: [
                                   CustomText(
                                     'Add',
-                                    size: 12.sp,
+                                    size: 10.sp,
                                     color: AppColors.greyColor,
                                   ),
                                   CustomText(
                                     '#',
-                                    size: 16.sp,
+                                    size: 13.sp,
                                     color: Color(0xff0088FF),
                                   ),
                                 ],

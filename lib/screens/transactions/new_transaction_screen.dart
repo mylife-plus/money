@@ -15,6 +15,7 @@ import 'package:moneyapp/constants/app_currencies.dart';
 import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/hashtag/hashtag_selection_dialog.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
@@ -530,22 +531,22 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                   border: InputBorder.none,
                                   hintText: 'Select Date',
                                   labelText: 'Date',
-                                  labelStyle: TextStyle(
+                                  labelStyle: GoogleFonts.kumbhSans(
                                     color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
-                                  hintStyle: TextStyle(
+                                  hintStyle: GoogleFonts.kumbhSans(
                                     color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
-                                  suffixStyle: TextStyle(
+                                  suffixStyle: GoogleFonts.kumbhSans(
                                     color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                 ),
-                                style: TextStyle(fontSize: 16.sp),
+                                style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                                 textAlign: TextAlign.end,
                               ),
                             ),
@@ -618,17 +619,17 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                     labelText: isAddingIncome
                                         ? 'Income'
                                         : 'Spending',
-                                    labelStyle: TextStyle(
+                                    labelStyle: GoogleFonts.kumbhSans(
                                       color: AppColors.greyColor,
                                       fontSize: 16.sp,
                                     ),
-                                    hintStyle: TextStyle(
+                                    hintStyle: GoogleFonts.kumbhSans(
                                       color: AppColors.greyColor,
                                       fontSize: 16.sp,
                                     ),
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
-                                    suffixStyle: TextStyle(
+                                    suffixStyle: GoogleFonts.kumbhSans(
                                       color: AppColors.greyColor,
                                       fontSize: 16.sp,
                                     ),
@@ -638,7 +639,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                   keyboardType: TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
-                                  style: TextStyle(
+                                  style: GoogleFonts.kumbhSans(
                                     fontSize: 16.sp,
                                     color: isAddingIncome
                                         ? Color(0xff00C00D)
@@ -675,25 +676,28 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                     ),
                                   ],
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    CustomText(
-                                      'MCC',
-                                      size: 10.sp,
-                                      color: AppColors.greyColor,
-                                    ),
-                                    Center(
-                                      child: selectedMCC != null
-                                          ? selectedMCC!.getIcon(size: 13.r)
-                                          : Image.asset(
-                                              AppIcons.shopIcon,
-                                              height: 18.r,
-                                              width: 18.r,
-                                              color: AppColors.greyColor,
-                                            ),
-                                    ),
-                                  ],
+                                child: Padding(
+                                  padding: EdgeInsets.only(top: 4.h),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      CustomText(
+                                        'MCC',
+                                        size: 10.sp,
+                                        color: AppColors.greyColor,
+                                      ),
+                                      Center(
+                                        child: selectedMCC != null
+                                            ? selectedMCC!.getIcon(size: 13.r)
+                                            : Image.asset(
+                                                AppIcons.shopIcon,
+                                                height: 18.r,
+                                                width: 18.r,
+                                                color: AppColors.greyColor,
+                                              ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -720,18 +724,18 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                     border: InputBorder.none,
                                     hintText: '',
                                     labelText: isAddingIncome ? 'Sender' : 'Recipient',
-                                    labelStyle: TextStyle(
+                                    labelStyle: GoogleFonts.kumbhSans(
                                       color: AppColors.greyColor,
                                       fontSize: 16.sp,
                                     ),
-                                    hintStyle: TextStyle(
+                                    hintStyle: GoogleFonts.kumbhSans(
                                       color: AppColors.greyColor,
                                       fontSize: 16.sp,
                                     ),
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
                                   ),
-                                  style: TextStyle(fontSize: 16.sp),
+                                  style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                                 ),
                               ),
                             ),
@@ -758,11 +762,11 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                               border: InputBorder.none,
                               hintText: '',
                               labelText: 'Note',
-                              labelStyle: TextStyle(
+                              labelStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
-                              hintStyle: TextStyle(
+                              hintStyle: GoogleFonts.kumbhSans(
                                 color: AppColors.greyColor,
                                 fontSize: 16.sp,
                               ),
@@ -770,7 +774,7 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                               contentPadding: EdgeInsets.zero,
                               counterText: "", // Hide the counter
                             ),
-                            style: TextStyle(fontSize: 16.sp),
+                            style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                           ),
                         ),
                         7.verticalSpace,
@@ -791,14 +795,9 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                 InkWell(
                                   onTap: _showHashtagSelectionDialog,
                                   child: Container(
-                                    // height: 42.h,
-                                    width: 37.w,
-                                    padding: EdgeInsets.fromLTRB(
-                                      5.r,
-                                      0.r,
-                                      5.r,
-                                      0.r,
-                                    ),
+                                    // height: 41.h,
+                                    width: 35.h,
+                                    padding: EdgeInsets.zero,
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(4.r),
@@ -815,21 +814,24 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
                                         ),
                                       ],
                                     ),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        CustomText(
-                                          'Add',
-                                          size: 10.sp,
-                                          color: AppColors.greyColor,
-                                        ),
-                                        CustomText(
-                                          '#',
-                                          size: 18.sp,
-                                          color: Color(0xff0088FF),
-                                        ),
-                                      ],
+                                    child: Padding(
+                                      padding: EdgeInsets.only(top: 4.h),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          CustomText(
+                                            'Add',
+                                            size: 10.sp,
+                                            color: AppColors.greyColor,
+                                          ),
+                                          CustomText(
+                                            '#',
+                                            size: 16.sp,
+                                            color: Color(0xff0088FF),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

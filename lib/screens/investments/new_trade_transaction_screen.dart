@@ -9,6 +9,7 @@ import 'package:moneyapp/models/investment_model.dart';
 import 'package:moneyapp/models/investment_activity_model.dart';
 import 'package:moneyapp/constants/app_currencies.dart';
 import 'package:moneyapp/services/currency_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/utils/number_format_helper.dart';
 import 'package:moneyapp/widgets/investments/investment_selector_button.dart';
@@ -718,13 +719,13 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
           suffixText: showCurrencySymbol
               ? CurrencyService.instance.portfolioCode
               : null,
-          suffixStyle: TextStyle(color: AppColors.greyColor, fontSize: 16.sp),
-          labelStyle: TextStyle(color: AppColors.greyColor, fontSize: 16.sp),
-          hintStyle: TextStyle(color: AppColors.greyColor, fontSize: 16.sp),
+          suffixStyle: GoogleFonts.kumbhSans(color: AppColors.greyColor, fontSize: 16.sp),
+          labelStyle: GoogleFonts.kumbhSans(color: AppColors.greyColor, fontSize: 16.sp),
+          hintStyle: GoogleFonts.kumbhSans(color: AppColors.greyColor, fontSize: 16.sp),
           isDense: true,
           contentPadding: EdgeInsets.zero,
         ),
-        style: TextStyle(fontSize: 16.sp),
+        style: GoogleFonts.kumbhSans(fontSize: 16.sp),
       ),
     );
   }
@@ -744,12 +745,12 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
           border: InputBorder.none,
           hintText: '',
           labelText: 'Description',
-          labelStyle: TextStyle(color: AppColors.greyColor, fontSize: 16.sp),
-          hintStyle: TextStyle(color: AppColors.greyColor, fontSize: 16.sp),
+          labelStyle: GoogleFonts.kumbhSans(color: AppColors.greyColor, fontSize: 16.sp),
+          hintStyle: GoogleFonts.kumbhSans(color: AppColors.greyColor, fontSize: 16.sp),
           isDense: true,
           contentPadding: EdgeInsets.zero,
         ),
-        style: TextStyle(fontSize: 16.sp),
+        style: GoogleFonts.kumbhSans(fontSize: 16.sp),
       ),
     );
   }
@@ -891,18 +892,18 @@ class _NewTradeTransactionScreenState extends State<NewTradeTransactionScreen> {
                                   border: InputBorder.none,
                                   hintText: 'Select Date',
                                   labelText: 'Date',
-                                  labelStyle: TextStyle(
+                                  labelStyle: GoogleFonts.kumbhSans(
                                     color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
-                                  hintStyle: TextStyle(
+                                  hintStyle: GoogleFonts.kumbhSans(
                                     color: AppColors.greyColor,
                                     fontSize: 16.sp,
                                   ),
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
                                 ),
-                                style: TextStyle(fontSize: 16.sp),
+                                style: GoogleFonts.kumbhSans(fontSize: 16.sp),
                                 textAlign: TextAlign.end,
                               ),
                             ),

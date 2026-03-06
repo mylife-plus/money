@@ -473,7 +473,7 @@ class InvestmentController extends GetxController {
     void update(int investmentId, DateTime date, double price) {
       if (date.isBefore(beforeDate)) {
         final existing = latestEntries[investmentId];
-        if (existing == null || date.isAfter(existing.key)) {
+        if (existing == null || !date.isBefore(existing.key)) {
           latestEntries[investmentId] = MapEntry(date, price);
         }
       }
@@ -576,7 +576,7 @@ class InvestmentController extends GetxController {
 
           if (activity.tradeSoldPrice != null) {
             final existingDate = investmentChanges[soldId]!['latestPriceDate'];
-            if (existingDate == null || activity.date.isAfter(existingDate)) {
+            if (existingDate == null || !activity.date.isBefore(existingDate)) {
               investmentChanges[soldId]!['latestPrice'] =
                   activity.tradeSoldPrice;
               investmentChanges[soldId]!['latestPriceDate'] = activity.date;
@@ -598,7 +598,7 @@ class InvestmentController extends GetxController {
           if (activity.tradeBoughtPrice != null) {
             final existingDate =
                 investmentChanges[boughtId]!['latestPriceDate'];
-            if (existingDate == null || activity.date.isAfter(existingDate)) {
+            if (existingDate == null || !activity.date.isBefore(existingDate)) {
               investmentChanges[boughtId]!['latestPrice'] =
                   activity.tradeBoughtPrice;
               investmentChanges[boughtId]!['latestPriceDate'] = activity.date;

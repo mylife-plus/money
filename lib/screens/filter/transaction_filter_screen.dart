@@ -12,6 +12,7 @@ import 'package:moneyapp/models/hashtag_group_model.dart';
 import 'package:moneyapp/services/database/repositories/utils/date_picker_helper.dart';
 import 'package:moneyapp/services/currency_service.dart';
 import 'package:moneyapp/utils/number_format_helper.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:moneyapp/widgets/common/custom_text.dart';
 import 'package:moneyapp/widgets/common/category_chip.dart';
 import 'package:moneyapp/widgets/mcc/mcc_selection_dialog.dart';
@@ -329,18 +330,18 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                                         labelText: fromDate != null
                                             ? 'From Date'
                                             : null,
-                                        labelStyle: TextStyle(
+                                        labelStyle: GoogleFonts.kumbhSans(
                                           color: AppColors.greyColor,
-                                          fontSize: 12.sp,
+                                          fontSize: 16.sp,
                                         ),
-                                        hintStyle: TextStyle(
+                                        hintStyle: GoogleFonts.kumbhSans(
                                           color: AppColors.greyColor,
                                           fontSize: 16.sp,
                                         ),
                                         isDense: true,
                                         contentPadding: EdgeInsets.zero,
                                       ),
-                                      style: TextStyle(
+                                      style: GoogleFonts.kumbhSans(
                                         fontSize: 16.sp,
                                         color: Colors.black,
                                       ),
@@ -389,18 +390,18 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                                         labelText: toDate != null
                                             ? 'To Date'
                                             : null,
-                                        labelStyle: TextStyle(
+                                        labelStyle: GoogleFonts.kumbhSans(
                                           color: AppColors.greyColor,
-                                          fontSize: 12.sp,
+                                          fontSize: 16.sp,
                                         ),
-                                        hintStyle: TextStyle(
+                                        hintStyle: GoogleFonts.kumbhSans(
                                           color: AppColors.greyColor,
                                           fontSize: 16.sp,
                                         ),
                                         isDense: true,
                                         contentPadding: EdgeInsets.zero,
                                       ),
-                                      style: TextStyle(
+                                      style: GoogleFonts.kumbhSans(
                                         fontSize: 16.sp,
                                         color: Colors.black,
                                       ),
@@ -455,7 +456,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
 
                       // Display selected MCCs as chips
                       if (selectedMCCs.isNotEmpty) ...[
-                        10.verticalSpace,
+                        7.verticalSpace,
                         Wrap(
                           spacing: 8.w,
                           runSpacing: 8.h,
@@ -542,7 +543,7 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
 
                       // Display selected hashtags as chips
                       if (selectedHashtags.isNotEmpty) ...[
-                        10.verticalSpace,
+                      7.verticalSpace,
                         Wrap(
                           spacing: 8.w,
                           runSpacing: 8.h,
@@ -594,44 +595,49 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                                 border: Border.all(color: AppColors.greyBorder),
                                 borderRadius: BorderRadius.circular(4.r),
                               ),
-                              child: TextField(
-                                controller: minAmountController,
-                                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                                inputFormatters: [
-                                  ThousandsSeparatorFormatter(
-                                    locale: CurrencyService.instance.cashflowLocale,
-                                  ),
-                                ],
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  labelText: 'min amount',
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  prefixIconConstraints: BoxConstraints(
-                                    minWidth: 20.w,
-                                    minHeight: 20.h,
-                                  ),
-                                  prefixIcon: Image.asset(
+                              child: Row(
+                                children: [
+                                  Image.asset(
                                     AppIcons.receipt,
                                     height: 20.r,
                                     width: 20.r,
                                     color: AppColors.greyColor,
                                   ),
-
-                                  labelStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
+                                  10.horizontalSpace,
+                                  Expanded(
+                                    child: TextField(
+                                      controller: minAmountController,
+                                      onChanged: (_) => setState(() {}),
+                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                      inputFormatters: [
+                                        ThousandsSeparatorFormatter(
+                                          locale: CurrencyService.instance.cashflowLocale,
+                                        ),
+                                      ],
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'min amount',
+                                        labelText: minAmountController.text.isNotEmpty
+                                            ? 'min amount'
+                                            : null,
+                                        labelStyle: GoogleFonts.kumbhSans(
+                                          color: AppColors.greyColor,
+                                          fontSize: 16.sp,
+                                        ),
+                                        hintStyle: GoogleFonts.kumbhSans(
+                                          color: AppColors.greyColor,
+                                          fontSize: 16.sp,
+                                        ),
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                      style: GoogleFonts.kumbhSans(
+                                        fontSize: 16.sp,
+                                        color: Colors.black,
+                                      ),
+                                    ),
                                   ),
-                                  hintStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
-                                  ),
-                                ),
-
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: Colors.black,
-                                ),
+                                ],
                               ),
                             ),
                           ),
@@ -648,42 +654,49 @@ class _TransactionFilterScreenState extends State<TransactionFilterScreen>
                                 border: Border.all(color: AppColors.greyBorder),
                                 borderRadius: BorderRadius.circular(4.r),
                               ),
-                              child: TextField(
-                                controller: maxAmountController,
-                                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                                inputFormatters: [
-                                  ThousandsSeparatorFormatter(
-                                    locale: CurrencyService.instance.cashflowLocale,
-                                  ),
-                                ],
-                                decoration: InputDecoration(
-                                  prefixIconConstraints: BoxConstraints(
-                                    minWidth: 20.w,
-                                    minHeight: 20.h,
-                                  ),
-                                  prefixIcon: Image.asset(
+                              child: Row(
+                                children: [
+                                  Image.asset(
                                     AppIcons.receipt,
                                     height: 20.r,
                                     width: 20.r,
                                     color: AppColors.greyColor,
                                   ),
-                                  border: InputBorder.none,
-                                  labelText: 'max amount',
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  labelStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
+                                  10.horizontalSpace,
+                                  Expanded(
+                                    child: TextField(
+                                      controller: maxAmountController,
+                                      onChanged: (_) => setState(() {}),
+                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                      inputFormatters: [
+                                        ThousandsSeparatorFormatter(
+                                          locale: CurrencyService.instance.cashflowLocale,
+                                        ),
+                                      ],
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'max amount',
+                                        labelText: maxAmountController.text.isNotEmpty
+                                            ? 'max amount'
+                                            : null,
+                                        labelStyle: GoogleFonts.kumbhSans(
+                                          color: AppColors.greyColor,
+                                          fontSize: 16.sp,
+                                        ),
+                                        hintStyle: GoogleFonts.kumbhSans(
+                                          color: AppColors.greyColor,
+                                          fontSize: 16.sp,
+                                        ),
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                      style: GoogleFonts.kumbhSans(
+                                        fontSize: 16.sp,
+                                        color: Colors.black,
+                                      ),
+                                    ),
                                   ),
-                                  hintStyle: TextStyle(
-                                    color: AppColors.greyColor,
-                                    fontSize: 16.sp,
-                                  ),
-                                ),
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: Colors.black,
-                                ),
+                                ],
                               ),
                             ),
                           ),
