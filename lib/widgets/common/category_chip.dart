@@ -48,17 +48,20 @@ class CategoryChip extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CustomText(
-                    categoryGroup,
-                    size: 12.sp,
-                    color: Color(0xffB4B4B4),
-                  ),
-                  CustomText("# $category", size: 16.sp, color: Colors.black),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomText(
+                      categoryGroup,
+                      size: 12.sp,
+                      color: Color(0xffB4B4B4),
+                    ),
+                    CustomText("# $category", size: 12.sp, color: Colors.black),
+                  ],
+                ),
               ),
             ),
           ),
