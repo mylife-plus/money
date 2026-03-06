@@ -59,7 +59,7 @@ class CategoryChip extends StatelessWidget {
                       size: 12.sp,
                       color: Color(0xffB4B4B4),
                     ),
-                    CustomText("# $category", size: 12.sp, color: Colors.black),
+                    CustomText("# $category", size: 16.sp, color: Colors.black),
                   ],
                 ),
               ),
